@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Free Camera Explorer</title>
+		<meta charset=utf-8 />
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+		<div id="info">
+			Free Camera Explorer<br />
+			MOUSE to look around<br/>
+			WASD to move
+		</div>
+		<div id="container"></div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+					"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+
+			import Stats from 'three/addons/libs/stats.module.js';
+
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+			import { Octree } from 'three/addons/math/Octree.js';
+			import { OctreeHelper } from 'three/addons/helpers/OctreeHelper.js';
+
+			import { Capsule } from 'three/addons/math/Capsule.js';
+
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+			const clock = new THREE.Clock();
+
+			const scene = new THREE.Scene();
+			scene.background = new THREE.Color( 0x88ccee );
+			scene.fog = new THREE.Fog( 0x88ccee, 0, 50 );
+
+			const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
+			camera.rotation.order = 'YXZ';
+
+			const fillLight1 = new THREE.HemisphereLight( 0x8dc1de, 0x00668d, 1.5 );
+			fillLight1.position.set( 2, 1, 1 );
+			scene.add( fillLight1 );
+
+			const directionalLight = new THREE.DirectionalLight( 0xffffff, 2.5 );
+			directionalLight.position.set( - 5, 25, - 1 );
+			directionalLight.castShadow = true;
+			directionalLight.shadow.camera.near = 0.01;
+			directionalLight.shadow.camera.far = 500;
+			directionalLight.shadow.camera.right = 30;
+			directionalLight.shadow.camera.left = - 30;
+			directionalLight.shadow.camera.top	= 30;
+			directionalLight.shadow.camera.bottom = - 30;
+			directionalLight.shadow.mapSize.width = 1024;
+			directionalLight.shadow.mapSize.height = 1024;
+			directionalLight.shadow.radius = 4;
+			directionalLight.shadow.bias = - 0.00006;
+			scene.add( directionalLight );
+
+			const ambientLight = new THREE.AmbientLight( 0x404040, 0.5 );
+			scene.add( ambientLight );
+
+			const container = document.getElementById( 'container' );
+
+			const renderer = new THREE.WebGLRenderer( { antialias: true } );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setAnimationLoop( animate );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.VSMShadowMap;
+			renderer.toneMapping = THREE.ACESFilmicToneMapping;
+			renderer.toneMappingExposure = 1.0;
+			container.appendChild( renderer.domElement );
+
+			const stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+			const GRAVITY = 30;
+			const STEPS_PER_FRAME = 5;
+			
+			// Movement speed - adjust this value to control how fast you move
+			const MOVE_SPEED = 25;
+
+			const worldOctree = new Octree();
+
+			const playerCollider = new Capsule( new THREE.Vector3( 0, 0.35, 0 ), new THREE.Vector3( 0, 1, 0 ), 0.35 );
+
+			const playerVelocity = new THREE.Vector3();
+			const playerDirection = new THREE.Vector3();
+
+			let playerOnFloor = false;
+
+			const keyStates = {};
+
+			// Default environment settings
+			const defaultEnvSettings = {
+				// Sky / Background
+				backgroundColor: '#88ccee',
+				
+				// Fog
+				fogEnabled: true,
+				fogColor: '#88ccee',
+				fogNear: 0,
+				fogFar: 50,
+				
+				// Hemisphere Light
+				hemiSkyColor: '#8dc1de',
+				hemiGroundColor: '#00668d',
+				hemiIntensity: 1.5,
+				
+				// Directional Light (Sun)
+				sunColor: '#ffffff',
+				sunIntensity: 2.5,
+				sunPosX: -5,
+				sunPosY: 25,
+				sunPosZ: -1,
+				
+				// Ambient Light
+				ambientColor: '#404040',
+				ambientIntensity: 0.5,
+				
+				// Renderer
+				toneMapping: 'ACESFilmic',
+				exposure: 1.0,
+				
+				// Debug
+				showOctree: false
+			};
+
+			// Load saved settings or use defaults
+			function loadSettings() {
+				try {
+					const saved = localStorage.getItem( 'envSettings' );
+					if ( saved ) {
+						return { ...defaultEnvSettings, ...JSON.parse( saved ) };
+					}
+				} catch ( e ) {
+					console.warn( 'Failed to load settings:', e );
+				}
+				return { ...defaultEnvSettings };
+			}
+
+			// Save settings to localStorage
+			function saveSettings() {
+				try {
+					localStorage.setItem( 'envSettings', JSON.stringify( envSettings ) );
+				} catch ( e ) {
+					console.warn( 'Failed to save settings:', e );
+				}
+			}
+
+			const envSettings = loadSettings();
+
+			// Apply loaded settings to scene
+			function applySettings() {
+				// Background
+				scene.background = new THREE.Color( envSettings.backgroundColor );
+				
+				// Fog
+				if ( envSettings.fogEnabled ) {
+					scene.fog = new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar );
+				} else {
+					scene.fog = null;
+				}
+				
+				// Hemisphere Light
+				fillLight1.color.set( envSettings.hemiSkyColor );
+				fillLight1.groundColor.set( envSettings.hemiGroundColor );
+				fillLight1.intensity = envSettings.hemiIntensity;
+				
+				// Directional Light (Sun)
+				directionalLight.color.set( envSettings.sunColor );
+				directionalLight.intensity = envSettings.sunIntensity;
+				directionalLight.position.set( envSettings.sunPosX, envSettings.sunPosY, envSettings.sunPosZ );
+				
+				// Ambient Light
+				ambientLight.color.set( envSettings.ambientColor );
+				ambientLight.intensity = envSettings.ambientIntensity;
+				
+				// Renderer
+				renderer.toneMapping = toneMappingOptions[ envSettings.toneMapping ];
+				renderer.toneMappingExposure = envSettings.exposure;
+			}
+
+			const toneMappingOptions = {
+				'None': THREE.NoToneMapping,
+				'Linear': THREE.LinearToneMapping,
+				'Reinhard': THREE.ReinhardToneMapping,
+				'Cineon': THREE.CineonToneMapping,
+				'ACESFilmic': THREE.ACESFilmicToneMapping
+			};
+
+			document.addEventListener( 'keydown', ( event ) => {
+
+				keyStates[ event.code ] = true;
+
+			} );
+
+			document.addEventListener( 'keyup', ( event ) => {
+
+				keyStates[ event.code ] = false;
+
+			} );
+
+			container.addEventListener( 'mousedown', () => {
+
+				document.body.requestPointerLock();
+
+			} );
+
+			document.body.addEventListener( 'mousemove', ( event ) => {
+
+				if ( document.pointerLockElement === document.body ) {
+
+					camera.rotation.y -= event.movementX / 500;
+					camera.rotation.x -= event.movementY / 500;
+
+				}
+
+			} );
+
+			window.addEventListener( 'resize', onWindowResize );
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function playerCollisions() {
+
+				const result = worldOctree.capsuleIntersect( playerCollider );
+
+				playerOnFloor = false;
+
+				if ( result ) {
+
+					playerOnFloor = result.normal.y > 0;
+
+					if ( ! playerOnFloor ) {
+
+						playerVelocity.addScaledVector( result.normal, - result.normal.dot( playerVelocity ) );
+
+					}
+
+					if ( result.depth >= 1e-10 ) {
+
+						playerCollider.translate( result.normal.multiplyScalar( result.depth ) );
+
+					}
+
+				}
+
+			}
+
+			function updatePlayer( deltaTime ) {
+
+				let damping = Math.exp( - 4 * deltaTime ) - 1;
+
+				if ( ! playerOnFloor ) {
+
+					playerVelocity.y -= GRAVITY * deltaTime;
+
+					// small air resistance
+					damping *= 0.1;
+
+				}
+
+				playerVelocity.addScaledVector( playerVelocity, damping );
+
+				const deltaPosition = playerVelocity.clone().multiplyScalar( deltaTime );
+				playerCollider.translate( deltaPosition );
+
+				playerCollisions();
+
+				camera.position.copy( playerCollider.end );
+
+			}
+
+			function getForwardVector() {
+
+				camera.getWorldDirection( playerDirection );
+				playerDirection.y = 0;
+				playerDirection.normalize();
+
+				return playerDirection;
+
+			}
+
+			function getSideVector() {
+
+				camera.getWorldDirection( playerDirection );
+				playerDirection.y = 0;
+				playerDirection.normalize();
+				playerDirection.cross( camera.up );
+
+				return playerDirection;
+
+			}
+
+			function controls( deltaTime ) {
+
+				const speedDelta = deltaTime * MOVE_SPEED;
+
+				if ( keyStates[ 'KeyW' ] ) {
+
+					playerVelocity.add( getForwardVector().multiplyScalar( speedDelta ) );
+
+				}
+
+				if ( keyStates[ 'KeyS' ] ) {
+
+					playerVelocity.add( getForwardVector().multiplyScalar( - speedDelta ) );
+
+				}
+
+				if ( keyStates[ 'KeyA' ] ) {
+
+					playerVelocity.add( getSideVector().multiplyScalar( - speedDelta ) );
+
+				}
+
+				if ( keyStates[ 'KeyD' ] ) {
+
+					playerVelocity.add( getSideVector().multiplyScalar( speedDelta ) );
+
+				}
+
+			}
+
+			let octreeHelper = null;
+
+			const loader = new GLTFLoader();
+
+			loader.load( './Magnet_Scene1.glb', ( gltf ) => {
+
+				scene.add( gltf.scene );
+
+				worldOctree.fromGraphNode( gltf.scene );
+
+				gltf.scene.traverse( child => {
+
+					if ( child.isMesh ) {
+
+						child.castShadow = true;
+						child.receiveShadow = true;
+
+						if ( child.material.map ) {
+
+							child.material.map.anisotropy = 4;
+
+						}
+
+					}
+
+				} );
+
+				octreeHelper = new OctreeHelper( worldOctree );
+				octreeHelper.visible = envSettings.showOctree;
+				scene.add( octreeHelper );
+
+				// Apply saved settings
+				applySettings();
+
+				// Create GUI
+				createGUI();
+			
+			} );
+
+			function createGUI() {
+
+				const gui = new GUI( { width: 280, title: 'Environment Settings' } );
+
+				// Sky / Background folder
+				const skyFolder = gui.addFolder( 'Sky & Background' );
+				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background Color' ).onChange( ( value ) => {
+					scene.background = new THREE.Color( value );
+					saveSettings();
+				} );
+
+				// Fog folder
+				const fogFolder = gui.addFolder( 'Atmospheric Fog' );
+				fogFolder.add( envSettings, 'fogEnabled' ).name( 'Enable Fog' ).onChange( ( value ) => {
+					if ( value ) {
+						scene.fog = new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar );
+					} else {
+						scene.fog = null;
+					}
+					saveSettings();
+				} );
+				fogFolder.addColor( envSettings, 'fogColor' ).name( 'Fog Color' ).onChange( ( value ) => {
+					if ( scene.fog ) scene.fog.color.set( value );
+					saveSettings();
+				} );
+				fogFolder.add( envSettings, 'fogNear', 0, 100, 1 ).name( 'Fog Near' ).onChange( ( value ) => {
+					if ( scene.fog ) scene.fog.near = value;
+					saveSettings();
+				} );
+				fogFolder.add( envSettings, 'fogFar', 10, 500, 1 ).name( 'Fog Far' ).onChange( ( value ) => {
+					if ( scene.fog ) scene.fog.far = value;
+					saveSettings();
+				} );
+
+				// Hemisphere Light folder
+				const hemiFolder = gui.addFolder( 'Hemisphere Light' );
+				hemiFolder.addColor( envSettings, 'hemiSkyColor' ).name( 'Sky Color' ).onChange( ( value ) => {
+					fillLight1.color.set( value );
+					saveSettings();
+				} );
+				hemiFolder.addColor( envSettings, 'hemiGroundColor' ).name( 'Ground Color' ).onChange( ( value ) => {
+					fillLight1.groundColor.set( value );
+					saveSettings();
+				} );
+				hemiFolder.add( envSettings, 'hemiIntensity', 0, 5, 0.1 ).name( 'Intensity' ).onChange( ( value ) => {
+					fillLight1.intensity = value;
+					saveSettings();
+				} );
+
+				// Directional Light (Sun) folder
+				const sunFolder = gui.addFolder( 'Sun Light' );
+				sunFolder.addColor( envSettings, 'sunColor' ).name( 'Color' ).onChange( ( value ) => {
+					directionalLight.color.set( value );
+					saveSettings();
+				} );
+				sunFolder.add( envSettings, 'sunIntensity', 0, 10, 0.1 ).name( 'Intensity' ).onChange( ( value ) => {
+					directionalLight.intensity = value;
+					saveSettings();
+				} );
+				sunFolder.add( envSettings, 'sunPosX', -50, 50, 1 ).name( 'Position X' ).onChange( ( value ) => {
+					directionalLight.position.x = value;
+					saveSettings();
+				} );
+				sunFolder.add( envSettings, 'sunPosY', 0, 100, 1 ).name( 'Position Y' ).onChange( ( value ) => {
+					directionalLight.position.y = value;
+					saveSettings();
+				} );
+				sunFolder.add( envSettings, 'sunPosZ', -50, 50, 1 ).name( 'Position Z' ).onChange( ( value ) => {
+					directionalLight.position.z = value;
+					saveSettings();
+				} );
+
+				// Ambient Light folder
+				const ambientFolder = gui.addFolder( 'Ambient Light' );
+				ambientFolder.addColor( envSettings, 'ambientColor' ).name( 'Color' ).onChange( ( value ) => {
+					ambientLight.color.set( value );
+					saveSettings();
+				} );
+				ambientFolder.add( envSettings, 'ambientIntensity', 0, 3, 0.1 ).name( 'Intensity' ).onChange( ( value ) => {
+					ambientLight.intensity = value;
+					saveSettings();
+				} );
+
+				// Renderer settings folder
+				const renderFolder = gui.addFolder( 'Renderer' );
+				renderFolder.add( envSettings, 'toneMapping', Object.keys( toneMappingOptions ) ).name( 'Tone Mapping' ).onChange( ( value ) => {
+					renderer.toneMapping = toneMappingOptions[ value ];
+					saveSettings();
+				} );
+				renderFolder.add( envSettings, 'exposure', 0, 3, 0.05 ).name( 'Exposure' ).onChange( ( value ) => {
+					renderer.toneMappingExposure = value;
+					saveSettings();
+				} );
+
+				// Debug folder
+				const debugFolder = gui.addFolder( 'Debug' );
+				debugFolder.add( envSettings, 'showOctree' ).name( 'Show Octree' ).onChange( ( value ) => {
+					if ( octreeHelper ) octreeHelper.visible = value;
+					saveSettings();
+				} );
+
+				// Reset button
+				debugFolder.add( { reset: function() {
+					Object.assign( envSettings, defaultEnvSettings );
+					applySettings();
+					if ( octreeHelper ) octreeHelper.visible = envSettings.showOctree;
+					gui.controllersRecursive().forEach( c => c.updateDisplay() );
+					saveSettings();
+				} }, 'reset' ).name( 'Reset to Defaults' );
+
+				// Close all folders by default except Sky
+				fogFolder.close();
+				hemiFolder.close();
+				sunFolder.close();
+				ambientFolder.close();
+				renderFolder.close();
+				debugFolder.close();
+
+			}
+
+			function teleportPlayerIfOob() {
+
+				if ( camera.position.y <= - 25 ) {
+
+					playerCollider.start.set( 0, 0.35, 0 );
+					playerCollider.end.set( 0, 1, 0 );
+					playerCollider.radius = 0.35;
+					camera.position.copy( playerCollider.end );
+					camera.rotation.set( 0, 0, 0 );
+
+				}
+
+			}
+
+
+			function animate() {
+
+				const deltaTime = Math.min( 0.05, clock.getDelta() ) / STEPS_PER_FRAME;
+
+				// we look for collisions in substeps to mitigate the risk of
+				// an object traversing another too quickly for detection.
+
+				for ( let i = 0; i < STEPS_PER_FRAME; i ++ ) {
+
+					controls( deltaTime );
+
+					updatePlayer( deltaTime );
+
+					teleportPlayerIfOob();
+
+				}
+
+				renderer.render( scene, camera );
+
+				stats.update();
+
+			}
+
+		</script>
+	</body>
+</html>
