@@ -10,9 +10,9 @@
 
 <body>
 	<div id="info">
-		Free Camera Explorer<br />
-		<span class="desktop-controls">MOUSE to look around | WASD to move</span>
-		<span class="mobile-controls" style="display: none;">Hold to move forward | Swipe to look</span>
+		<br />
+		<span class="desktop-controls"></span>
+		<span class="mobile-controls" style="display: none;"></span>
 	</div>
 	<div id="container"></div>
 	
@@ -38,122 +38,304 @@
 
 			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
+			import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+			import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+			import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+			import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+			import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+			import { LUTPass } from 'three/addons/postprocessing/LUTPass.js';
+			import { LUTCubeLoader } from 'three/addons/loaders/LUTCubeLoader.js';
+			import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+			import { Water } from 'three/addons/objects/Water2.js';
+
+			/** Consolidated post-processing shader (vignette, tilt-shift, film grain) */
+			const MasterPostShader = {
+				uniforms: {
+					'tDiffuse': { value: null },
+					'time': { value: 0.0 },
+					'resolution': { value: new THREE.Vector2( window.innerWidth, window.innerHeight ) },
+					'vignetteEnabled': { value: true },
+					'vignetteOffset': { value: 1.0 },
+					'vignetteDarkness': { value: 1.2 },
+					'grainEnabled': { value: true },
+					'grainIntensity': { value: 0.15 },
+					'tiltShiftEnabled': { value: false },
+					'focusY': { value: 0.5 },
+					'focusWidth': { value: 0.35 },
+					'blurAmount': { value: 2.0 }
+				},
+				vertexShader: `
+					varying vec2 vUv;
+					void main() {
+						vUv = uv;
+						gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+					}
+				`,
+				fragmentShader: `
+					uniform sampler2D tDiffuse;
+					uniform float time;
+					uniform vec2 resolution;
+					uniform bool vignetteEnabled;
+					uniform float vignetteOffset;
+					uniform float vignetteDarkness;
+					uniform bool grainEnabled;
+					uniform float grainIntensity;
+					uniform bool tiltShiftEnabled;
+					uniform float focusY;
+					uniform float focusWidth;
+					uniform float blurAmount;
+					varying vec2 vUv;
+					
+					float rand( vec2 co ) {
+						return fract( sin( dot( co.xy, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+					}
+					
+					void main() {
+						vec2 texelSize = 1.0 / resolution;
+						vec4 color;
+						
+						if ( tiltShiftEnabled && blurAmount > 0.0 ) {
+							float dist = abs( vUv.y - focusY );
+							float blur = smoothstep( 0.0, focusWidth, dist ) * blurAmount;
+							vec4 sum = vec4( 0.0 );
+							float total = 0.0;
+							for ( float i = -2.0; i <= 2.0; i++ ) {
+								float weight = 1.0 - abs( i ) / 2.0;
+								vec2 offset = vec2( 0.0, i * blur * texelSize.y );
+								sum += texture2D( tDiffuse, vUv + offset ) * weight;
+								total += weight;
+							}
+							for ( float i = -2.0; i <= 2.0; i++ ) {
+								float weight = 1.0 - abs( i ) / 2.0;
+								vec2 offset = vec2( i * blur * texelSize.x * 0.5, 0.0 );
+								sum += texture2D( tDiffuse, vUv + offset ) * weight;
+								total += weight;
+							}
+							color = sum / total;
+						} else {
+							color = texture2D( tDiffuse, vUv );
+						}
+						
+						if ( grainEnabled && grainIntensity > 0.0 ) {
+							float grain = rand( vUv + fract( time ) ) * 2.0 - 1.0;
+							color.rgb += grain * grainIntensity;
+						}
+						
+						if ( vignetteEnabled ) {
+							vec2 uv = ( vUv - vec2( 0.5 ) ) * vec2( vignetteOffset );
+							float vignette = 1.0 - dot( uv, uv );
+							vignette = clamp( pow( vignette, vignetteDarkness ), 0.0, 1.0 );
+							color.rgb *= vignette;
+						}
+						
+						gl_FragColor = color;
+					}
+				`
+			};
+
 			const clock = new THREE.Clock();
+			const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test( navigator.userAgent );
 
 			const scene = new THREE.Scene();
 			scene.background = new THREE.Color( 0x88ccee );
-			scene.fog = new THREE.Fog( 0x88ccee, 0, 50 );
+			scene.fog = new THREE.Fog( 0x88ccee, 0, isMobileDevice ? 30 : 50 );
 
-			const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 1000 );
+			const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 200 );
 			camera.rotation.order = 'YXZ';
 
 			const fillLight1 = new THREE.HemisphereLight( 0x8dc1de, 0x00668d, 1.5 );
 			fillLight1.position.set( 2, 1, 1 );
 			scene.add( fillLight1 );
 
+			const light = new THREE.PointLight( 0xff0000, 100, 0 );
+			light.position.set( -7, 6, 60 );
+			light.castShadow = true;
+			scene.add( light );
+
+			const sun = new THREE.PointLight( 0xff0000, 1000, 0 );
+			sun.position.set( 50, 1, 200 );
+			sun.castShadow = true;
+			scene.add( light );
+
 			const directionalLight = new THREE.DirectionalLight( 0xffffff, 2.5 );
-			directionalLight.position.set( - 5, 25, - 1 );
+			directionalLight.position.set( -5, 25, -1 );
 			directionalLight.castShadow = true;
-			directionalLight.shadow.camera.near = 0.01;
-			directionalLight.shadow.camera.far = 500;
-			directionalLight.shadow.camera.right = 30;
-			directionalLight.shadow.camera.left = - 30;
-			directionalLight.shadow.camera.top	= 30;
-			directionalLight.shadow.camera.bottom = - 30;
-			directionalLight.shadow.mapSize.width = 1024;
-			directionalLight.shadow.mapSize.height = 1024;
-			directionalLight.shadow.radius = 4;
-			directionalLight.shadow.bias = - 0.00006;
+			directionalLight.shadow.camera.near = 0.1;
+			directionalLight.shadow.camera.far = 100;
+			directionalLight.shadow.camera.right = 20;
+			directionalLight.shadow.camera.left = -20;
+			directionalLight.shadow.camera.top = 20;
+			directionalLight.shadow.camera.bottom = -20;
+			const shadowRes = isMobileDevice ? 256 : 512;
+			directionalLight.shadow.mapSize.width = shadowRes;
+			directionalLight.shadow.mapSize.height = shadowRes;
+			directionalLight.shadow.radius = 2;
+			directionalLight.shadow.bias = -0.0001;
+			directionalLight.shadow.autoUpdate = false;
+			directionalLight.shadow.needsUpdate = true;
 			scene.add( directionalLight );
 
 			const ambientLight = new THREE.AmbientLight( 0x404040, 0.5 );
 			scene.add( ambientLight );
 
-			const container = document.getElementById( 'container' );
+			/** Water plane */
+			let water = null;
+			const textureLoader = new THREE.TextureLoader();
+			const waterParams = { color: 0x0088aa, scale: 4, flowX: 1, flowY: 1 };
+			const waterTextureBase = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/water/';
+			
+			Promise.all( [
+				new Promise( ( resolve ) => {
+					textureLoader.load( waterTextureBase + 'Water_1_M_Normal.jpg', ( tex ) => {
+						tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+						resolve( tex );
+					}, undefined, () => resolve( null ) );
+				} ),
+				new Promise( ( resolve ) => {
+					textureLoader.load( waterTextureBase + 'Water_2_M_Normal.jpg', ( tex ) => {
+						tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+						resolve( tex );
+					}, undefined, () => resolve( null ) );
+				} )
+			] ).then( ( [ normalMap0, normalMap1 ] ) => {
+				if ( normalMap0 && normalMap1 ) {
+					const waterGeometry = new THREE.PlaneGeometry( 500, 500 );
+					water = new Water( waterGeometry, {
+						color: waterParams.color,
+						scale: waterParams.scale,
+						flowDirection: new THREE.Vector2( waterParams.flowX, waterParams.flowY ),
+						normalMap0: normalMap0,
+						normalMap1: normalMap1
+					} );
+					water.position.set( 0, -0.1, 0 );
+					water.rotation.x = Math.PI * -0.5;
+					scene.add( water );
+				}
+			} );
 
-			const renderer = new THREE.WebGLRenderer( { antialias: true } );
-			renderer.setPixelRatio( window.devicePixelRatio );
+			const container = document.getElementById( 'container' );
+			const isMobile = isMobileDevice;
+
+			const renderer = new THREE.WebGLRenderer( { 
+				antialias: !isMobile,
+				powerPreference: isMobile ? 'low-power' : 'high-performance',
+				precision: isMobile ? 'mediump' : 'highp'
+			} );
+			renderer.setPixelRatio( Math.min( window.devicePixelRatio, 1.5 ) );
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			renderer.setAnimationLoop( animate );
 			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = THREE.VSMShadowMap;
+			renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
 			renderer.toneMapping = THREE.ACESFilmicToneMapping;
 			renderer.toneMappingExposure = 1.0;
 			container.appendChild( renderer.domElement );
 
-			const stats = new Stats();
-			stats.domElement.style.position = 'absolute';
-			stats.domElement.style.top = '0px';
-			container.appendChild( stats.domElement );
+			let stats = null;
+			let coordsDisplay = null;
+			if ( !isMobile ) {
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
 
-			const PHYSICS_TIMESTEP = 1/60; // Fixed physics timestep
-			
-			// Movement/physics values will be loaded from envSettings
-			// These are defaults that will be overridden when settings load
-			let GRAVITY = 25;
-			let MOVE_SPEED = 50;
-			let JUMP_VELOCITY = 6;
+				coordsDisplay = document.createElement( 'div' );
+				coordsDisplay.style.cssText = 'position:absolute;top:50px;left:0;background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;font:12px monospace;z-index:100;border-radius:0 4px 4px 0;';
+				coordsDisplay.innerHTML = 'X: 0.00<br>Y: 0.00<br>Z: 0.00';
+				container.appendChild( coordsDisplay );
+			}
 
-			// Camera spawn position - adjust these values to change where the camera starts
-			const SPAWN_POSITION = {
-				x: 0,
-				y: 5,
-				z: 0
+			/** Post-processing pipeline */
+			const composer = new EffectComposer( renderer );
+
+			const renderPass = new RenderPass( scene, camera );
+			composer.addPass( renderPass );
+
+			const ssaoPass = new SSAOPass( scene, camera, 
+				Math.floor( window.innerWidth / 2 ), 
+				Math.floor( window.innerHeight / 2 ) 
+			);
+			ssaoPass.kernelRadius = 8;
+			ssaoPass.minDistance = 0.001;
+			ssaoPass.maxDistance = 0.05;
+			ssaoPass.output = SSAOPass.OUTPUT.Default;
+			composer.addPass( ssaoPass );
+
+			const bloomPass = new UnrealBloomPass(
+				new THREE.Vector2( window.innerWidth, window.innerHeight ),
+				0.3, 0.4, 0.92
+			);
+			composer.addPass( bloomPass );
+
+			const masterPostPass = new ShaderPass( MasterPostShader );
+			masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
+			composer.addPass( masterPostPass );
+
+			let lutPass = null;
+			const lutLoader = new LUTCubeLoader();
+			const lutSettings = { enabled: true, intensity: 1.0 };
+
+			lutLoader.load( './HardBoost.cube', ( result ) => {
+				lutPass = new LUTPass( { lut: result.texture3D, intensity: lutSettings.intensity } );
+				composer.insertPass( lutPass, composer.passes.length - 1 );
+			} );
+
+			const outputPass = new OutputPass();
+			composer.addPass( outputPass );
+
+			const postProcessingSettings = {
+				ssaoEnabled: true,
+				ssaoKernelRadius: 8,
+				ssaoMinDistance: 0.001,
+				ssaoMaxDistance: 0.05,
+				bloomEnabled: true,
+				bloomStrength: 0.2,
+				bloomRadius: 1,
+				bloomThreshold: 0.92,
+				filmEnabled: true,
+				filmNoiseIntensity: 0.15,
+				vignetteEnabled: true,
+				vignetteOffset: 1.0,
+				vignetteDarkness: 1.2,
+				tiltShiftEnabled: false,
+				tiltShiftFocusY: 0.5,
+				tiltShiftFocusWidth: 0.35,
+				tiltShiftBlurAmount: 2.0,
+				lutEnabled: true,
+				lutIntensity: 0.8
 			};
 
-			// Player settings
-			const PLAYER_HEIGHT = 1.8; // Total height of player (head to feet)
-			const PLAYER_RADIUS = 0.4; // Radius of the capsule
-			const PLAYER_EYE_HEIGHT = 1.6; // Height of camera/eyes from bottom
+			const PHYSICS_TIMESTEP = 1/60;
+			const SPAWN_POSITION = { x: 0, y: 5, z: 0 };
+			const PLAYER_HEIGHT = 1.8;
+			const PLAYER_RADIUS = 0.4;
+			const PLAYER_EYE_HEIGHT = 1.6;
+			let cameraMode = 'firstPerson';
 
-			// Camera mode settings
-			let cameraMode = 'firstPerson'; // 'firstPerson' or 'thirdPerson'
-
-			// ============================================
-			// LOAD SETTINGS FIRST (before physics setup)
-			// ============================================
-			// Default environment settings
+			/** Default environment settings */
 			const defaultEnvSettings = {
-				// Sky / Background
 				backgroundColor: '#88ccee',
-				
-				// Fog
-				fogEnabled: true,
+				fogEnabled: false,
 				fogColor: '#88ccee',
 				fogNear: 0,
 				fogFar: 50,
-				
-				// Hemisphere Light
-				hemiSkyColor: '#8dc1de',
+				hemiSkyColor: '#ffffff',
 				hemiGroundColor: '#00668d',
-				hemiIntensity: 1.5,
-				
-				// Directional Light (Sun)
+				hemiIntensity: 0,
 				sunColor: '#ffffff',
-				sunIntensity: 2.5,
+				sunIntensity: 0,
 				sunPosX: -5,
 				sunPosY: 25,
 				sunPosZ: -1,
-				
-				// Ambient Light
-				ambientColor: '#404040',
-				ambientIntensity: 0.5,
-				
-				// Renderer
+				ambientColor: '#ffffff',
+				ambientIntensity: 1.1,
 				toneMapping: 'ACESFilmic',
 				exposure: 1.0,
-				
-				// Debug
-				showCollisionWireframe: true,
-				showColliderVisualization: true,
+				showCollisionWireframe: false,
+				showColliderVisualization: false,
 				cameraMode: 'firstPerson',
-				
-				// Third Person Camera
 				thirdPersonDistance: 5,
 				thirdPersonHeight: 2,
 				thirdPersonAngle: 0.3,
-				
-				// Movement & Physics
 				moveSpeed: 9,
 				acceleration: 50,
 				deceleration: 30,
@@ -162,97 +344,72 @@
 				friction: 0,
 				airControl: 0.3,
 				playerMass: 10,
-				cameraSmoothing: 12
+				cameraSmoothing: 30
 			};
 
-			// Load saved settings or use defaults
 			function loadSettings() {
 				try {
 					const saved = localStorage.getItem( 'envSettings' );
-					if ( saved ) {
-						return { ...defaultEnvSettings, ...JSON.parse( saved ) };
-					}
-				} catch ( e ) {
-					console.warn( 'Failed to load settings:', e );
-				}
+					if ( saved ) return { ...defaultEnvSettings, ...JSON.parse( saved ) };
+				} catch ( e ) { console.warn( 'Failed to load settings:', e ); }
 				return { ...defaultEnvSettings };
 			}
 
-			// Save settings to localStorage
 			function saveSettings() {
-				try {
-					localStorage.setItem( 'envSettings', JSON.stringify( envSettings ) );
-				} catch ( e ) {
-					console.warn( 'Failed to save settings:', e );
-				}
+				try { localStorage.setItem( 'envSettings', JSON.stringify( envSettings ) ); }
+				catch ( e ) { console.warn( 'Failed to save settings:', e ); }
 			}
 
 			const envSettings = loadSettings();
 
-			// ============================================
-			// CANNON.JS PHYSICS WORLD SETUP
-			// ============================================
+			/** Physics world */
 			const world = new CANNON.World();
 			world.gravity.set( 0, -envSettings.gravity, 0 );
 			world.broadphase = new CANNON.SAPBroadphase( world );
 			world.allowSleep = false;
 			world.solver.iterations = 10;
 
-			// Physics materials
 			const groundMaterial = new CANNON.Material( 'ground' );
 			const playerMaterial = new CANNON.Material( 'player' );
-			
-			// Contact material for player-ground interaction
-			// Optimized for cave surfaces: rocky but not too slippery
 			const playerGroundContact = new CANNON.ContactMaterial( playerMaterial, groundMaterial, {
-				friction: envSettings.friction, // Low friction for smooth movement, but enough grip for slopes
-				restitution: 0.0 // No bouncing
+				friction: envSettings.friction,
+				restitution: 0.0
 			} );
 			world.addContactMaterial( playerGroundContact );
 
-			// Create player body (capsule approximated with cylinder + spheres)
 			const playerBody = new CANNON.Body( {
-				mass: envSettings.playerMass, // kg
+				mass: envSettings.playerMass,
 				material: playerMaterial,
-				linearDamping: 0.01, // Very low damping - we handle deceleration manually
-				angularDamping: 1.0, // Prevent spinning
-				fixedRotation: true, // Don't let player tip over
+				linearDamping: 0.01,
+				angularDamping: 1.0,
+				fixedRotation: true,
 				position: new CANNON.Vec3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z )
 			} );
 
-			// Capsule shape: cylinder + two half-spheres
 			const cylinderHeight = PLAYER_HEIGHT - PLAYER_RADIUS * 2;
 			const cylinderShape = new CANNON.Cylinder( PLAYER_RADIUS, PLAYER_RADIUS, cylinderHeight, 8 );
 			const topSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
 			const bottomSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
 
-			// Add shapes to player body (cylinder needs rotation to be vertical)
 			const cylinderQuaternion = new CANNON.Quaternion();
 			cylinderQuaternion.setFromAxisAngle( new CANNON.Vec3( 1, 0, 0 ), Math.PI / 2 );
 			playerBody.addShape( cylinderShape, new CANNON.Vec3( 0, 0, 0 ), cylinderQuaternion );
 			playerBody.addShape( topSphereShape, new CANNON.Vec3( 0, cylinderHeight / 2, 0 ) );
 			playerBody.addShape( bottomSphereShape, new CANNON.Vec3( 0, -cylinderHeight / 2, 0 ) );
-
 			world.addBody( playerBody );
 
-			// Ground contact detection
 			let playerOnFloor = false;
 			let groundContactNormal = new CANNON.Vec3();
 			const upAxis = new CANNON.Vec3( 0, 1, 0 );
 
-			// Listen for collisions to detect ground contact
 			playerBody.addEventListener( 'collide', ( event ) => {
 				const contact = event.contact;
-				
-				// Get the contact normal (pointing from other body to player)
 				let contactNormal;
 				if ( contact.bi.id === playerBody.id ) {
 					contactNormal = contact.ni.negate( new CANNON.Vec3() );
 				} else {
 					contactNormal = contact.ni;
 				}
-				
-				// Check if the normal is pointing upward (ground contact)
 				if ( contactNormal.dot( upAxis ) > 0.5 ) {
 					playerOnFloor = true;
 					groundContactNormal.copy( contactNormal );
@@ -262,47 +419,22 @@
 			const playerDirection = new THREE.Vector3();
 			const keyStates = {};
 
-			// Apply loaded settings to scene
 			function applySettings() {
-				// Background
 				scene.background = new THREE.Color( envSettings.backgroundColor );
-				
-				// Fog
-				if ( envSettings.fogEnabled ) {
-					scene.fog = new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar );
-				} else {
-					scene.fog = null;
-				}
-				
-				// Hemisphere Light
+				scene.fog = envSettings.fogEnabled ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null;
 				fillLight1.color.set( envSettings.hemiSkyColor );
 				fillLight1.groundColor.set( envSettings.hemiGroundColor );
 				fillLight1.intensity = envSettings.hemiIntensity;
-				
-				// Directional Light (Sun)
 				directionalLight.color.set( envSettings.sunColor );
 				directionalLight.intensity = envSettings.sunIntensity;
 				directionalLight.position.set( envSettings.sunPosX, envSettings.sunPosY, envSettings.sunPosZ );
-				
-				// Ambient Light
 				ambientLight.color.set( envSettings.ambientColor );
 				ambientLight.intensity = envSettings.ambientIntensity;
-				
-				// Renderer
 				renderer.toneMapping = toneMappingOptions[ envSettings.toneMapping ];
 				renderer.toneMappingExposure = envSettings.exposure;
-				
-				// Physics (only apply if physics objects exist)
-				if ( world ) {
-					world.gravity.set( 0, -envSettings.gravity, 0 );
-				}
-				if ( playerGroundContact ) {
-					playerGroundContact.friction = envSettings.friction;
-				}
-				if ( playerBody ) {
-					playerBody.mass = envSettings.playerMass;
-					playerBody.updateMassProperties();
-				}
+				if ( world ) world.gravity.set( 0, -envSettings.gravity, 0 );
+				if ( playerGroundContact ) playerGroundContact.friction = envSettings.friction;
+				if ( playerBody ) { playerBody.mass = envSettings.playerMass; playerBody.updateMassProperties(); }
 			}
 
 			const toneMappingOptions = {
@@ -342,119 +474,67 @@
 
 			} );
 
-			// ============================================
-			// MOBILE TOUCH CONTROLS
-			// ============================================
-			
-			// Touch state tracking
+			/** Mobile touch controls */
 			const touchState = {
-				active: false,
-				startX: 0,
-				startY: 0,
-				currentX: 0,
-				currentY: 0,
-				lastX: 0,
-				lastY: 0,
-				isHolding: false,
-				holdThreshold: 15, // pixels of movement to distinguish hold vs swipe
-				touchStartTime: 0,
-				holdDelay: 100 // ms before hold starts moving forward
+				active: false, startX: 0, startY: 0, currentX: 0, currentY: 0,
+				lastX: 0, lastY: 0, isHolding: false, holdThreshold: 15,
+				touchStartTime: 0, holdDelay: 100
 			};
-			
-			// Mobile movement flags (separate from keyboard)
 			let mobileMovingForward = false;
-			
-			// Touch sensitivity for camera rotation
 			const touchSensitivity = 0.003;
+			const isTouchDevice = isMobile || ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 );
 			
-			// Detect if device is mobile/touch
-			const isTouchDevice = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 );
-			
-			container.addEventListener( 'touchstart', ( event ) => {
-				event.preventDefault();
-				
-				if ( event.touches.length === 1 ) {
-					const touch = event.touches[ 0 ];
+			container.addEventListener( 'touchstart', ( e ) => {
+				e.preventDefault();
+				if ( e.touches.length === 1 ) {
+					const t = e.touches[ 0 ];
 					touchState.active = true;
-					touchState.startX = touch.clientX;
-					touchState.startY = touch.clientY;
-					touchState.currentX = touch.clientX;
-					touchState.currentY = touch.clientY;
-					touchState.lastX = touch.clientX;
-					touchState.lastY = touch.clientY;
+					touchState.startX = touchState.currentX = touchState.lastX = t.clientX;
+					touchState.startY = touchState.currentY = touchState.lastY = t.clientY;
 					touchState.isHolding = true;
 					touchState.touchStartTime = performance.now();
 					mobileMovingForward = false;
 				}
 			}, { passive: false } );
 			
-			container.addEventListener( 'touchmove', ( event ) => {
-				event.preventDefault();
-				
-				if ( !touchState.active || event.touches.length !== 1 ) return;
-				
-				const touch = event.touches[ 0 ];
-				touchState.currentX = touch.clientX;
-				touchState.currentY = touch.clientY;
-				
-				// Calculate movement delta from last position
+			container.addEventListener( 'touchmove', ( e ) => {
+				e.preventDefault();
+				if ( !touchState.active || e.touches.length !== 1 ) return;
+				const t = e.touches[ 0 ];
+				touchState.currentX = t.clientX;
+				touchState.currentY = t.clientY;
 				const deltaX = touchState.currentX - touchState.lastX;
 				const deltaY = touchState.currentY - touchState.lastY;
+				const totalMovement = Math.hypot( touchState.currentX - touchState.startX, touchState.currentY - touchState.startY );
 				
-				// Calculate total movement from start
-				const totalMovementX = Math.abs( touchState.currentX - touchState.startX );
-				const totalMovementY = Math.abs( touchState.currentY - touchState.startY );
-				const totalMovement = Math.sqrt( totalMovementX * totalMovementX + totalMovementY * totalMovementY );
-				
-				// If movement exceeds threshold, it's a swipe - rotate camera
 				if ( totalMovement > touchState.holdThreshold ) {
 					touchState.isHolding = false;
 					mobileMovingForward = false;
-					
-					// Apply camera rotation based on swipe
 					camera.rotation.y -= deltaX * touchSensitivity;
 					camera.rotation.x -= deltaY * touchSensitivity;
-					
-					// Clamp vertical rotation to prevent flipping
 					camera.rotation.x = Math.max( -Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
-				} else {
-					// Still within hold threshold - check if enough time passed to move forward
-					const holdTime = performance.now() - touchState.touchStartTime;
-					if ( holdTime > touchState.holdDelay && touchState.isHolding ) {
-						mobileMovingForward = true;
-					}
+				} else if ( performance.now() - touchState.touchStartTime > touchState.holdDelay && touchState.isHolding ) {
+					mobileMovingForward = true;
 				}
-				
-				// Update last position
 				touchState.lastX = touchState.currentX;
 				touchState.lastY = touchState.currentY;
 			}, { passive: false } );
 			
-			container.addEventListener( 'touchend', ( event ) => {
-				event.preventDefault();
-				
-				touchState.active = false;
-				touchState.isHolding = false;
-				mobileMovingForward = false;
+			container.addEventListener( 'touchend', ( e ) => {
+				e.preventDefault();
+				touchState.active = touchState.isHolding = mobileMovingForward = false;
 			}, { passive: false } );
 			
-			container.addEventListener( 'touchcancel', ( event ) => {
-				touchState.active = false;
-				touchState.isHolding = false;
-				mobileMovingForward = false;
+			container.addEventListener( 'touchcancel', () => {
+				touchState.active = touchState.isHolding = mobileMovingForward = false;
 			} );
 			
-			// Update mobile hold state in animation loop
 			function updateMobileInput() {
-				if ( touchState.active && touchState.isHolding ) {
-					const holdTime = performance.now() - touchState.touchStartTime;
-					if ( holdTime > touchState.holdDelay ) {
-						mobileMovingForward = true;
-					}
+				if ( touchState.active && touchState.isHolding && performance.now() - touchState.touchStartTime > touchState.holdDelay ) {
+					mobileMovingForward = true;
 				}
 			}
 			
-			// Show appropriate controls text based on device
 			if ( isTouchDevice ) {
 				document.querySelector( '.desktop-controls' ).style.display = 'none';
 				document.querySelector( '.mobile-controls' ).style.display = 'inline';
@@ -463,334 +543,175 @@
 			window.addEventListener( 'resize', onWindowResize );
 
 			function onWindowResize() {
-
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-
 				renderer.setSize( window.innerWidth, window.innerHeight );
-
+				composer.setSize( window.innerWidth, window.innerHeight );
+				ssaoPass.setSize( Math.floor( window.innerWidth / 2 ), Math.floor( window.innerHeight / 2 ) );
+				bloomPass.setSize( window.innerWidth, window.innerHeight );
+				masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
 			}
 
-			// Create visual representation of player collider (pill/capsule)
 			function createColliderVisualization() {
-				if ( colliderVisualization ) {
-					scene.remove( colliderVisualization );
-				}
-
+				if ( colliderVisualization ) scene.remove( colliderVisualization );
 				const group = new THREE.Group();
 				const radius = PLAYER_RADIUS;
-				const cylinderHeight = PLAYER_HEIGHT - (PLAYER_RADIUS * 2);
+				const cylHeight = PLAYER_HEIGHT - ( PLAYER_RADIUS * 2 );
+				const lineMat = new THREE.LineBasicMaterial( { color: 0xff0000, transparent: true, opacity: 0.9 } );
 				
-				const lineMaterial = new THREE.LineBasicMaterial( {
-					color: 0xff0000, // Red color
-					transparent: true,
-					opacity: 0.9,
-					linewidth: 2
-				} );
+				const cylGeo = new THREE.CylinderGeometry( radius, radius, cylHeight, 16, 1 );
+				group.add( new THREE.LineSegments( new THREE.EdgesGeometry( cylGeo ), lineMat ) );
 				
-				// Create cylinder body using edges for clean wireframe
-				const cylinderGeometry = new THREE.CylinderGeometry( radius, radius, cylinderHeight, 16, 1 );
-				const cylinderEdges = new THREE.EdgesGeometry( cylinderGeometry );
-				const cylinderLines = new THREE.LineSegments( cylinderEdges, lineMaterial );
-				group.add( cylinderLines );
+				const topGeo = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2 );
+				const topLines = new THREE.LineSegments( new THREE.EdgesGeometry( topGeo ), lineMat );
+				topLines.position.y = cylHeight / 2;
+				group.add( topLines );
 				
-				// Create top hemisphere using edges
-				const topSphereGeometry = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2 );
-				const topSphereEdges = new THREE.EdgesGeometry( topSphereGeometry );
-				const topSphereLines = new THREE.LineSegments( topSphereEdges, lineMaterial );
-				topSphereLines.position.y = cylinderHeight / 2;
-				group.add( topSphereLines );
+				const botGeo = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2 );
+				const botLines = new THREE.LineSegments( new THREE.EdgesGeometry( botGeo ), lineMat );
+				botLines.position.y = -cylHeight / 2;
+				group.add( botLines );
 				
-				// Create bottom hemisphere using edges
-				const bottomSphereGeometry = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2 );
-				const bottomSphereEdges = new THREE.EdgesGeometry( bottomSphereGeometry );
-				const bottomSphereLines = new THREE.LineSegments( bottomSphereEdges, lineMaterial );
-				bottomSphereLines.position.y = -cylinderHeight / 2;
-				group.add( bottomSphereLines );
-				
-				// Add colored markers at top and bottom for orientation
-				const topMarker = new THREE.Mesh(
-					new THREE.CircleGeometry( radius * 0.25, 16 ),
-					new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } )
-				);
+				const topMarker = new THREE.Mesh( new THREE.CircleGeometry( radius * 0.25, 16 ), new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } ) );
 				topMarker.rotation.x = -Math.PI / 2;
 				topMarker.position.y = PLAYER_HEIGHT / 2;
 				group.add( topMarker );
 				
-				const bottomMarker = new THREE.Mesh(
-					new THREE.CircleGeometry( radius * 0.25, 16 ),
-					new THREE.MeshBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } )
-				);
-				bottomMarker.rotation.x = -Math.PI / 2;
-				bottomMarker.position.y = -PLAYER_HEIGHT / 2;
-				group.add( bottomMarker );
+				const botMarker = new THREE.Mesh( new THREE.CircleGeometry( radius * 0.25, 16 ), new THREE.MeshBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } ) );
+				botMarker.rotation.x = -Math.PI / 2;
+				botMarker.position.y = -PLAYER_HEIGHT / 2;
+				group.add( botMarker );
 				
 				colliderVisualization = group;
 				colliderVisualization.name = 'PlayerColliderVisualization';
 				scene.add( colliderVisualization );
 			}
 
-			// Update collider visualization position from Cannon.js body
 			function updateColliderVisualization() {
 				if ( !playerBody || !colliderVisualization ) return;
-				
-				colliderVisualization.position.set(
-					playerBody.position.x,
-					playerBody.position.y,
-					playerBody.position.z
-				);
+				colliderVisualization.position.set( playerBody.position.x, playerBody.position.y, playerBody.position.z );
 			}
 
-			
-			
-			// Target velocity for smooth interpolation
 			const targetVelocity = new THREE.Vector3( 0, 0, 0 );
 			
-			// Check if player is on ground using ray cast
 			function checkGroundContact() {
-				// Safety check: make sure playerBody exists
 				if ( !playerBody ) return;
-				
-				// Cast a ray downward from the player's position
-				const rayFrom = new CANNON.Vec3( 
-					playerBody.position.x, 
-					playerBody.position.y, 
-					playerBody.position.z 
-				);
-				const rayTo = new CANNON.Vec3( 
-					playerBody.position.x, 
-					playerBody.position.y - PLAYER_HEIGHT / 2 - 0.2, // Slightly below feet
-					playerBody.position.z 
-				);
-				
+				const rayFrom = new CANNON.Vec3( playerBody.position.x, playerBody.position.y, playerBody.position.z );
+				const rayTo = new CANNON.Vec3( playerBody.position.x, playerBody.position.y - PLAYER_HEIGHT / 2 - 0.2, playerBody.position.z );
 				const rayResult = new CANNON.RaycastResult();
 				world.raycastClosest( rayFrom, rayTo, {}, rayResult );
-				
 				playerOnFloor = rayResult.hasHit && rayResult.distance < PLAYER_HEIGHT / 2 + 0.15;
 			}
 
-			// Apply movement forces to player with smooth acceleration
 			function applyPlayerMovement( deltaTime ) {
-				// Safety check: make sure playerBody exists
 				if ( !playerBody ) return;
-				// Calculate desired movement direction
 				const inputDirection = new THREE.Vector3( 0, 0, 0 );
 				
-				// Keyboard input: W/S for forward/back
-				if ( keyStates[ 'KeyW' ] ) {
-					const forward = getForwardVector();
-					inputDirection.x += forward.x;
-					inputDirection.z += forward.z;
-				}
-				if ( keyStates[ 'KeyS' ] ) {
-					const forward = getForwardVector();
-					inputDirection.x -= forward.x;
-					inputDirection.z -= forward.z;
-				}
-				if ( keyStates[ 'KeyA' ] ) {
-					const side = getSideVector();
-					inputDirection.x -= side.x;
-					inputDirection.z -= side.z;
-				}
-				if ( keyStates[ 'KeyD' ] ) {
-					const side = getSideVector();
-					inputDirection.x += side.x;
-					inputDirection.z += side.z;
-				}
+				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); inputDirection.x += f.x; inputDirection.z += f.z; }
+				if ( keyStates[ 'KeyS' ] ) { const f = getForwardVector(); inputDirection.x -= f.x; inputDirection.z -= f.z; }
+				if ( keyStates[ 'KeyA' ] ) { const s = getSideVector(); inputDirection.x -= s.x; inputDirection.z -= s.z; }
+				if ( keyStates[ 'KeyD' ] ) { const s = getSideVector(); inputDirection.x += s.x; inputDirection.z += s.z; }
+				if ( mobileMovingForward ) { const f = getForwardVector(); inputDirection.x += f.x; inputDirection.z += f.z; }
 				
-				// Mobile input: hold to move forward
-				if ( mobileMovingForward ) {
-					const forward = getForwardVector();
-					inputDirection.x += forward.x;
-					inputDirection.z += forward.z;
-				}
-				
-				// Normalize input direction if moving
 				const hasInput = inputDirection.lengthSq() > 0.001;
-				if ( hasInput ) {
-					inputDirection.normalize();
-				}
+				if ( hasInput ) inputDirection.normalize();
 				
-				// Get current horizontal velocity
-				const currentHorizontalVel = new THREE.Vector3(
-					playerBody.velocity.x,
-					0,
-					playerBody.velocity.z
-				);
+				const currentHorizontalVel = new THREE.Vector3( playerBody.velocity.x, 0, playerBody.velocity.z );
+				hasInput ? targetVelocity.copy( inputDirection ).multiplyScalar( envSettings.moveSpeed ) : targetVelocity.set( 0, 0, 0 );
 				
-				// Calculate target velocity based on input
-				if ( hasInput ) {
-					targetVelocity.copy( inputDirection ).multiplyScalar( envSettings.moveSpeed );
-				} else {
-					targetVelocity.set( 0, 0, 0 );
-				}
-				
-				// Calculate acceleration rate based on grounded state
 				const accelRate = playerOnFloor ? envSettings.acceleration : envSettings.acceleration * envSettings.airControl;
 				const decelRate = playerOnFloor ? envSettings.deceleration : envSettings.deceleration * envSettings.airControl * 0.5;
-				
-				// Smoothly interpolate horizontal velocity towards target
 				const velocityDiff = new THREE.Vector3().subVectors( targetVelocity, currentHorizontalVel );
 				const velocityDiffLength = velocityDiff.length();
 				
 				if ( velocityDiffLength > 0.01 ) {
-					// Choose acceleration or deceleration rate
 					const rate = hasInput ? accelRate : decelRate;
-					
-					// Calculate how much we can change this frame
 					const maxChange = rate * deltaTime;
-					
-					// Apply change (clamped to not overshoot)
-					// If acceleration is very high, allow reaching target faster
 					if ( velocityDiffLength <= maxChange || accelRate > 150 ) {
-						// We can reach target this frame (or very quickly)
 						playerBody.velocity.x = targetVelocity.x;
 						playerBody.velocity.z = targetVelocity.z;
 					} else {
-						// Accelerate towards target
 						velocityDiff.normalize().multiplyScalar( maxChange );
 						playerBody.velocity.x += velocityDiff.x;
 						playerBody.velocity.z += velocityDiff.z;
 					}
 				}
 				
-				// Clamp horizontal speed to max
-				const horizontalSpeed = Math.sqrt(
-					playerBody.velocity.x * playerBody.velocity.x +
-					playerBody.velocity.z * playerBody.velocity.z
-				);
+				const horizontalSpeed = Math.hypot( playerBody.velocity.x, playerBody.velocity.z );
 				if ( horizontalSpeed > envSettings.moveSpeed ) {
 					const scale = envSettings.moveSpeed / horizontalSpeed;
 					playerBody.velocity.x *= scale;
 					playerBody.velocity.z *= scale;
 				}
 				
-				// Jumping
 				if ( keyStates[ 'Space' ] && playerOnFloor ) {
 					playerBody.velocity.y = envSettings.jumpVelocity;
-					keyStates[ 'Space' ] = false; // Prevent holding space to jump repeatedly
+					keyStates[ 'Space' ] = false;
 				}
 			}
 
-			// Camera smoothing for less jittery movement
 			const smoothedCameraPos = new THREE.Vector3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
-			// Camera smoothing uses envSettings.cameraSmoothing
 			
-			// Update physics and sync with Three.js
 			function updatePhysics( deltaTime ) {
-				// Safety check: make sure playerBody exists
 				if ( !playerBody ) return;
-				
-				// Check if player is on ground BEFORE movement
 				checkGroundContact();
-				
-				// Apply player movement with smooth acceleration
 				applyPlayerMovement( deltaTime );
-				
-				// Step the physics world
 				world.step( PHYSICS_TIMESTEP, deltaTime, 3 );
-				
-				// Update collider visualization
 				updateColliderVisualization();
 				
-				// Calculate target camera position based on player body position
-				if ( !playerBody ) return;
 				const playerPos = playerBody.position;
 				const eyeHeight = PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT;
-				
-				// Target position for camera
-				const targetCameraPos = new THREE.Vector3(
-					playerPos.x,
-					playerPos.y + eyeHeight,
-					playerPos.z
-				);
-				
-				// Smoothly interpolate camera position (lerp)
-				const lerpFactor = Math.min( 1, deltaTime * envSettings.cameraSmoothing );
-				smoothedCameraPos.lerp( targetCameraPos, lerpFactor );
+				const targetCameraPos = new THREE.Vector3( playerPos.x, playerPos.y + eyeHeight, playerPos.z );
+				smoothedCameraPos.lerp( targetCameraPos, Math.min( 1, deltaTime * envSettings.cameraSmoothing ) );
 				
 				if ( cameraMode === 'firstPerson' ) {
-					// First person: camera at smoothed eye height position
 					camera.position.copy( smoothedCameraPos );
 				} else {
-					// Third person: camera behind and above player
 					const playerCenter = smoothedCameraPos.clone();
-					
-					// Get forward direction from camera rotation
 					const forward = new THREE.Vector3();
 					camera.getWorldDirection( forward );
-					forward.y = 0; // Keep horizontal
+					forward.y = 0;
 					forward.normalize();
-					
-					// Calculate camera position behind player
 					const offset = forward.clone().multiplyScalar( -envSettings.thirdPersonDistance );
 					offset.y = envSettings.thirdPersonHeight;
-					
 					camera.position.copy( playerCenter ).add( offset );
-					
-					// Look at player center with slight offset upward
 					const lookAtTarget = playerCenter.clone();
 					lookAtTarget.y += envSettings.thirdPersonAngle * 2;
 					camera.lookAt( lookAtTarget );
 				}
 			}
 
-			// Helper function to create Cannon.js trimesh from Three.js geometry
 			function createTrimeshFromGeometry( geometry, scale = new THREE.Vector3( 1, 1, 1 ) ) {
 				const position = geometry.attributes.position;
-				const vertices = [];
-				const indices = [];
-				
-				// Extract vertices
+				const vertices = [], indices = [];
 				for ( let i = 0; i < position.count; i++ ) {
-					vertices.push(
-						position.getX( i ) * scale.x,
-						position.getY( i ) * scale.y,
-						position.getZ( i ) * scale.z
-					);
+					vertices.push( position.getX( i ) * scale.x, position.getY( i ) * scale.y, position.getZ( i ) * scale.z );
 				}
-				
-				// Extract indices (or create them if not indexed)
 				if ( geometry.index ) {
-					const index = geometry.index;
-					for ( let i = 0; i < index.count; i++ ) {
-						indices.push( index.getX( i ) );
-					}
+					for ( let i = 0; i < geometry.index.count; i++ ) indices.push( geometry.index.getX( i ) );
 				} else {
-					for ( let i = 0; i < position.count; i++ ) {
-						indices.push( i );
-					}
+					for ( let i = 0; i < position.count; i++ ) indices.push( i );
 				}
-				
 				return new CANNON.Trimesh( vertices, indices );
 			}
 
-			// Add collision mesh to Cannon.js world
 			function addCollisionMeshToWorld( mesh ) {
 				mesh.traverse( ( child ) => {
 					if ( child.isMesh && child.geometry ) {
-						// Get world transform
 						child.updateMatrixWorld( true );
-						const worldPosition = new THREE.Vector3();
-						const worldQuaternion = new THREE.Quaternion();
+						const worldPos = new THREE.Vector3();
+						const worldQuat = new THREE.Quaternion();
 						const worldScale = new THREE.Vector3();
-						child.matrixWorld.decompose( worldPosition, worldQuaternion, worldScale );
-						
-						// Clone and apply scale to geometry
-						const geometry = child.geometry.clone();
-						geometry.applyMatrix4( new THREE.Matrix4().makeScale( worldScale.x, worldScale.y, worldScale.z ) );
-						
-						// Create trimesh shape
-						const trimesh = createTrimeshFromGeometry( geometry );
-						
-						// Create static body
+						child.matrixWorld.decompose( worldPos, worldQuat, worldScale );
+						const geo = child.geometry.clone();
+						geo.applyMatrix4( new THREE.Matrix4().makeScale( worldScale.x, worldScale.y, worldScale.z ) );
+						const trimesh = createTrimeshFromGeometry( geo );
 						const body = new CANNON.Body( {
-							mass: 0, // Static
+							mass: 0,
 							material: groundMaterial,
-							position: new CANNON.Vec3( worldPosition.x, worldPosition.y, worldPosition.z ),
-							quaternion: new CANNON.Quaternion( worldQuaternion.x, worldQuaternion.y, worldQuaternion.z, worldQuaternion.w )
+							position: new CANNON.Vec3( worldPos.x, worldPos.y, worldPos.z ),
+							quaternion: new CANNON.Quaternion( worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w )
 						} );
-						
 						body.addShape( trimesh );
 						world.addBody( body );
 					}
@@ -798,206 +719,119 @@
 			}
 
 			function getForwardVector() {
-
 				camera.getWorldDirection( playerDirection );
 				playerDirection.y = 0;
 				playerDirection.normalize();
-
 				return playerDirection;
-
 			}
 
 			function getSideVector() {
-
 				camera.getWorldDirection( playerDirection );
 				playerDirection.y = 0;
 				playerDirection.normalize();
 				playerDirection.cross( camera.up );
-
 				return playerDirection;
-
 			}
 
-			// Controls are now handled in applyPlayerMovement()
-
 			let collisionWireframe = null;
-			let colliderVisualization = null; // Visual representation of player collider
+			let colliderVisualization = null;
 
 			const loader = new GLTFLoader();
-
-			// Performance: Enable debug logging only if needed (set to false for production)
-			const DEBUG_LOGGING = false;
-
-			// Show loading progress
 			const loadingInfo = document.getElementById( 'info' );
 			const originalInfoText = loadingInfo.innerHTML;
 			loadingInfo.innerHTML = 'Loading model...';
 
-			loader.load( 
-				'maptest2.glb',
-				// onLoad callback
+			loader.load( 'maptest2.glb',
 				( gltf ) => {
 					loadingInfo.innerHTML = originalInfoText;
+					scene.add( gltf.scene );
 
-scene.add( gltf.scene );
+					let collisionMesh = null;
+					const collisionNameSet = new Set( [ 'collisionmesh', 'collision', 'collision1' ] );
 
-let collisionMesh = null;
-const collisionNames = [ 'CollisionMesh', 'collisionMesh', 'Collision', 'collision1' ];
-const collisionNameSet = new Set( collisionNames.map( n => n.toLowerCase() ) );
-
-// Single optimized traversal: setup shadows, find collision mesh, and debug logging in one pass
-if ( DEBUG_LOGGING ) {
-	console.log("=== ALL OBJECTS IN SCENE ===");
-}
-let meshCount = 0;
-gltf.scene.traverse( ( child ) => {
-	// Setup shadows and textures for meshes
-	if ( child.isMesh ) {
-		meshCount++;
-		child.castShadow = true;
-		child.receiveShadow = true;
-		if ( child.material && child.material.map ) {
-			child.material.map.anisotropy = 4;
-		}
-	}
-	
-	// Find collision mesh in same traversal
-	if ( !collisionMesh && child.name ) {
-		const nameLower = child.name.toLowerCase();
-		if ( collisionNameSet.has( nameLower ) || nameLower.includes( 'collision' ) ) {
-			collisionMesh = child;
-		}
-	}
-	
-	// Debug logging (only if enabled)
-	if ( DEBUG_LOGGING ) {
-		if ( child.name ) {
-			console.log(`  - Name: "${child.name}" | Type: ${child.type} | IsMesh: ${child.isMesh}`);
-		}
-	}
-});
-
-if ( DEBUG_LOGGING ) {
-	console.log(`=== Total meshes found: ${meshCount} ===`);
-}
-
-if ( collisionMesh ) {
-	// IF FOUND: Use the low-poly mesh for physics with Cannon.js
-	if ( DEBUG_LOGGING ) {
-		console.log(`✓ Collision mesh found! Name: "${collisionMesh.name}" | Type: ${collisionMesh.type}`);
-	}
-	
-	// Validate geometry
-	let totalTriangles = 0;
-	let hasValidGeometry = false;
-	collisionMesh.traverse( ( child ) => {
-		if ( child.isMesh && child.geometry ) {
-			hasValidGeometry = true;
-			if ( child.geometry.attributes && child.geometry.attributes.position ) {
-				const vertexCount = child.geometry.attributes.position.count;
-				totalTriangles += vertexCount >= 3 ? Math.floor( vertexCount / 3 ) : 0;
-			}
-		}
-	});
-	
-	if ( DEBUG_LOGGING ) {
-		console.log(`  Total triangles in collision mesh: ${totalTriangles}`);
-	}
-	
-	if ( !hasValidGeometry || totalTriangles === 0 ) {
-		if ( DEBUG_LOGGING ) {
-			console.error(`  ✗ ERROR: Collision mesh has no valid geometry! Falling back to full scene.`);
-		}
-		// Fallback: add entire scene to physics
-		addCollisionMeshToWorld( gltf.scene );
-	} else {
-		// Add collision mesh to Cannon.js physics world
-		console.log(`  Adding ${totalTriangles} triangles to Cannon.js physics world...`);
-		addCollisionMeshToWorld( collisionMesh );
-		console.log(`  ✓ Physics collision mesh added successfully.`);
-		
-		// Hide the collision mesh so we see the high-res visuals
-		collisionMesh.visible = false;
-		
-		// Defer wireframe creation to avoid blocking
-		if ( envSettings.showCollisionWireframe ) {
-			requestAnimationFrame( () => {
-				collisionWireframe = new THREE.Group();
-				collisionWireframe.name = 'CollisionWireframe';
-				collisionMesh.traverse( ( child ) => {
-					if ( child.isMesh && child.geometry ) {
-						const wireframeGeometry = child.geometry.clone();
-						const wireframeMaterial = new THREE.MeshBasicMaterial( {
-							color: 0x00ff00,
-							wireframe: true,
-							transparent: true,
-							opacity: 0.5,
-							depthTest: true,
-							depthWrite: false
-						} );
-						const wireframeMesh = new THREE.Mesh( wireframeGeometry, wireframeMaterial );
-						wireframeMesh.position.copy( child.position );
-						wireframeMesh.rotation.copy( child.rotation );
-						wireframeMesh.scale.copy( child.scale );
-						collisionWireframe.add( wireframeMesh );
+				gltf.scene.traverse( ( child ) => {
+					if ( child.isMesh ) {
+						child.castShadow = true;
+						child.receiveShadow = true;
+						if ( child.material?.map ) child.material.map.anisotropy = isMobile ? 1 : 4;
+						child.frustumCulled = true;
+					}
+					/** Hide flame objects */
+					if ( child.name && child.name.toLowerCase().includes( 'flame' ) ) {
+						child.visible = false;
+					}
+					if ( !collisionMesh && child.name ) {
+						const nameLower = child.name.toLowerCase();
+						if ( collisionNameSet.has( nameLower ) || nameLower.includes( 'collision' ) ) collisionMesh = child;
 					}
 				} );
-				scene.add( collisionWireframe );
-				collisionWireframe.visible = envSettings.showCollisionWireframe;
-			} );
-		}
-	}
-} else {
-	// FALLBACK: If you haven't updated the file yet, warn the user and use the whole scene
-	if ( DEBUG_LOGGING ) {
-		console.warn("✗ No collision mesh found. Using full scene for physics.");
-	}
-	console.log("  Adding entire scene to Cannon.js physics world...");
-	addCollisionMeshToWorld( gltf.scene );
-	console.log("  ✓ Full scene physics added.");
-}
 
-// 3. Handle Spawn Points
-const spawnPoint = gltf.scene.getObjectByName( 'SpawnPoint' );
-if ( spawnPoint ) {
-	const spawnPos = new THREE.Vector3();
-	spawnPoint.getWorldPosition( spawnPos );
-	
-	// Set Cannon.js player body position
-	playerBody.position.set( spawnPos.x, spawnPos.y, spawnPos.z );
-	playerBody.velocity.set( 0, 0, 0 );
-	
-	SPAWN_POSITION.x = spawnPos.x;
-	SPAWN_POSITION.y = spawnPos.y;
-	SPAWN_POSITION.z = spawnPos.z;
-	
-	spawnPoint.visible = false;
-}
-
-applySettings();
-
-// Create collider visualization (defer to avoid blocking)
-requestAnimationFrame( () => {
-	createColliderVisualization();
-	if ( colliderVisualization ) {
-		colliderVisualization.visible = envSettings.showColliderVisualization;
-	}
-} );
-
-// Initialize camera mode
-cameraMode = envSettings.cameraMode;
-
-createGUI();
-
-				},
-				// onProgress callback
-				( progress ) => {
-					if ( progress.lengthComputable ) {
-						const percentComplete = ( progress.loaded / progress.total ) * 100;
-						loadingInfo.innerHTML = `Loading model... ${percentComplete.toFixed(0)}%`;
+					if ( collisionMesh ) {
+						let totalTriangles = 0, hasValidGeometry = false;
+						collisionMesh.traverse( ( child ) => {
+							if ( child.isMesh && child.geometry ) {
+								hasValidGeometry = true;
+								const vertexCount = child.geometry.attributes?.position?.count || 0;
+								totalTriangles += vertexCount >= 3 ? Math.floor( vertexCount / 3 ) : 0;
+							}
+						} );
+						
+						if ( !hasValidGeometry || totalTriangles === 0 ) {
+							addCollisionMeshToWorld( gltf.scene );
+						} else {
+							addCollisionMeshToWorld( collisionMesh );
+							collisionMesh.visible = false;
+							
+							if ( !isMobile && envSettings.showCollisionWireframe ) {
+								requestAnimationFrame( () => {
+									collisionWireframe = new THREE.Group();
+									collisionWireframe.name = 'CollisionWireframe';
+									collisionMesh.traverse( ( child ) => {
+										if ( child.isMesh && child.geometry ) {
+											const wireMat = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.5, depthTest: true, depthWrite: false } );
+											const wireMesh = new THREE.Mesh( child.geometry.clone(), wireMat );
+											wireMesh.position.copy( child.position );
+											wireMesh.rotation.copy( child.rotation );
+											wireMesh.scale.copy( child.scale );
+											collisionWireframe.add( wireMesh );
+										}
+									} );
+									scene.add( collisionWireframe );
+									collisionWireframe.visible = envSettings.showCollisionWireframe;
+								} );
+							}
+						}
+					} else {
+						addCollisionMeshToWorld( gltf.scene );
 					}
+
+					const spawnPoint = gltf.scene.getObjectByName( 'SpawnPoint' );
+					if ( spawnPoint ) {
+						const spawnPos = new THREE.Vector3();
+						spawnPoint.getWorldPosition( spawnPos );
+						playerBody.position.set( spawnPos.x, spawnPos.y, spawnPos.z );
+						playerBody.velocity.set( 0, 0, 0 );
+						SPAWN_POSITION.x = spawnPos.x;
+						SPAWN_POSITION.y = spawnPos.y;
+						SPAWN_POSITION.z = spawnPos.z;
+						spawnPoint.visible = false;
+					}
+
+					applySettings();
+
+					if ( !isMobile ) {
+						requestAnimationFrame( () => {
+							createColliderVisualization();
+							if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
+						} );
+					}
+
+					cameraMode = envSettings.cameraMode;
+					if ( !isMobile ) createGUI();
 				},
-				// onError callback
+				( progress ) => {
+					if ( progress.lengthComputable ) loadingInfo.innerHTML = `Loading model... ${ Math.round( progress.loaded / progress.total * 100 ) }%`;
+				},
 				( error ) => {
 					console.error( 'Error loading model:', error );
 					loadingInfo.innerHTML = 'Error loading model. Check console.';
@@ -1008,167 +842,102 @@ createGUI();
 
 
 			function createGUI() {
-
 				const gui = new GUI( { width: 280, title: 'Environment Settings' } );
-				
-				// Collapse GUI by default on touch/mobile devices for better visibility
-				if ( isTouchDevice ) {
-					gui.close();
-				}
+				if ( isTouchDevice ) gui.close();
 
-				// Sky / Background folder
 				const skyFolder = gui.addFolder( 'Sky & Background' );
-				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background Color' ).onChange( ( value ) => {
-					scene.background = new THREE.Color( value );
-					saveSettings();
-				} );
+				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background' ).onChange( ( v ) => { scene.background = new THREE.Color( v ); saveSettings(); } );
 
-				// Fog folder
-				const fogFolder = gui.addFolder( 'Atmospheric Fog' );
-				fogFolder.add( envSettings, 'fogEnabled' ).name( 'Enable Fog' ).onChange( ( value ) => {
-					if ( value ) {
-						scene.fog = new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar );
-					} else {
-						scene.fog = null;
-					}
-					saveSettings();
-				} );
-				fogFolder.addColor( envSettings, 'fogColor' ).name( 'Fog Color' ).onChange( ( value ) => {
-					if ( scene.fog ) scene.fog.color.set( value );
-					saveSettings();
-				} );
-				fogFolder.add( envSettings, 'fogNear', 0, 100, 1 ).name( 'Fog Near' ).onChange( ( value ) => {
-					if ( scene.fog ) scene.fog.near = value;
-					saveSettings();
-				} );
-				fogFolder.add( envSettings, 'fogFar', 10, 500, 1 ).name( 'Fog Far' ).onChange( ( value ) => {
-					if ( scene.fog ) scene.fog.far = value;
-					saveSettings();
-				} );
+				const fogFolder = gui.addFolder( 'Fog' );
+				fogFolder.add( envSettings, 'fogEnabled' ).name( 'Enabled' ).onChange( ( v ) => { scene.fog = v ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null; saveSettings(); } );
+				fogFolder.addColor( envSettings, 'fogColor' ).name( 'Color' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.color.set( v ); saveSettings(); } );
+				fogFolder.add( envSettings, 'fogNear', 0, 100, 1 ).name( 'Near' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.near = v; saveSettings(); } );
+				fogFolder.add( envSettings, 'fogFar', 10, 500, 1 ).name( 'Far' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.far = v; saveSettings(); } );
 
-				// Hemisphere Light folder
 				const hemiFolder = gui.addFolder( 'Hemisphere Light' );
-				hemiFolder.addColor( envSettings, 'hemiSkyColor' ).name( 'Sky Color' ).onChange( ( value ) => {
-					fillLight1.color.set( value );
-					saveSettings();
-				} );
-				hemiFolder.addColor( envSettings, 'hemiGroundColor' ).name( 'Ground Color' ).onChange( ( value ) => {
-					fillLight1.groundColor.set( value );
-					saveSettings();
-				} );
-				hemiFolder.add( envSettings, 'hemiIntensity', 0, 5, 0.1 ).name( 'Intensity' ).onChange( ( value ) => {
-					fillLight1.intensity = value;
-					saveSettings();
-				} );
+				hemiFolder.addColor( envSettings, 'hemiSkyColor' ).name( 'Sky' ).onChange( ( v ) => { fillLight1.color.set( v ); saveSettings(); } );
+				hemiFolder.addColor( envSettings, 'hemiGroundColor' ).name( 'Ground' ).onChange( ( v ) => { fillLight1.groundColor.set( v ); saveSettings(); } );
+				hemiFolder.add( envSettings, 'hemiIntensity', 0, 5, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { fillLight1.intensity = v; saveSettings(); } );
 
-				// Directional Light (Sun) folder
 				const sunFolder = gui.addFolder( 'Sun Light' );
-				sunFolder.addColor( envSettings, 'sunColor' ).name( 'Color' ).onChange( ( value ) => {
-					directionalLight.color.set( value );
-					saveSettings();
-				} );
-				sunFolder.add( envSettings, 'sunIntensity', 0, 10, 0.1 ).name( 'Intensity' ).onChange( ( value ) => {
-					directionalLight.intensity = value;
-					saveSettings();
-				} );
-				sunFolder.add( envSettings, 'sunPosX', -50, 50, 1 ).name( 'Position X' ).onChange( ( value ) => {
-					directionalLight.position.x = value;
-					saveSettings();
-				} );
-				sunFolder.add( envSettings, 'sunPosY', 0, 100, 1 ).name( 'Position Y' ).onChange( ( value ) => {
-					directionalLight.position.y = value;
-					saveSettings();
-				} );
-				sunFolder.add( envSettings, 'sunPosZ', -50, 50, 1 ).name( 'Position Z' ).onChange( ( value ) => {
-					directionalLight.position.z = value;
-					saveSettings();
-				} );
+				sunFolder.addColor( envSettings, 'sunColor' ).name( 'Color' ).onChange( ( v ) => { directionalLight.color.set( v ); saveSettings(); } );
+				sunFolder.add( envSettings, 'sunIntensity', 0, 10, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { directionalLight.intensity = v; saveSettings(); } );
+				sunFolder.add( envSettings, 'sunPosX', -50, 50, 1 ).name( 'X' ).onChange( ( v ) => { directionalLight.position.x = v; saveSettings(); } );
+				sunFolder.add( envSettings, 'sunPosY', 0, 100, 1 ).name( 'Y' ).onChange( ( v ) => { directionalLight.position.y = v; saveSettings(); } );
+				sunFolder.add( envSettings, 'sunPosZ', -50, 50, 1 ).name( 'Z' ).onChange( ( v ) => { directionalLight.position.z = v; saveSettings(); } );
 
-				// Ambient Light folder
 				const ambientFolder = gui.addFolder( 'Ambient Light' );
-				ambientFolder.addColor( envSettings, 'ambientColor' ).name( 'Color' ).onChange( ( value ) => {
-					ambientLight.color.set( value );
-					saveSettings();
-				} );
-				ambientFolder.add( envSettings, 'ambientIntensity', 0, 3, 0.1 ).name( 'Intensity' ).onChange( ( value ) => {
-					ambientLight.intensity = value;
-					saveSettings();
-				} );
+				ambientFolder.addColor( envSettings, 'ambientColor' ).name( 'Color' ).onChange( ( v ) => { ambientLight.color.set( v ); saveSettings(); } );
+				ambientFolder.add( envSettings, 'ambientIntensity', 0, 3, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { ambientLight.intensity = v; saveSettings(); } );
 
-				// Renderer settings folder
 				const renderFolder = gui.addFolder( 'Renderer' );
-				renderFolder.add( envSettings, 'toneMapping', Object.keys( toneMappingOptions ) ).name( 'Tone Mapping' ).onChange( ( value ) => {
-					renderer.toneMapping = toneMappingOptions[ value ];
-					saveSettings();
-				} );
-				renderFolder.add( envSettings, 'exposure', 0, 3, 0.05 ).name( 'Exposure' ).onChange( ( value ) => {
-					renderer.toneMappingExposure = value;
-					saveSettings();
-				} );
+				renderFolder.add( envSettings, 'toneMapping', Object.keys( toneMappingOptions ) ).name( 'Tone Mapping' ).onChange( ( v ) => { renderer.toneMapping = toneMappingOptions[ v ]; saveSettings(); } );
+				renderFolder.add( envSettings, 'exposure', 0, 3, 0.05 ).name( 'Exposure' ).onChange( ( v ) => { renderer.toneMappingExposure = v; saveSettings(); } );
 
-				// Movement & Physics folder
 				const movementFolder = gui.addFolder( 'Movement & Physics' );
-				movementFolder.add( envSettings, 'moveSpeed', 1, 100, 1 ).name( 'Movement Speed' ).onChange( () => {
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'acceleration', 10, 500, 10 ).name( 'Acceleration' ).onChange( () => {
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'deceleration', 1, 100, 1 ).name( 'Deceleration' ).onChange( () => {
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'gravity', 5, 50, 1 ).name( 'Gravity' ).onChange( ( value ) => {
-					world.gravity.set( 0, -value, 0 );
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'jumpVelocity', 1, 15, 0.5 ).name( 'Jump Velocity' ).onChange( () => {
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'friction', 0, 1, 0.01 ).name( 'Friction' ).onChange( ( value ) => {
-					playerGroundContact.friction = value;
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'airControl', 0, 1, 0.05 ).name( 'Air Control' ).onChange( () => {
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'playerMass', 1, 100, 1 ).name( 'Player Mass' ).onChange( ( value ) => {
-					playerBody.mass = value;
-					playerBody.updateMassProperties();
-					saveSettings();
-				} );
-				movementFolder.add( envSettings, 'cameraSmoothing', 1, 30, 1 ).name( 'Camera Smoothing' ).onChange( () => {
-					saveSettings();
-				} );
+				movementFolder.add( envSettings, 'moveSpeed', 1, 100, 1 ).name( 'Speed' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'acceleration', 10, 500, 10 ).name( 'Acceleration' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'deceleration', 1, 100, 1 ).name( 'Deceleration' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'gravity', 5, 50, 1 ).name( 'Gravity' ).onChange( ( v ) => { world.gravity.set( 0, -v, 0 ); saveSettings(); } );
+				movementFolder.add( envSettings, 'jumpVelocity', 1, 15, 0.5 ).name( 'Jump' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'friction', 0, 1, 0.01 ).name( 'Friction' ).onChange( ( v ) => { playerGroundContact.friction = v; saveSettings(); } );
+				movementFolder.add( envSettings, 'airControl', 0, 1, 0.05 ).name( 'Air Control' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'playerMass', 1, 100, 1 ).name( 'Mass' ).onChange( ( v ) => { playerBody.mass = v; playerBody.updateMassProperties(); saveSettings(); } );
+				movementFolder.add( envSettings, 'cameraSmoothing', 1, 30, 1 ).name( 'Cam Smoothing' ).onChange( saveSettings );
 
-				// Debug folder
 				const debugFolder = gui.addFolder( 'Debug' );
-				debugFolder.add( envSettings, 'showCollisionWireframe' ).name( 'Show Collision Wireframe' ).onChange( ( value ) => {
-					if ( collisionWireframe ) collisionWireframe.visible = value;
-					saveSettings();
-				} );
-				debugFolder.add( envSettings, 'showColliderVisualization' ).name( 'Show Player Collider' ).onChange( ( value ) => {
-					if ( colliderVisualization ) colliderVisualization.visible = value;
-					saveSettings();
-				} );
-				
-				// Camera folder
-				const cameraFolder = gui.addFolder( 'Camera' );
-				cameraFolder.add( envSettings, 'cameraMode', [ 'firstPerson', 'thirdPerson' ] ).name( 'Camera Mode' ).onChange( ( value ) => {
-					cameraMode = value;
-					saveSettings();
-				} );
-				cameraFolder.add( envSettings, 'thirdPersonDistance', 2, 15, 0.5 ).name( 'Third Person Distance' ).onChange( () => {
-					saveSettings();
-				} );
-				cameraFolder.add( envSettings, 'thirdPersonHeight', 0, 5, 0.1 ).name( 'Third Person Height' ).onChange( () => {
-					saveSettings();
-				} );
-				cameraFolder.add( envSettings, 'thirdPersonAngle', -0.5, 0.5, 0.05 ).name( 'Third Person Angle' ).onChange( () => {
-					saveSettings();
-				} );
+				debugFolder.add( envSettings, 'showCollisionWireframe' ).name( 'Collision Wireframe' ).onChange( ( v ) => { if ( collisionWireframe ) collisionWireframe.visible = v; saveSettings(); } );
+				debugFolder.add( envSettings, 'showColliderVisualization' ).name( 'Player Collider' ).onChange( ( v ) => { if ( colliderVisualization ) colliderVisualization.visible = v; saveSettings(); } );
 
-				// Reset button
-				debugFolder.add( { reset: function() {
+				const cameraFolder = gui.addFolder( 'Camera' );
+				cameraFolder.add( envSettings, 'cameraMode', [ 'firstPerson', 'thirdPerson' ] ).name( 'Mode' ).onChange( ( v ) => { cameraMode = v; saveSettings(); } );
+				cameraFolder.add( envSettings, 'thirdPersonDistance', 2, 15, 0.5 ).name( '3P Distance' ).onChange( saveSettings );
+				cameraFolder.add( envSettings, 'thirdPersonHeight', 0, 5, 0.1 ).name( '3P Height' ).onChange( saveSettings );
+				cameraFolder.add( envSettings, 'thirdPersonAngle', -0.5, 0.5, 0.05 ).name( '3P Angle' ).onChange( saveSettings );
+
+				const waterFolder = gui.addFolder( 'Water' );
+				waterFolder.addColor( waterParams, 'color' ).name( 'Color' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'color' ].value.set( v ); } );
+				waterFolder.add( waterParams, 'scale', 1, 10, 0.5 ).name( 'Scale' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'config' ].value.w = v; } );
+				waterFolder.add( waterParams, 'flowX', -2, 2, 0.1 ).name( 'Flow X' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.x = v; } );
+				waterFolder.add( waterParams, 'flowY', -2, 2, 0.1 ).name( 'Flow Y' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.y = v; } );
+				waterParams.waterHeight = 0;
+				waterFolder.add( waterParams, 'waterHeight', -10, 10, 0.1 ).name( 'Height' ).onChange( ( v ) => { if ( water ) water.position.y = v; } );
+				waterFolder.close();
+
+				const postFolder = gui.addFolder( 'Post-Processing' );
+
+				const ssaoFolder = postFolder.addFolder( 'SSAO' );
+				ssaoFolder.add( postProcessingSettings, 'ssaoEnabled' ).name( 'Enabled' ).onChange( ( v ) => { ssaoPass.enabled = v; } );
+				ssaoFolder.add( postProcessingSettings, 'ssaoKernelRadius', 1, 32, 1 ).name( 'Radius' ).onChange( ( v ) => { ssaoPass.kernelRadius = v; } );
+				ssaoFolder.add( postProcessingSettings, 'ssaoMinDistance', 0.001, 0.02, 0.001 ).name( 'Min Dist' ).onChange( ( v ) => { ssaoPass.minDistance = v; } );
+				ssaoFolder.add( postProcessingSettings, 'ssaoMaxDistance', 0.01, 0.3, 0.01 ).name( 'Max Dist' ).onChange( ( v ) => { ssaoPass.maxDistance = v; } );
+
+				const bloomFolder = postFolder.addFolder( 'Bloom' );
+				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; } );
+				bloomFolder.add( postProcessingSettings, 'bloomStrength', 0, 2, 0.01 ).name( 'Strength' ).onChange( ( v ) => { bloomPass.strength = v; } );
+				bloomFolder.add( postProcessingSettings, 'bloomRadius', 0, 1, 0.01 ).name( 'Radius' ).onChange( ( v ) => { bloomPass.radius = v; } );
+				bloomFolder.add( postProcessingSettings, 'bloomThreshold', 0, 1, 0.01 ).name( 'Threshold' ).onChange( ( v ) => { bloomPass.threshold = v; } );
+
+				const filmFolder = postFolder.addFolder( 'Film Grain' );
+				filmFolder.add( postProcessingSettings, 'filmEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainEnabled' ].value = v; } );
+				filmFolder.add( postProcessingSettings, 'filmNoiseIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainIntensity' ].value = v; } );
+
+				const vignetteFolder = postFolder.addFolder( 'Vignette' );
+				vignetteFolder.add( postProcessingSettings, 'vignetteEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteEnabled' ].value = v; } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteOffset', 0.5, 2.0, 0.05 ).name( 'Offset' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteOffset' ].value = v; } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteDarkness', 0.5, 3.0, 0.1 ).name( 'Darkness' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteDarkness' ].value = v; } );
+
+				const tiltShiftFolder = postFolder.addFolder( 'Tilt-Shift' );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = v; } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusY', 0, 1, 0.01 ).name( 'Focus Y' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusY' ].value = v; } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusWidth', 0.1, 0.8, 0.01 ).name( 'Width' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusWidth' ].value = v; } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftBlurAmount', 0, 6, 0.1 ).name( 'Blur' ).onChange( ( v ) => { masterPostPass.uniforms[ 'blurAmount' ].value = v; } );
+
+				const lutFolder = postFolder.addFolder( 'LUT' );
+				lutFolder.add( postProcessingSettings, 'lutEnabled' ).name( 'Enabled' ).onChange( ( v ) => { if ( lutPass ) lutPass.enabled = v; } );
+				lutFolder.add( postProcessingSettings, 'lutIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { if ( lutPass ) lutPass.intensity = v; } );
+
+				debugFolder.add( { reset: () => {
 					Object.assign( envSettings, defaultEnvSettings );
 					applySettings();
 					if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
@@ -1176,21 +945,12 @@ createGUI();
 					cameraMode = envSettings.cameraMode;
 					gui.controllersRecursive().forEach( c => c.updateDisplay() );
 					saveSettings();
-				} }, 'reset' ).name( 'Reset to Defaults' );
+				} }, 'reset' ).name( 'Reset Defaults' );
 
-				// Close all folders by default except Sky
-				fogFolder.close();
-				hemiFolder.close();
-				sunFolder.close();
-				ambientFolder.close();
-				renderFolder.close();
-				movementFolder.close();
-				debugFolder.close();
-
+				[ fogFolder, hemiFolder, sunFolder, ambientFolder, renderFolder, movementFolder, debugFolder, postFolder ].forEach( f => f.close() );
 			}
 
 			function teleportPlayerIfOob() {
-				// Teleport player back to spawn if they fall out of bounds
 				if ( playerBody.position.y <= -25 ) {
 					playerBody.position.set( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
 					playerBody.velocity.set( 0, 0, 0 );
@@ -1198,25 +958,15 @@ createGUI();
 				}
 			}
 
-
 			function animate() {
 				const deltaTime = Math.min( 0.05, clock.getDelta() );
-
-				// Update mobile touch input state
 				updateMobileInput();
-
-				// Update physics (Cannon.js handles collision detection)
 				updatePhysics( deltaTime );
-				
-				// Check if player fell out of bounds
 				teleportPlayerIfOob();
-
-				renderer.render( scene, camera );
-
-				stats.update();
-
-
-				
+				masterPostPass.uniforms[ 'time' ].value += deltaTime;
+				composer.render( deltaTime );
+				if ( stats ) stats.update();
+				if ( coordsDisplay ) coordsDisplay.innerHTML = `X: ${camera.position.x.toFixed(2)}<br>Y: ${camera.position.y.toFixed(2)}<br>Z: ${camera.position.z.toFixed(2)}`;
 			}
 
 
