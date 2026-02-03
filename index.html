@@ -1,40 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<title>Free Cam test</title>
-		<meta charset=utf-8 />
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<link type="text/css" rel="stylesheet" href="main.css">
-	</head>
-	<body>
-		<div id="info">
-			Free Camera Explorer<br />
-			MOUSE to look around<br/>
-			WASD to move
-		</div>
-		<div id="container"></div>
 
-		<script type="importmap">
-			{
+<head>
+	<title>Free Cam test</title>
+	<meta charset=utf-8 />
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="main.css">
+</head>
+
+<body>
+	<div id="info">
+		Free Camera Explorer<br />
+		<span class="desktop-controls">MOUSE to look around | WASD to move</span>
+		<span class="mobile-controls" style="display: none;">Hold to move forward | Swipe to look</span>
+	</div>
+	<div id="container"></div>
+	
+
+	<script type="importmap">
+		{
 				"imports": {
 					"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-					"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+					"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+					"cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
 				}
 			}
 		</script>
 
-		<script type="module">
+	<script type="module">
 
-			import * as THREE from 'three';
+		import * as THREE from 'three';
+		import * as CANNON from 'cannon-es';
 
 			import Stats from 'three/addons/libs/stats.module.js';
 
 			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-			import { Octree } from 'three/addons/math/Octree.js';
-			import { OctreeHelper } from 'three/addons/helpers/OctreeHelper.js';
-
-			import { Capsule } from 'three/addons/math/Capsule.js';
 
 			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
@@ -86,23 +86,32 @@
 			stats.domElement.style.top = '0px';
 			container.appendChild( stats.domElement );
 
-			const GRAVITY = 50;
-			const STEPS_PER_FRAME = 5;
+			const PHYSICS_TIMESTEP = 1/60; // Fixed physics timestep
 			
-			// Movement speed - adjust this value to control how fast you move
-			const MOVE_SPEED = 12;
+			// Movement/physics values will be loaded from envSettings
+			// These are defaults that will be overridden when settings load
+			let GRAVITY = 25;
+			let MOVE_SPEED = 50;
+			let JUMP_VELOCITY = 6;
 
-			const worldOctree = new Octree();
+			// Camera spawn position - adjust these values to change where the camera starts
+			const SPAWN_POSITION = {
+				x: 0,
+				y: 5,
+				z: 0
+			};
 
-			const playerCollider = new Capsule( new THREE.Vector3( 0, 0.35, 0 ), new THREE.Vector3( 0, 1, 0 ), 0.35 );
+			// Player settings
+			const PLAYER_HEIGHT = 1.8; // Total height of player (head to feet)
+			const PLAYER_RADIUS = 0.4; // Radius of the capsule
+			const PLAYER_EYE_HEIGHT = 1.6; // Height of camera/eyes from bottom
 
-			const playerVelocity = new THREE.Vector3();
-			const playerDirection = new THREE.Vector3();
+			// Camera mode settings
+			let cameraMode = 'firstPerson'; // 'firstPerson' or 'thirdPerson'
 
-			let playerOnFloor = false;
-
-			const keyStates = {};
-
+			// ============================================
+			// LOAD SETTINGS FIRST (before physics setup)
+			// ============================================
 			// Default environment settings
 			const defaultEnvSettings = {
 				// Sky / Background
@@ -135,7 +144,25 @@
 				exposure: 1.0,
 				
 				// Debug
-				showOctree: false
+				showCollisionWireframe: true,
+				showColliderVisualization: true,
+				cameraMode: 'firstPerson',
+				
+				// Third Person Camera
+				thirdPersonDistance: 5,
+				thirdPersonHeight: 2,
+				thirdPersonAngle: 0.3,
+				
+				// Movement & Physics
+				moveSpeed: 9,
+				acceleration: 50,
+				deceleration: 30,
+				gravity: 25,
+				jumpVelocity: 6,
+				friction: 0,
+				airControl: 0.3,
+				playerMass: 10,
+				cameraSmoothing: 12
 			};
 
 			// Load saved settings or use defaults
@@ -161,6 +188,79 @@
 			}
 
 			const envSettings = loadSettings();
+
+			// ============================================
+			// CANNON.JS PHYSICS WORLD SETUP
+			// ============================================
+			const world = new CANNON.World();
+			world.gravity.set( 0, -envSettings.gravity, 0 );
+			world.broadphase = new CANNON.SAPBroadphase( world );
+			world.allowSleep = false;
+			world.solver.iterations = 10;
+
+			// Physics materials
+			const groundMaterial = new CANNON.Material( 'ground' );
+			const playerMaterial = new CANNON.Material( 'player' );
+			
+			// Contact material for player-ground interaction
+			// Optimized for cave surfaces: rocky but not too slippery
+			const playerGroundContact = new CANNON.ContactMaterial( playerMaterial, groundMaterial, {
+				friction: envSettings.friction, // Low friction for smooth movement, but enough grip for slopes
+				restitution: 0.0 // No bouncing
+			} );
+			world.addContactMaterial( playerGroundContact );
+
+			// Create player body (capsule approximated with cylinder + spheres)
+			const playerBody = new CANNON.Body( {
+				mass: envSettings.playerMass, // kg
+				material: playerMaterial,
+				linearDamping: 0.01, // Very low damping - we handle deceleration manually
+				angularDamping: 1.0, // Prevent spinning
+				fixedRotation: true, // Don't let player tip over
+				position: new CANNON.Vec3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z )
+			} );
+
+			// Capsule shape: cylinder + two half-spheres
+			const cylinderHeight = PLAYER_HEIGHT - PLAYER_RADIUS * 2;
+			const cylinderShape = new CANNON.Cylinder( PLAYER_RADIUS, PLAYER_RADIUS, cylinderHeight, 8 );
+			const topSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
+			const bottomSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
+
+			// Add shapes to player body (cylinder needs rotation to be vertical)
+			const cylinderQuaternion = new CANNON.Quaternion();
+			cylinderQuaternion.setFromAxisAngle( new CANNON.Vec3( 1, 0, 0 ), Math.PI / 2 );
+			playerBody.addShape( cylinderShape, new CANNON.Vec3( 0, 0, 0 ), cylinderQuaternion );
+			playerBody.addShape( topSphereShape, new CANNON.Vec3( 0, cylinderHeight / 2, 0 ) );
+			playerBody.addShape( bottomSphereShape, new CANNON.Vec3( 0, -cylinderHeight / 2, 0 ) );
+
+			world.addBody( playerBody );
+
+			// Ground contact detection
+			let playerOnFloor = false;
+			let groundContactNormal = new CANNON.Vec3();
+			const upAxis = new CANNON.Vec3( 0, 1, 0 );
+
+			// Listen for collisions to detect ground contact
+			playerBody.addEventListener( 'collide', ( event ) => {
+				const contact = event.contact;
+				
+				// Get the contact normal (pointing from other body to player)
+				let contactNormal;
+				if ( contact.bi.id === playerBody.id ) {
+					contactNormal = contact.ni.negate( new CANNON.Vec3() );
+				} else {
+					contactNormal = contact.ni;
+				}
+				
+				// Check if the normal is pointing upward (ground contact)
+				if ( contactNormal.dot( upAxis ) > 0.5 ) {
+					playerOnFloor = true;
+					groundContactNormal.copy( contactNormal );
+				}
+			} );
+
+			const playerDirection = new THREE.Vector3();
+			const keyStates = {};
 
 			// Apply loaded settings to scene
 			function applySettings() {
@@ -191,6 +291,18 @@
 				// Renderer
 				renderer.toneMapping = toneMappingOptions[ envSettings.toneMapping ];
 				renderer.toneMappingExposure = envSettings.exposure;
+				
+				// Physics (only apply if physics objects exist)
+				if ( world ) {
+					world.gravity.set( 0, -envSettings.gravity, 0 );
+				}
+				if ( playerGroundContact ) {
+					playerGroundContact.friction = envSettings.friction;
+				}
+				if ( playerBody ) {
+					playerBody.mass = envSettings.playerMass;
+					playerBody.updateMassProperties();
+				}
 			}
 
 			const toneMappingOptions = {
@@ -230,6 +342,124 @@
 
 			} );
 
+			// ============================================
+			// MOBILE TOUCH CONTROLS
+			// ============================================
+			
+			// Touch state tracking
+			const touchState = {
+				active: false,
+				startX: 0,
+				startY: 0,
+				currentX: 0,
+				currentY: 0,
+				lastX: 0,
+				lastY: 0,
+				isHolding: false,
+				holdThreshold: 15, // pixels of movement to distinguish hold vs swipe
+				touchStartTime: 0,
+				holdDelay: 100 // ms before hold starts moving forward
+			};
+			
+			// Mobile movement flags (separate from keyboard)
+			let mobileMovingForward = false;
+			
+			// Touch sensitivity for camera rotation
+			const touchSensitivity = 0.003;
+			
+			// Detect if device is mobile/touch
+			const isTouchDevice = ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 );
+			
+			container.addEventListener( 'touchstart', ( event ) => {
+				event.preventDefault();
+				
+				if ( event.touches.length === 1 ) {
+					const touch = event.touches[ 0 ];
+					touchState.active = true;
+					touchState.startX = touch.clientX;
+					touchState.startY = touch.clientY;
+					touchState.currentX = touch.clientX;
+					touchState.currentY = touch.clientY;
+					touchState.lastX = touch.clientX;
+					touchState.lastY = touch.clientY;
+					touchState.isHolding = true;
+					touchState.touchStartTime = performance.now();
+					mobileMovingForward = false;
+				}
+			}, { passive: false } );
+			
+			container.addEventListener( 'touchmove', ( event ) => {
+				event.preventDefault();
+				
+				if ( !touchState.active || event.touches.length !== 1 ) return;
+				
+				const touch = event.touches[ 0 ];
+				touchState.currentX = touch.clientX;
+				touchState.currentY = touch.clientY;
+				
+				// Calculate movement delta from last position
+				const deltaX = touchState.currentX - touchState.lastX;
+				const deltaY = touchState.currentY - touchState.lastY;
+				
+				// Calculate total movement from start
+				const totalMovementX = Math.abs( touchState.currentX - touchState.startX );
+				const totalMovementY = Math.abs( touchState.currentY - touchState.startY );
+				const totalMovement = Math.sqrt( totalMovementX * totalMovementX + totalMovementY * totalMovementY );
+				
+				// If movement exceeds threshold, it's a swipe - rotate camera
+				if ( totalMovement > touchState.holdThreshold ) {
+					touchState.isHolding = false;
+					mobileMovingForward = false;
+					
+					// Apply camera rotation based on swipe
+					camera.rotation.y -= deltaX * touchSensitivity;
+					camera.rotation.x -= deltaY * touchSensitivity;
+					
+					// Clamp vertical rotation to prevent flipping
+					camera.rotation.x = Math.max( -Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
+				} else {
+					// Still within hold threshold - check if enough time passed to move forward
+					const holdTime = performance.now() - touchState.touchStartTime;
+					if ( holdTime > touchState.holdDelay && touchState.isHolding ) {
+						mobileMovingForward = true;
+					}
+				}
+				
+				// Update last position
+				touchState.lastX = touchState.currentX;
+				touchState.lastY = touchState.currentY;
+			}, { passive: false } );
+			
+			container.addEventListener( 'touchend', ( event ) => {
+				event.preventDefault();
+				
+				touchState.active = false;
+				touchState.isHolding = false;
+				mobileMovingForward = false;
+			}, { passive: false } );
+			
+			container.addEventListener( 'touchcancel', ( event ) => {
+				touchState.active = false;
+				touchState.isHolding = false;
+				mobileMovingForward = false;
+			} );
+			
+			// Update mobile hold state in animation loop
+			function updateMobileInput() {
+				if ( touchState.active && touchState.isHolding ) {
+					const holdTime = performance.now() - touchState.touchStartTime;
+					if ( holdTime > touchState.holdDelay ) {
+						mobileMovingForward = true;
+					}
+				}
+			}
+			
+			// Show appropriate controls text based on device
+			if ( isTouchDevice ) {
+				document.querySelector( '.desktop-controls' ).style.display = 'none';
+				document.querySelector( '.mobile-controls' ).style.display = 'inline';
+			}
+
 			window.addEventListener( 'resize', onWindowResize );
 
 			function onWindowResize() {
@@ -241,54 +471,330 @@
 
 			}
 
-			function playerCollisions() {
-
-				const result = worldOctree.capsuleIntersect( playerCollider );
-
-				playerOnFloor = false;
-
-				if ( result ) {
-
-					playerOnFloor = result.normal.y > 0;
-
-					if ( ! playerOnFloor ) {
-
-						playerVelocity.addScaledVector( result.normal, - result.normal.dot( playerVelocity ) );
-
-					}
-
-					if ( result.depth >= 1e-10 ) {
-
-						playerCollider.translate( result.normal.multiplyScalar( result.depth ) );
-
-					}
-
+			// Create visual representation of player collider (pill/capsule)
+			function createColliderVisualization() {
+				if ( colliderVisualization ) {
+					scene.remove( colliderVisualization );
 				}
 
+				const group = new THREE.Group();
+				const radius = PLAYER_RADIUS;
+				const cylinderHeight = PLAYER_HEIGHT - (PLAYER_RADIUS * 2);
+				
+				const lineMaterial = new THREE.LineBasicMaterial( {
+					color: 0xff0000, // Red color
+					transparent: true,
+					opacity: 0.9,
+					linewidth: 2
+				} );
+				
+				// Create cylinder body using edges for clean wireframe
+				const cylinderGeometry = new THREE.CylinderGeometry( radius, radius, cylinderHeight, 16, 1 );
+				const cylinderEdges = new THREE.EdgesGeometry( cylinderGeometry );
+				const cylinderLines = new THREE.LineSegments( cylinderEdges, lineMaterial );
+				group.add( cylinderLines );
+				
+				// Create top hemisphere using edges
+				const topSphereGeometry = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2 );
+				const topSphereEdges = new THREE.EdgesGeometry( topSphereGeometry );
+				const topSphereLines = new THREE.LineSegments( topSphereEdges, lineMaterial );
+				topSphereLines.position.y = cylinderHeight / 2;
+				group.add( topSphereLines );
+				
+				// Create bottom hemisphere using edges
+				const bottomSphereGeometry = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2 );
+				const bottomSphereEdges = new THREE.EdgesGeometry( bottomSphereGeometry );
+				const bottomSphereLines = new THREE.LineSegments( bottomSphereEdges, lineMaterial );
+				bottomSphereLines.position.y = -cylinderHeight / 2;
+				group.add( bottomSphereLines );
+				
+				// Add colored markers at top and bottom for orientation
+				const topMarker = new THREE.Mesh(
+					new THREE.CircleGeometry( radius * 0.25, 16 ),
+					new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } )
+				);
+				topMarker.rotation.x = -Math.PI / 2;
+				topMarker.position.y = PLAYER_HEIGHT / 2;
+				group.add( topMarker );
+				
+				const bottomMarker = new THREE.Mesh(
+					new THREE.CircleGeometry( radius * 0.25, 16 ),
+					new THREE.MeshBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } )
+				);
+				bottomMarker.rotation.x = -Math.PI / 2;
+				bottomMarker.position.y = -PLAYER_HEIGHT / 2;
+				group.add( bottomMarker );
+				
+				colliderVisualization = group;
+				colliderVisualization.name = 'PlayerColliderVisualization';
+				scene.add( colliderVisualization );
 			}
 
-			function updatePlayer( deltaTime ) {
+			// Update collider visualization position from Cannon.js body
+			function updateColliderVisualization() {
+				if ( !playerBody || !colliderVisualization ) return;
+				
+				colliderVisualization.position.set(
+					playerBody.position.x,
+					playerBody.position.y,
+					playerBody.position.z
+				);
+			}
 
-				let damping = Math.exp( - 4 * deltaTime ) - 1;
+			
+			
+			// Target velocity for smooth interpolation
+			const targetVelocity = new THREE.Vector3( 0, 0, 0 );
+			
+			// Check if player is on ground using ray cast
+			function checkGroundContact() {
+				// Safety check: make sure playerBody exists
+				if ( !playerBody ) return;
+				
+				// Cast a ray downward from the player's position
+				const rayFrom = new CANNON.Vec3( 
+					playerBody.position.x, 
+					playerBody.position.y, 
+					playerBody.position.z 
+				);
+				const rayTo = new CANNON.Vec3( 
+					playerBody.position.x, 
+					playerBody.position.y - PLAYER_HEIGHT / 2 - 0.2, // Slightly below feet
+					playerBody.position.z 
+				);
+				
+				const rayResult = new CANNON.RaycastResult();
+				world.raycastClosest( rayFrom, rayTo, {}, rayResult );
+				
+				playerOnFloor = rayResult.hasHit && rayResult.distance < PLAYER_HEIGHT / 2 + 0.15;
+			}
 
-				if ( ! playerOnFloor ) {
-
-					playerVelocity.y -= GRAVITY * deltaTime;
-
-					// small air resistance
-					damping *= 0.1;
-
+			// Apply movement forces to player with smooth acceleration
+			function applyPlayerMovement( deltaTime ) {
+				// Safety check: make sure playerBody exists
+				if ( !playerBody ) return;
+				// Calculate desired movement direction
+				const inputDirection = new THREE.Vector3( 0, 0, 0 );
+				
+				// Keyboard input: W/S for forward/back
+				if ( keyStates[ 'KeyW' ] ) {
+					const forward = getForwardVector();
+					inputDirection.x += forward.x;
+					inputDirection.z += forward.z;
 				}
+				if ( keyStates[ 'KeyS' ] ) {
+					const forward = getForwardVector();
+					inputDirection.x -= forward.x;
+					inputDirection.z -= forward.z;
+				}
+				if ( keyStates[ 'KeyA' ] ) {
+					const side = getSideVector();
+					inputDirection.x -= side.x;
+					inputDirection.z -= side.z;
+				}
+				if ( keyStates[ 'KeyD' ] ) {
+					const side = getSideVector();
+					inputDirection.x += side.x;
+					inputDirection.z += side.z;
+				}
+				
+				// Mobile input: hold to move forward
+				if ( mobileMovingForward ) {
+					const forward = getForwardVector();
+					inputDirection.x += forward.x;
+					inputDirection.z += forward.z;
+				}
+				
+				// Normalize input direction if moving
+				const hasInput = inputDirection.lengthSq() > 0.001;
+				if ( hasInput ) {
+					inputDirection.normalize();
+				}
+				
+				// Get current horizontal velocity
+				const currentHorizontalVel = new THREE.Vector3(
+					playerBody.velocity.x,
+					0,
+					playerBody.velocity.z
+				);
+				
+				// Calculate target velocity based on input
+				if ( hasInput ) {
+					targetVelocity.copy( inputDirection ).multiplyScalar( envSettings.moveSpeed );
+				} else {
+					targetVelocity.set( 0, 0, 0 );
+				}
+				
+				// Calculate acceleration rate based on grounded state
+				const accelRate = playerOnFloor ? envSettings.acceleration : envSettings.acceleration * envSettings.airControl;
+				const decelRate = playerOnFloor ? envSettings.deceleration : envSettings.deceleration * envSettings.airControl * 0.5;
+				
+				// Smoothly interpolate horizontal velocity towards target
+				const velocityDiff = new THREE.Vector3().subVectors( targetVelocity, currentHorizontalVel );
+				const velocityDiffLength = velocityDiff.length();
+				
+				if ( velocityDiffLength > 0.01 ) {
+					// Choose acceleration or deceleration rate
+					const rate = hasInput ? accelRate : decelRate;
+					
+					// Calculate how much we can change this frame
+					const maxChange = rate * deltaTime;
+					
+					// Apply change (clamped to not overshoot)
+					// If acceleration is very high, allow reaching target faster
+					if ( velocityDiffLength <= maxChange || accelRate > 150 ) {
+						// We can reach target this frame (or very quickly)
+						playerBody.velocity.x = targetVelocity.x;
+						playerBody.velocity.z = targetVelocity.z;
+					} else {
+						// Accelerate towards target
+						velocityDiff.normalize().multiplyScalar( maxChange );
+						playerBody.velocity.x += velocityDiff.x;
+						playerBody.velocity.z += velocityDiff.z;
+					}
+				}
+				
+				// Clamp horizontal speed to max
+				const horizontalSpeed = Math.sqrt(
+					playerBody.velocity.x * playerBody.velocity.x +
+					playerBody.velocity.z * playerBody.velocity.z
+				);
+				if ( horizontalSpeed > envSettings.moveSpeed ) {
+					const scale = envSettings.moveSpeed / horizontalSpeed;
+					playerBody.velocity.x *= scale;
+					playerBody.velocity.z *= scale;
+				}
+				
+				// Jumping
+				if ( keyStates[ 'Space' ] && playerOnFloor ) {
+					playerBody.velocity.y = envSettings.jumpVelocity;
+					keyStates[ 'Space' ] = false; // Prevent holding space to jump repeatedly
+				}
+			}
 
-				playerVelocity.addScaledVector( playerVelocity, damping );
+			// Camera smoothing for less jittery movement
+			const smoothedCameraPos = new THREE.Vector3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
+			// Camera smoothing uses envSettings.cameraSmoothing
+			
+			// Update physics and sync with Three.js
+			function updatePhysics( deltaTime ) {
+				// Safety check: make sure playerBody exists
+				if ( !playerBody ) return;
+				
+				// Check if player is on ground BEFORE movement
+				checkGroundContact();
+				
+				// Apply player movement with smooth acceleration
+				applyPlayerMovement( deltaTime );
+				
+				// Step the physics world
+				world.step( PHYSICS_TIMESTEP, deltaTime, 3 );
+				
+				// Update collider visualization
+				updateColliderVisualization();
+				
+				// Calculate target camera position based on player body position
+				if ( !playerBody ) return;
+				const playerPos = playerBody.position;
+				const eyeHeight = PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT;
+				
+				// Target position for camera
+				const targetCameraPos = new THREE.Vector3(
+					playerPos.x,
+					playerPos.y + eyeHeight,
+					playerPos.z
+				);
+				
+				// Smoothly interpolate camera position (lerp)
+				const lerpFactor = Math.min( 1, deltaTime * envSettings.cameraSmoothing );
+				smoothedCameraPos.lerp( targetCameraPos, lerpFactor );
+				
+				if ( cameraMode === 'firstPerson' ) {
+					// First person: camera at smoothed eye height position
+					camera.position.copy( smoothedCameraPos );
+				} else {
+					// Third person: camera behind and above player
+					const playerCenter = smoothedCameraPos.clone();
+					
+					// Get forward direction from camera rotation
+					const forward = new THREE.Vector3();
+					camera.getWorldDirection( forward );
+					forward.y = 0; // Keep horizontal
+					forward.normalize();
+					
+					// Calculate camera position behind player
+					const offset = forward.clone().multiplyScalar( -envSettings.thirdPersonDistance );
+					offset.y = envSettings.thirdPersonHeight;
+					
+					camera.position.copy( playerCenter ).add( offset );
+					
+					// Look at player center with slight offset upward
+					const lookAtTarget = playerCenter.clone();
+					lookAtTarget.y += envSettings.thirdPersonAngle * 2;
+					camera.lookAt( lookAtTarget );
+				}
+			}
 
-				const deltaPosition = playerVelocity.clone().multiplyScalar( deltaTime );
-				playerCollider.translate( deltaPosition );
+			// Helper function to create Cannon.js trimesh from Three.js geometry
+			function createTrimeshFromGeometry( geometry, scale = new THREE.Vector3( 1, 1, 1 ) ) {
+				const position = geometry.attributes.position;
+				const vertices = [];
+				const indices = [];
+				
+				// Extract vertices
+				for ( let i = 0; i < position.count; i++ ) {
+					vertices.push(
+						position.getX( i ) * scale.x,
+						position.getY( i ) * scale.y,
+						position.getZ( i ) * scale.z
+					);
+				}
+				
+				// Extract indices (or create them if not indexed)
+				if ( geometry.index ) {
+					const index = geometry.index;
+					for ( let i = 0; i < index.count; i++ ) {
+						indices.push( index.getX( i ) );
+					}
+				} else {
+					for ( let i = 0; i < position.count; i++ ) {
+						indices.push( i );
+					}
+				}
+				
+				return new CANNON.Trimesh( vertices, indices );
+			}
 
-				playerCollisions();
-
-				camera.position.copy( playerCollider.end );
-
+			// Add collision mesh to Cannon.js world
+			function addCollisionMeshToWorld( mesh ) {
+				mesh.traverse( ( child ) => {
+					if ( child.isMesh && child.geometry ) {
+						// Get world transform
+						child.updateMatrixWorld( true );
+						const worldPosition = new THREE.Vector3();
+						const worldQuaternion = new THREE.Quaternion();
+						const worldScale = new THREE.Vector3();
+						child.matrixWorld.decompose( worldPosition, worldQuaternion, worldScale );
+						
+						// Clone and apply scale to geometry
+						const geometry = child.geometry.clone();
+						geometry.applyMatrix4( new THREE.Matrix4().makeScale( worldScale.x, worldScale.y, worldScale.z ) );
+						
+						// Create trimesh shape
+						const trimesh = createTrimeshFromGeometry( geometry );
+						
+						// Create static body
+						const body = new CANNON.Body( {
+							mass: 0, // Static
+							material: groundMaterial,
+							position: new CANNON.Vec3( worldPosition.x, worldPosition.y, worldPosition.z ),
+							quaternion: new CANNON.Quaternion( worldQuaternion.x, worldQuaternion.y, worldQuaternion.z, worldQuaternion.w )
+						} );
+						
+						body.addShape( trimesh );
+						world.addBody( body );
+					}
+				} );
 			}
 
 			function getForwardVector() {
@@ -312,78 +818,203 @@
 
 			}
 
-			function controls( deltaTime ) {
+			// Controls are now handled in applyPlayerMovement()
 
-				const speedDelta = deltaTime * MOVE_SPEED;
-
-				if ( keyStates[ 'KeyW' ] ) {
-
-					playerVelocity.add( getForwardVector().multiplyScalar( speedDelta ) );
-
-				}
-
-				if ( keyStates[ 'KeyS' ] ) {
-
-					playerVelocity.add( getForwardVector().multiplyScalar( - speedDelta ) );
-
-				}
-
-				if ( keyStates[ 'KeyA' ] ) {
-
-					playerVelocity.add( getSideVector().multiplyScalar( - speedDelta ) );
-
-				}
-
-				if ( keyStates[ 'KeyD' ] ) {
-
-					playerVelocity.add( getSideVector().multiplyScalar( speedDelta ) );
-
-				}
-
-			}
-
-			let octreeHelper = null;
+			let collisionWireframe = null;
+			let colliderVisualization = null; // Visual representation of player collider
 
 			const loader = new GLTFLoader();
 
-			loader.load( './Magnet_Scene1.glb', ( gltf ) => {
+			// Performance: Enable debug logging only if needed (set to false for production)
+			const DEBUG_LOGGING = false;
 
-				scene.add( gltf.scene );
+			// Show loading progress
+			const loadingInfo = document.getElementById( 'info' );
+			const originalInfoText = loadingInfo.innerHTML;
+			loadingInfo.innerHTML = 'Loading model...';
 
-				worldOctree.fromGraphNode( gltf.scene );
+			loader.load( 
+				'maptest2.glb',
+				// onLoad callback
+				( gltf ) => {
+					loadingInfo.innerHTML = originalInfoText;
 
-				gltf.scene.traverse( child => {
+scene.add( gltf.scene );
 
-					if ( child.isMesh ) {
+let collisionMesh = null;
+const collisionNames = [ 'CollisionMesh', 'collisionMesh', 'Collision', 'collision1' ];
+const collisionNameSet = new Set( collisionNames.map( n => n.toLowerCase() ) );
 
-						child.castShadow = true;
-						child.receiveShadow = true;
+// Single optimized traversal: setup shadows, find collision mesh, and debug logging in one pass
+if ( DEBUG_LOGGING ) {
+	console.log("=== ALL OBJECTS IN SCENE ===");
+}
+let meshCount = 0;
+gltf.scene.traverse( ( child ) => {
+	// Setup shadows and textures for meshes
+	if ( child.isMesh ) {
+		meshCount++;
+		child.castShadow = true;
+		child.receiveShadow = true;
+		if ( child.material && child.material.map ) {
+			child.material.map.anisotropy = 4;
+		}
+	}
+	
+	// Find collision mesh in same traversal
+	if ( !collisionMesh && child.name ) {
+		const nameLower = child.name.toLowerCase();
+		if ( collisionNameSet.has( nameLower ) || nameLower.includes( 'collision' ) ) {
+			collisionMesh = child;
+		}
+	}
+	
+	// Debug logging (only if enabled)
+	if ( DEBUG_LOGGING ) {
+		if ( child.name ) {
+			console.log(`  - Name: "${child.name}" | Type: ${child.type} | IsMesh: ${child.isMesh}`);
+		}
+	}
+});
 
-						if ( child.material.map ) {
+if ( DEBUG_LOGGING ) {
+	console.log(`=== Total meshes found: ${meshCount} ===`);
+}
 
-							child.material.map.anisotropy = 4;
-
-						}
-
+if ( collisionMesh ) {
+	// IF FOUND: Use the low-poly mesh for physics with Cannon.js
+	if ( DEBUG_LOGGING ) {
+		console.log(`✓ Collision mesh found! Name: "${collisionMesh.name}" | Type: ${collisionMesh.type}`);
+	}
+	
+	// Validate geometry
+	let totalTriangles = 0;
+	let hasValidGeometry = false;
+	collisionMesh.traverse( ( child ) => {
+		if ( child.isMesh && child.geometry ) {
+			hasValidGeometry = true;
+			if ( child.geometry.attributes && child.geometry.attributes.position ) {
+				const vertexCount = child.geometry.attributes.position.count;
+				totalTriangles += vertexCount >= 3 ? Math.floor( vertexCount / 3 ) : 0;
+			}
+		}
+	});
+	
+	if ( DEBUG_LOGGING ) {
+		console.log(`  Total triangles in collision mesh: ${totalTriangles}`);
+	}
+	
+	if ( !hasValidGeometry || totalTriangles === 0 ) {
+		if ( DEBUG_LOGGING ) {
+			console.error(`  ✗ ERROR: Collision mesh has no valid geometry! Falling back to full scene.`);
+		}
+		// Fallback: add entire scene to physics
+		addCollisionMeshToWorld( gltf.scene );
+	} else {
+		// Add collision mesh to Cannon.js physics world
+		console.log(`  Adding ${totalTriangles} triangles to Cannon.js physics world...`);
+		addCollisionMeshToWorld( collisionMesh );
+		console.log(`  ✓ Physics collision mesh added successfully.`);
+		
+		// Hide the collision mesh so we see the high-res visuals
+		collisionMesh.visible = false;
+		
+		// Defer wireframe creation to avoid blocking
+		if ( envSettings.showCollisionWireframe ) {
+			requestAnimationFrame( () => {
+				collisionWireframe = new THREE.Group();
+				collisionWireframe.name = 'CollisionWireframe';
+				collisionMesh.traverse( ( child ) => {
+					if ( child.isMesh && child.geometry ) {
+						const wireframeGeometry = child.geometry.clone();
+						const wireframeMaterial = new THREE.MeshBasicMaterial( {
+							color: 0x00ff00,
+							wireframe: true,
+							transparent: true,
+							opacity: 0.5,
+							depthTest: true,
+							depthWrite: false
+						} );
+						const wireframeMesh = new THREE.Mesh( wireframeGeometry, wireframeMaterial );
+						wireframeMesh.position.copy( child.position );
+						wireframeMesh.rotation.copy( child.rotation );
+						wireframeMesh.scale.copy( child.scale );
+						collisionWireframe.add( wireframeMesh );
 					}
-
 				} );
-
-				octreeHelper = new OctreeHelper( worldOctree );
-				octreeHelper.visible = envSettings.showOctree;
-				scene.add( octreeHelper );
-
-				// Apply saved settings
-				applySettings();
-
-				// Create GUI
-				createGUI();
-			
+				scene.add( collisionWireframe );
+				collisionWireframe.visible = envSettings.showCollisionWireframe;
 			} );
+		}
+	}
+} else {
+	// FALLBACK: If you haven't updated the file yet, warn the user and use the whole scene
+	if ( DEBUG_LOGGING ) {
+		console.warn("✗ No collision mesh found. Using full scene for physics.");
+	}
+	console.log("  Adding entire scene to Cannon.js physics world...");
+	addCollisionMeshToWorld( gltf.scene );
+	console.log("  ✓ Full scene physics added.");
+}
+
+// 3. Handle Spawn Points
+const spawnPoint = gltf.scene.getObjectByName( 'SpawnPoint' );
+if ( spawnPoint ) {
+	const spawnPos = new THREE.Vector3();
+	spawnPoint.getWorldPosition( spawnPos );
+	
+	// Set Cannon.js player body position
+	playerBody.position.set( spawnPos.x, spawnPos.y, spawnPos.z );
+	playerBody.velocity.set( 0, 0, 0 );
+	
+	SPAWN_POSITION.x = spawnPos.x;
+	SPAWN_POSITION.y = spawnPos.y;
+	SPAWN_POSITION.z = spawnPos.z;
+	
+	spawnPoint.visible = false;
+}
+
+applySettings();
+
+// Create collider visualization (defer to avoid blocking)
+requestAnimationFrame( () => {
+	createColliderVisualization();
+	if ( colliderVisualization ) {
+		colliderVisualization.visible = envSettings.showColliderVisualization;
+	}
+} );
+
+// Initialize camera mode
+cameraMode = envSettings.cameraMode;
+
+createGUI();
+
+				},
+				// onProgress callback
+				( progress ) => {
+					if ( progress.lengthComputable ) {
+						const percentComplete = ( progress.loaded / progress.total ) * 100;
+						loadingInfo.innerHTML = `Loading model... ${percentComplete.toFixed(0)}%`;
+					}
+				},
+				// onError callback
+				( error ) => {
+					console.error( 'Error loading model:', error );
+					loadingInfo.innerHTML = 'Error loading model. Check console.';
+				}
+			);
+
+
+
 
 			function createGUI() {
 
 				const gui = new GUI( { width: 280, title: 'Environment Settings' } );
+				
+				// Collapse GUI by default on touch/mobile devices for better visibility
+				if ( isTouchDevice ) {
+					gui.close();
+				}
 
 				// Sky / Background folder
 				const skyFolder = gui.addFolder( 'Sky & Background' );
@@ -475,10 +1106,64 @@
 					saveSettings();
 				} );
 
+				// Movement & Physics folder
+				const movementFolder = gui.addFolder( 'Movement & Physics' );
+				movementFolder.add( envSettings, 'moveSpeed', 1, 100, 1 ).name( 'Movement Speed' ).onChange( () => {
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'acceleration', 10, 500, 10 ).name( 'Acceleration' ).onChange( () => {
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'deceleration', 1, 100, 1 ).name( 'Deceleration' ).onChange( () => {
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'gravity', 5, 50, 1 ).name( 'Gravity' ).onChange( ( value ) => {
+					world.gravity.set( 0, -value, 0 );
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'jumpVelocity', 1, 15, 0.5 ).name( 'Jump Velocity' ).onChange( () => {
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'friction', 0, 1, 0.01 ).name( 'Friction' ).onChange( ( value ) => {
+					playerGroundContact.friction = value;
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'airControl', 0, 1, 0.05 ).name( 'Air Control' ).onChange( () => {
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'playerMass', 1, 100, 1 ).name( 'Player Mass' ).onChange( ( value ) => {
+					playerBody.mass = value;
+					playerBody.updateMassProperties();
+					saveSettings();
+				} );
+				movementFolder.add( envSettings, 'cameraSmoothing', 1, 30, 1 ).name( 'Camera Smoothing' ).onChange( () => {
+					saveSettings();
+				} );
+
 				// Debug folder
 				const debugFolder = gui.addFolder( 'Debug' );
-				debugFolder.add( envSettings, 'showOctree' ).name( 'Show Octree' ).onChange( ( value ) => {
-					if ( octreeHelper ) octreeHelper.visible = value;
+				debugFolder.add( envSettings, 'showCollisionWireframe' ).name( 'Show Collision Wireframe' ).onChange( ( value ) => {
+					if ( collisionWireframe ) collisionWireframe.visible = value;
+					saveSettings();
+				} );
+				debugFolder.add( envSettings, 'showColliderVisualization' ).name( 'Show Player Collider' ).onChange( ( value ) => {
+					if ( colliderVisualization ) colliderVisualization.visible = value;
+					saveSettings();
+				} );
+				
+				// Camera folder
+				const cameraFolder = gui.addFolder( 'Camera' );
+				cameraFolder.add( envSettings, 'cameraMode', [ 'firstPerson', 'thirdPerson' ] ).name( 'Camera Mode' ).onChange( ( value ) => {
+					cameraMode = value;
+					saveSettings();
+				} );
+				cameraFolder.add( envSettings, 'thirdPersonDistance', 2, 15, 0.5 ).name( 'Third Person Distance' ).onChange( () => {
+					saveSettings();
+				} );
+				cameraFolder.add( envSettings, 'thirdPersonHeight', 0, 5, 0.1 ).name( 'Third Person Height' ).onChange( () => {
+					saveSettings();
+				} );
+				cameraFolder.add( envSettings, 'thirdPersonAngle', -0.5, 0.5, 0.05 ).name( 'Third Person Angle' ).onChange( () => {
 					saveSettings();
 				} );
 
@@ -486,7 +1171,9 @@
 				debugFolder.add( { reset: function() {
 					Object.assign( envSettings, defaultEnvSettings );
 					applySettings();
-					if ( octreeHelper ) octreeHelper.visible = envSettings.showOctree;
+					if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
+					if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
+					cameraMode = envSettings.cameraMode;
 					gui.controllersRecursive().forEach( c => c.updateDisplay() );
 					saveSettings();
 				} }, 'reset' ).name( 'Reset to Defaults' );
@@ -497,41 +1184,32 @@
 				sunFolder.close();
 				ambientFolder.close();
 				renderFolder.close();
+				movementFolder.close();
 				debugFolder.close();
 
 			}
 
 			function teleportPlayerIfOob() {
-
-				if ( camera.position.y <= - 25 ) {
-
-					playerCollider.start.set( 0, 0.35, 0 );
-					playerCollider.end.set( 0, 1, 0 );
-					playerCollider.radius = 0.35;
-					camera.position.copy( playerCollider.end );
+				// Teleport player back to spawn if they fall out of bounds
+				if ( playerBody.position.y <= -25 ) {
+					playerBody.position.set( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
+					playerBody.velocity.set( 0, 0, 0 );
 					camera.rotation.set( 0, 0, 0 );
-
 				}
-
 			}
 
 
 			function animate() {
+				const deltaTime = Math.min( 0.05, clock.getDelta() );
 
-				const deltaTime = Math.min( 0.05, clock.getDelta() ) / STEPS_PER_FRAME;
+				// Update mobile touch input state
+				updateMobileInput();
 
-				// we look for collisions in substeps to mitigate the risk of
-				// an object traversing another too quickly for detection.
-
-				for ( let i = 0; i < STEPS_PER_FRAME; i ++ ) {
-
-					controls( deltaTime );
-
-					updatePlayer( deltaTime );
-
-					teleportPlayerIfOob();
-
-				}
+				// Update physics (Cannon.js handles collision detection)
+				updatePhysics( deltaTime );
+				
+				// Check if player fell out of bounds
+				teleportPlayerIfOob();
 
 				renderer.render( scene, camera );
 
@@ -544,5 +1222,6 @@
 
 
 		</script>
-	</body>
+</body>
+
 </html>
