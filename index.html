@@ -15,7 +15,7 @@
 		<span class="mobile-controls" style="display: none;"></span>
 	</div>
 	<div id="container"></div>
-	
+
 
 	<script type="importmap">
 		{
@@ -357,7 +357,31 @@
 				try { localStorage.setItem( 'envSettings', JSON.stringify( envSettings ) ); }
 				catch ( e ) { console.warn( 'Failed to save settings:', e ); }
 			}
+/**
+ * Creates a debounced function that delays invoking func until after 
+ * wait milliseconds have elapsed since the last time the debounced function 
+ * was invoked.
+ *
+ * @param {Function} func The function to debounce.
+ * @param {number} wait The number of milliseconds to wait (cooldown period).
+ * @returns {Function} A new, debounced function.
+ */
+ function debounce(func, wait = 250) {
+    let timeoutId;
 
+    return function(...args) {
+        // 'this' context is preserved using apply or call
+        const context = this; 
+
+        // Clear the previous timeout if the function is called again
+        clearTimeout(timeoutId); 
+
+        // Set a new timeout to execute the function after the wait period
+        timeoutId = setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
+}
 			const envSettings = loadSettings();
 
 			/** Physics world */
@@ -591,6 +615,8 @@
 			}
 
 			const targetVelocity = new THREE.Vector3( 0, 0, 0 );
+			const JUMP_DEBOUNCE_SEC = 1;
+			let jumpCooldownRemaining = 0;
 			
 			const _rayFrom = new CANNON.Vec3();
 			const _rayTo = new CANNON.Vec3();
@@ -610,6 +636,7 @@
 			
 			function applyPlayerMovement( deltaTime ) {
 				if ( !playerBody ) return;
+				jumpCooldownRemaining = Math.max( 0, jumpCooldownRemaining - deltaTime );
 				_inputDirection.set( 0, 0, 0 );
 				
 				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
@@ -649,9 +676,10 @@
 					playerBody.velocity.z *= scale;
 				}
 				
-				if ( keyStates[ 'Space' ] && playerOnFloor ) {
+				if ( keyStates[ 'Space' ] && playerOnFloor && jumpCooldownRemaining <= 0 ) {
 					playerBody.velocity.y = envSettings.jumpVelocity;
 					keyStates[ 'Space' ] = false;
+					jumpCooldownRemaining = JUMP_DEBOUNCE_SEC;
 				}
 			}
 
