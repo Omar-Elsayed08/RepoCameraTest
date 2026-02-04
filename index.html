@@ -592,36 +592,24 @@
 
 			const targetVelocity = new THREE.Vector3( 0, 0, 0 );
 			
-			// #region agent log - reusable objects for checkGroundContact (Hypothesis A)
 			const _rayFrom = new CANNON.Vec3();
 			const _rayTo = new CANNON.Vec3();
 			const _rayResult = new CANNON.RaycastResult();
-			let _dbgCheckGroundCalls = 0;
-			// #endregion
 			
 			function checkGroundContact() {
 				if ( !playerBody ) return;
-				// #region agent log - Hypothesis A: track calls
-				_dbgCheckGroundCalls++;
-				// #endregion
 				_rayFrom.set( playerBody.position.x, playerBody.position.y, playerBody.position.z );
 				_rayTo.set( playerBody.position.x, playerBody.position.y - PLAYER_HEIGHT / 2 - 0.2, playerBody.position.z );
 				world.raycastClosest( _rayFrom, _rayTo, {}, _rayResult );
 				playerOnFloor = _rayResult.hasHit && _rayResult.distance < PLAYER_HEIGHT / 2 + 0.15;
 			}
 
-			// #region agent log - reusable objects for applyPlayerMovement (Hypothesis B)
 			const _inputDirection = new THREE.Vector3();
 			const _currentHorizontalVel = new THREE.Vector3();
 			const _velocityDiff = new THREE.Vector3();
-			let _dbgMovementCalls = 0;
-			// #endregion
 			
 			function applyPlayerMovement( deltaTime ) {
 				if ( !playerBody ) return;
-				// #region agent log - Hypothesis B: track calls
-				_dbgMovementCalls++;
-				// #endregion
 				_inputDirection.set( 0, 0, 0 );
 				
 				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
@@ -668,24 +656,17 @@
 			}
 
 			const smoothedCameraPos = new THREE.Vector3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
-			
-			// #region agent log - reusable objects for updatePhysics (Hypothesis C)
 			const _targetCameraPos = new THREE.Vector3();
 			const _playerCenter = new THREE.Vector3();
 			const _forward = new THREE.Vector3();
 			const _offset = new THREE.Vector3();
 			const _lookAtTarget = new THREE.Vector3();
-			let _dbgPhysicsCalls = 0;
-			// #endregion
 			
 			/** Physics sub-steps: limit to prevent "spiral of death" when frames drop */
 			const PHYSICS_MAX_SUBSTEPS = 2;
 			
 			function updatePhysics( deltaTime ) {
 				if ( !playerBody ) return;
-				// #region agent log - Hypothesis C: track calls
-				_dbgPhysicsCalls++;
-				// #endregion
 				checkGroundContact();
 				applyPlayerMovement( deltaTime );
 				world.step( PHYSICS_TIMESTEP, deltaTime, PHYSICS_MAX_SUBSTEPS );
@@ -991,15 +972,6 @@
 				}
 			}
 
-			// #region agent log - debug instrumentation
-			let _dbgFrameCount = 0;
-			let _dbgLastLogTime = 0;
-			const _dbgLogInterval = 2000; // Log every 2 seconds
-			function _dbgLog(loc, msg, data, hyp) {
-				fetch('http://127.0.0.1:7244/ingest/810a5782-1b6d-4a4a-b92b-16a297e16be5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:loc,message:msg,data:data,timestamp:Date.now(),sessionId:'debug-session',hypothesisId:hyp})}).catch(()=>{});
-			}
-			// #endregion
-
 			function animate() {
 				const deltaTime = Math.min( 0.05, clock.getDelta() );
 				updateMobileInput();
@@ -1009,61 +981,6 @@
 				composer.render( deltaTime );
 				stats.update();
 				coordsDisplay.innerHTML = `X: ${camera.position.x.toFixed(2)}<br>Y: ${camera.position.y.toFixed(2)}<br>Z: ${camera.position.z.toFixed(2)}`;
-				
-				// #region agent log - memory tracking
-				_dbgFrameCount++;
-				const now = performance.now();
-				if (now - _dbgLastLogTime > _dbgLogInterval) {
-					_dbgLastLogTime = now;
-					const mem = performance.memory ? {
-						usedJSHeapSize: Math.round(performance.memory.usedJSHeapSize / 1048576),
-						totalJSHeapSize: Math.round(performance.memory.totalJSHeapSize / 1048576),
-						jsHeapSizeLimit: Math.round(performance.memory.jsHeapSizeLimit / 1048576)
-					} : null;
-					
-					// Count total vertices in scene (Hypothesis G)
-					let totalVertices = 0;
-					let totalTriangles = 0;
-					scene.traverse((obj) => {
-						if (obj.isMesh && obj.geometry) {
-							const pos = obj.geometry.attributes.position;
-							if (pos) totalVertices += pos.count;
-							if (obj.geometry.index) totalTriangles += obj.geometry.index.count / 3;
-							else if (pos) totalTriangles += pos.count / 3;
-						}
-					});
-					
-					// Count render targets in composer (Hypothesis F)
-					let composerRTCount = composer.passes.length;
-					let rtInfo = [];
-					composer.passes.forEach((pass, i) => {
-						let info = { pass: pass.constructor.name, enabled: pass.enabled };
-						if (pass.renderTarget) {
-							info.rtSize = pass.renderTarget.width + 'x' + pass.renderTarget.height;
-						}
-						rtInfo.push(info);
-					});
-					
-					_dbgLog('animate:972', 'Memory snapshot', {
-						memoryMB: mem,
-						frameCount: _dbgFrameCount,
-						physicsBodies: world.bodies.length,
-						physicsContacts: world.contacts.length,
-						sceneChildren: scene.children.length,
-						rendererInfo: {
-							geometries: renderer.info.memory.geometries,
-							textures: renderer.info.memory.textures,
-							programs: renderer.info.programs ? renderer.info.programs.length : 0,
-							triangles: renderer.info.render.triangles,
-							calls: renderer.info.render.calls
-						},
-						sceneGeometry: { totalVertices, totalTriangles },
-						composerPasses: rtInfo,
-						windowSize: window.innerWidth + 'x' + window.innerHeight,
-						pixelRatio: renderer.getPixelRatio()
-					}, 'ALL');
-				}
-				// #endregion
 			}
 
 
