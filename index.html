@@ -40,7 +40,6 @@
 
 			import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 			import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-			import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 			import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 			import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 			import { LUTPass } from 'three/addons/postprocessing/LUTPass.js';
@@ -248,16 +247,6 @@
 			const renderPass = new RenderPass( scene, camera );
 			composer.addPass( renderPass );
 
-			const ssaoPass = new SSAOPass( scene, camera, 
-				Math.floor( window.innerWidth / 2 ), 
-				Math.floor( window.innerHeight / 2 ) 
-			);
-			ssaoPass.kernelRadius = 8;
-			ssaoPass.minDistance = 0.001;
-			ssaoPass.maxDistance = 0.05;
-			ssaoPass.output = SSAOPass.OUTPUT.Default;
-			composer.addPass( ssaoPass );
-
 			const bloomPass = new UnrealBloomPass(
 				new THREE.Vector2( window.innerWidth, window.innerHeight ),
 				0.3, 0.4, 0.92
@@ -281,10 +270,6 @@
 			composer.addPass( outputPass );
 
 			const postProcessingSettings = {
-				ssaoEnabled: false,
-				ssaoKernelRadius: 8,
-				ssaoMinDistance: 0.001,
-				ssaoMaxDistance: 0.05,
 				bloomEnabled: true,
 				bloomStrength: 0.2,
 				bloomRadius: 1,
@@ -569,7 +554,6 @@
 				camera.updateProjectionMatrix();
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				composer.setSize( window.innerWidth, window.innerHeight );
-				ssaoPass.setSize( Math.floor( window.innerWidth / 2 ), Math.floor( window.innerHeight / 2 ) );
 				bloomPass.setSize( window.innerWidth, window.innerHeight );
 				masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
 			}
@@ -947,12 +931,6 @@
 				waterFolder.close();
 
 				const postFolder = gui.addFolder( 'Post-Processing' );
-
-				const ssaoFolder = postFolder.addFolder( 'SSAO' );
-				ssaoFolder.add( postProcessingSettings, 'ssaoEnabled' ).name( 'Enabled' ).onChange( ( v ) => { ssaoPass.enabled = v; } );
-				ssaoFolder.add( postProcessingSettings, 'ssaoKernelRadius', 1, 32, 1 ).name( 'Radius' ).onChange( ( v ) => { ssaoPass.kernelRadius = v; } );
-				ssaoFolder.add( postProcessingSettings, 'ssaoMinDistance', 0.001, 0.02, 0.001 ).name( 'Min Dist' ).onChange( ( v ) => { ssaoPass.minDistance = v; } );
-				ssaoFolder.add( postProcessingSettings, 'ssaoMaxDistance', 0.01, 0.3, 0.01 ).name( 'Max Dist' ).onChange( ( v ) => { ssaoPass.maxDistance = v; } );
 
 				const bloomFolder = postFolder.addFolder( 'Bloom' );
 				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; } );
