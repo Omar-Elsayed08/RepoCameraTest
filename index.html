@@ -250,15 +250,19 @@
 			const renderPass = new RenderPass( scene, camera );
 			composer.addPass( renderPass );
 
-			const ssaoPass = new SSAOPass( scene, camera, 
-				Math.floor( window.innerWidth / 2 ), 
-				Math.floor( window.innerHeight / 2 ) 
-			);
-			ssaoPass.kernelRadius = 8;
-			ssaoPass.minDistance = 0.001;
-			ssaoPass.maxDistance = 0.05;
-			ssaoPass.output = SSAOPass.OUTPUT.Default;
-			composer.addPass( ssaoPass );
+			/** SSAO is expensive - disable on mobile to save memory bandwidth */
+			let ssaoPass = null;
+			if ( !isMobile ) {
+				ssaoPass = new SSAOPass( scene, camera, 
+					Math.floor( window.innerWidth / 2 ), 
+					Math.floor( window.innerHeight / 2 ) 
+				);
+				ssaoPass.kernelRadius = 8;
+				ssaoPass.minDistance = 0.001;
+				ssaoPass.maxDistance = 0.05;
+				ssaoPass.output = SSAOPass.OUTPUT.Default;
+				composer.addPass( ssaoPass );
+			}
 
 			const bloomPass = new UnrealBloomPass(
 				new THREE.Vector2( window.innerWidth, window.innerHeight ),
@@ -547,7 +551,7 @@
 				camera.updateProjectionMatrix();
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				composer.setSize( window.innerWidth, window.innerHeight );
-				ssaoPass.setSize( Math.floor( window.innerWidth / 2 ), Math.floor( window.innerHeight / 2 ) );
+				if ( ssaoPass ) ssaoPass.setSize( Math.floor( window.innerWidth / 2 ), Math.floor( window.innerHeight / 2 ) );
 				bloomPass.setSize( window.innerWidth, window.innerHeight );
 				masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
 			}
@@ -652,11 +656,14 @@
 
 			const smoothedCameraPos = new THREE.Vector3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
 			
+			/** Physics sub-steps: use fewer on mobile to prevent "spiral of death" */
+			const PHYSICS_MAX_SUBSTEPS = isMobile ? 1 : 3;
+			
 			function updatePhysics( deltaTime ) {
 				if ( !playerBody ) return;
 				checkGroundContact();
 				applyPlayerMovement( deltaTime );
-				world.step( PHYSICS_TIMESTEP, deltaTime, 3 );
+				world.step( PHYSICS_TIMESTEP, deltaTime, PHYSICS_MAX_SUBSTEPS );
 				updateColliderVisualization();
 				
 				const playerPos = playerBody.position;
@@ -703,9 +710,13 @@
 						const worldQuat = new THREE.Quaternion();
 						const worldScale = new THREE.Vector3();
 						child.matrixWorld.decompose( worldPos, worldQuat, worldScale );
-						const geo = child.geometry.clone();
-						geo.applyMatrix4( new THREE.Matrix4().makeScale( worldScale.x, worldScale.y, worldScale.z ) );
-						const trimesh = createTrimeshFromGeometry( geo );
+						
+						/** 
+						 * Optimization: Reference geometry directly instead of cloning.
+						 * Pass scale to createTrimeshFromGeometry to apply during vertex extraction.
+						 * This avoids doubling RAM usage on high-poly collision meshes.
+						 */
+						const trimesh = createTrimeshFromGeometry( child.geometry, worldScale );
 						const body = new CANNON.Body( {
 							mass: 0,
 							material: groundMaterial,
@@ -906,11 +917,14 @@
 
 				const postFolder = gui.addFolder( 'Post-Processing' );
 
-				const ssaoFolder = postFolder.addFolder( 'SSAO' );
-				ssaoFolder.add( postProcessingSettings, 'ssaoEnabled' ).name( 'Enabled' ).onChange( ( v ) => { ssaoPass.enabled = v; } );
-				ssaoFolder.add( postProcessingSettings, 'ssaoKernelRadius', 1, 32, 1 ).name( 'Radius' ).onChange( ( v ) => { ssaoPass.kernelRadius = v; } );
-				ssaoFolder.add( postProcessingSettings, 'ssaoMinDistance', 0.001, 0.02, 0.001 ).name( 'Min Dist' ).onChange( ( v ) => { ssaoPass.minDistance = v; } );
-				ssaoFolder.add( postProcessingSettings, 'ssaoMaxDistance', 0.01, 0.3, 0.01 ).name( 'Max Dist' ).onChange( ( v ) => { ssaoPass.maxDistance = v; } );
+				/** SSAO controls only shown on desktop (SSAO disabled on mobile) */
+				if ( ssaoPass ) {
+					const ssaoFolder = postFolder.addFolder( 'SSAO' );
+					ssaoFolder.add( postProcessingSettings, 'ssaoEnabled' ).name( 'Enabled' ).onChange( ( v ) => { ssaoPass.enabled = v; } );
+					ssaoFolder.add( postProcessingSettings, 'ssaoKernelRadius', 1, 32, 1 ).name( 'Radius' ).onChange( ( v ) => { ssaoPass.kernelRadius = v; } );
+					ssaoFolder.add( postProcessingSettings, 'ssaoMinDistance', 0.001, 0.02, 0.001 ).name( 'Min Dist' ).onChange( ( v ) => { ssaoPass.minDistance = v; } );
+					ssaoFolder.add( postProcessingSettings, 'ssaoMaxDistance', 0.01, 0.3, 0.01 ).name( 'Max Dist' ).onChange( ( v ) => { ssaoPass.maxDistance = v; } );
+				}
 
 				const bloomFolder = postFolder.addFolder( 'Bloom' );
 				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; } );
