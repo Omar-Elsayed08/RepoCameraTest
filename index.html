@@ -776,7 +776,7 @@
 			const originalInfoText = loadingInfo.innerHTML;
 			loadingInfo.innerHTML = 'Loading model...';
 
-			loader.load( 'maptest2.glb',
+			loader.load( 'maptest2-compresses.glb',
 				( gltf ) => {
 					loadingInfo.innerHTML = originalInfoText;
 					scene.add( gltf.scene );
