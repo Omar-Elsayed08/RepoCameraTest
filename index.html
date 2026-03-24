@@ -57,7 +57,7 @@
 					'vignetteOffset': { value: 1.0 },
 					'vignetteDarkness': { value: 1.2 },
 					'grainEnabled': { value: true },
-					'grainIntensity': { value: 0.15 },
+					'grainIntensity': { value: 0.03 },
 					'tiltShiftEnabled': { value: false },
 					'focusY': { value: 0.5 },
 					'focusWidth': { value: 0.35 },
@@ -241,41 +241,13 @@
 			coordsDisplay.innerHTML = 'X: 0.00<br>Y: 0.00<br>Z: 0.00';
 			container.appendChild( coordsDisplay );
 
-			/** Post-processing pipeline */
-			const composer = new EffectComposer( renderer );
-
-			const renderPass = new RenderPass( scene, camera );
-			composer.addPass( renderPass );
-
-			const bloomPass = new UnrealBloomPass(
-				new THREE.Vector2( window.innerWidth, window.innerHeight ),
-				0.3, 0.4, 0.92
-			);
-			composer.addPass( bloomPass );
-
-			const masterPostPass = new ShaderPass( MasterPostShader );
-			masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
-			composer.addPass( masterPostPass );
-
-			let lutPass = null;
-			const lutLoader = new LUTCubeLoader();
-			const lutSettings = { enabled: true, intensity: 1.0 };
-
-			lutLoader.load( './HardBoost.cube', ( result ) => {
-				lutPass = new LUTPass( { lut: result.texture3D, intensity: lutSettings.intensity } );
-				composer.insertPass( lutPass, composer.passes.length - 1 );
-			} );
-
-			const outputPass = new OutputPass();
-			composer.addPass( outputPass );
-
-			const postProcessingSettings = {
+			const defaultPostProcessingSettings = {
 				bloomEnabled: true,
 				bloomStrength: 0.2,
 				bloomRadius: 1,
-				bloomThreshold: 0.92,
+				bloomThreshold: 1,
 				filmEnabled: true,
-				filmNoiseIntensity: 0.07,
+				filmNoiseIntensity: 0.03,
 				vignetteEnabled: true,
 				vignetteOffset: 1.0,
 				vignetteDarkness: 1.2,
@@ -284,8 +256,76 @@
 				tiltShiftFocusWidth: 0.35,
 				tiltShiftBlurAmount: 2.0,
 				lutEnabled: true,
-				lutIntensity: 0.8
+				lutIntensity: 1
 			};
+
+			function loadPostProcessingSettings() {
+				try {
+					const saved = localStorage.getItem( 'postProcessingSettings' );
+					if ( saved ) return { ...defaultPostProcessingSettings, ...JSON.parse( saved ) };
+				} catch ( e ) { console.warn( 'Failed to load post-processing settings:', e ); }
+				return { ...defaultPostProcessingSettings };
+			}
+
+			const postProcessingSettings = loadPostProcessingSettings();
+
+			function savePostProcessingSettings() {
+				try { localStorage.setItem( 'postProcessingSettings', JSON.stringify( postProcessingSettings ) ); }
+				catch ( e ) { console.warn( 'Failed to save post-processing settings:', e ); }
+			}
+
+			/** Post-processing pipeline */
+			const composer = new EffectComposer( renderer );
+
+			const renderPass = new RenderPass( scene, camera );
+			composer.addPass( renderPass );
+
+			const bloomPass = new UnrealBloomPass(
+				new THREE.Vector2( window.innerWidth, window.innerHeight ),
+				postProcessingSettings.bloomStrength,
+				postProcessingSettings.bloomRadius,
+				postProcessingSettings.bloomThreshold
+			);
+			composer.addPass( bloomPass );
+
+			const masterPostPass = new ShaderPass( MasterPostShader );
+			masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
+			composer.addPass( masterPostPass );
+
+			let lutPass = null;
+
+			function applyPostProcessingSettings() {
+				bloomPass.enabled = postProcessingSettings.bloomEnabled;
+				bloomPass.strength = postProcessingSettings.bloomStrength;
+				bloomPass.radius = postProcessingSettings.bloomRadius;
+				bloomPass.threshold = postProcessingSettings.bloomThreshold;
+				masterPostPass.uniforms[ 'grainEnabled' ].value = postProcessingSettings.filmEnabled;
+				masterPostPass.uniforms[ 'grainIntensity' ].value = postProcessingSettings.filmNoiseIntensity;
+				masterPostPass.uniforms[ 'vignetteEnabled' ].value = postProcessingSettings.vignetteEnabled;
+				masterPostPass.uniforms[ 'vignetteOffset' ].value = postProcessingSettings.vignetteOffset;
+				masterPostPass.uniforms[ 'vignetteDarkness' ].value = postProcessingSettings.vignetteDarkness;
+				masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = postProcessingSettings.tiltShiftEnabled;
+				masterPostPass.uniforms[ 'focusY' ].value = postProcessingSettings.tiltShiftFocusY;
+				masterPostPass.uniforms[ 'focusWidth' ].value = postProcessingSettings.tiltShiftFocusWidth;
+				masterPostPass.uniforms[ 'blurAmount' ].value = postProcessingSettings.tiltShiftBlurAmount;
+				if ( lutPass ) {
+					lutPass.enabled = postProcessingSettings.lutEnabled;
+					lutPass.intensity = postProcessingSettings.lutIntensity;
+				}
+			}
+
+			applyPostProcessingSettings();
+
+			const lutLoader = new LUTCubeLoader();
+
+			lutLoader.load( './HardBoost.cube', ( result ) => {
+				lutPass = new LUTPass( { lut: result.texture3D, intensity: postProcessingSettings.lutIntensity } );
+				lutPass.enabled = postProcessingSettings.lutEnabled;
+				composer.insertPass( lutPass, composer.passes.length - 1 );
+			} );
+
+			const outputPass = new OutputPass();
+			composer.addPass( outputPass );
 
 			const PHYSICS_TIMESTEP = 1/60;
 			const SPAWN_POSITION = { x: 0, y: 5, z: 0 };
@@ -351,7 +391,7 @@
  * @param {number} wait The number of milliseconds to wait (cooldown period).
  * @returns {Function} A new, debounced function.
  */
- function debounce(func, wait = 250) {
+ function debounce(func, wait = 500) {
     let timeoutId;
 
     return function(...args) {
@@ -933,38 +973,48 @@
 				const postFolder = gui.addFolder( 'Post-Processing' );
 
 				const bloomFolder = postFolder.addFolder( 'Bloom' );
-				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; } );
-				bloomFolder.add( postProcessingSettings, 'bloomStrength', 0, 2, 0.01 ).name( 'Strength' ).onChange( ( v ) => { bloomPass.strength = v; } );
-				bloomFolder.add( postProcessingSettings, 'bloomRadius', 0, 1, 0.01 ).name( 'Radius' ).onChange( ( v ) => { bloomPass.radius = v; } );
-				bloomFolder.add( postProcessingSettings, 'bloomThreshold', 0, 1, 0.01 ).name( 'Threshold' ).onChange( ( v ) => { bloomPass.threshold = v; } );
+				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; savePostProcessingSettings(); } );
+				bloomFolder.add( postProcessingSettings, 'bloomStrength', 0, 2, 0.01 ).name( 'Strength' ).onChange( ( v ) => { bloomPass.strength = v; savePostProcessingSettings(); } );
+				bloomFolder.add( postProcessingSettings, 'bloomRadius', 0, 1, 0.01 ).name( 'Radius' ).onChange( ( v ) => { bloomPass.radius = v; savePostProcessingSettings(); } );
+				bloomFolder.add( postProcessingSettings, 'bloomThreshold', 0, 1, 0.01 ).name( 'Threshold' ).onChange( ( v ) => { bloomPass.threshold = v; savePostProcessingSettings(); } );
 
 				const filmFolder = postFolder.addFolder( 'Film Grain' );
-				filmFolder.add( postProcessingSettings, 'filmEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainEnabled' ].value = v; } );
-				filmFolder.add( postProcessingSettings, 'filmNoiseIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainIntensity' ].value = v; } );
+				filmFolder.add( postProcessingSettings, 'filmEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainEnabled' ].value = v; savePostProcessingSettings(); } );
+				filmFolder.add( postProcessingSettings, 'filmNoiseIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainIntensity' ].value = v; savePostProcessingSettings(); } );
 
 				const vignetteFolder = postFolder.addFolder( 'Vignette' );
-				vignetteFolder.add( postProcessingSettings, 'vignetteEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteEnabled' ].value = v; } );
-				vignetteFolder.add( postProcessingSettings, 'vignetteOffset', 0.5, 2.0, 0.05 ).name( 'Offset' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteOffset' ].value = v; } );
-				vignetteFolder.add( postProcessingSettings, 'vignetteDarkness', 0.5, 3.0, 0.1 ).name( 'Darkness' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteDarkness' ].value = v; } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteEnabled' ].value = v; savePostProcessingSettings(); } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteOffset', 0.5, 2.0, 0.05 ).name( 'Offset' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteOffset' ].value = v; savePostProcessingSettings(); } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteDarkness', 0.5, 3.0, 0.1 ).name( 'Darkness' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteDarkness' ].value = v; savePostProcessingSettings(); } );
 
 				const tiltShiftFolder = postFolder.addFolder( 'Tilt-Shift' );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = v; } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusY', 0, 1, 0.01 ).name( 'Focus Y' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusY' ].value = v; } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusWidth', 0.1, 0.8, 0.01 ).name( 'Width' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusWidth' ].value = v; } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftBlurAmount', 0, 6, 0.1 ).name( 'Blur' ).onChange( ( v ) => { masterPostPass.uniforms[ 'blurAmount' ].value = v; } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = v; savePostProcessingSettings(); } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusY', 0, 1, 0.01 ).name( 'Focus Y' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusY' ].value = v; savePostProcessingSettings(); } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusWidth', 0.1, 0.8, 0.01 ).name( 'Width' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusWidth' ].value = v; savePostProcessingSettings(); } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftBlurAmount', 0, 6, 0.1 ).name( 'Blur' ).onChange( ( v ) => { masterPostPass.uniforms[ 'blurAmount' ].value = v; savePostProcessingSettings(); } );
 
 				const lutFolder = postFolder.addFolder( 'LUT' );
-				lutFolder.add( postProcessingSettings, 'lutEnabled' ).name( 'Enabled' ).onChange( ( v ) => { if ( lutPass ) lutPass.enabled = v; } );
-				lutFolder.add( postProcessingSettings, 'lutIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { if ( lutPass ) lutPass.intensity = v; } );
+				lutFolder.add( postProcessingSettings, 'lutEnabled' ).name( 'Enabled' ).onChange( ( v ) => { if ( lutPass ) lutPass.enabled = v; savePostProcessingSettings(); } );
+				lutFolder.add( postProcessingSettings, 'lutIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { if ( lutPass ) lutPass.intensity = v; savePostProcessingSettings(); } );
+
+				postFolder.add( { resetPost: () => {
+					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
+					applyPostProcessingSettings();
+					gui.controllersRecursive().forEach( c => c.updateDisplay() );
+					savePostProcessingSettings();
+				} }, 'resetPost' ).name( 'Reset to Defaults' );
 
 				debugFolder.add( { reset: () => {
 					Object.assign( envSettings, defaultEnvSettings );
+					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
 					applySettings();
+					applyPostProcessingSettings();
 					if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
 					if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
 					cameraMode = envSettings.cameraMode;
 					gui.controllersRecursive().forEach( c => c.updateDisplay() );
 					saveSettings();
+					savePostProcessingSettings();
 				} }, 'reset' ).name( 'Reset Defaults' );
 
 				[ fogFolder, hemiFolder, sunFolder, ambientFolder, renderFolder, movementFolder, debugFolder, postFolder ].forEach( f => f.close() );
