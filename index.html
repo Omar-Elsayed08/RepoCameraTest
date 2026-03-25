@@ -15,6 +15,11 @@
 		<span class="mobile-controls" style="display: none;"></span>
 	</div>
 	<div id="container"></div>
+	<div id="scroll-container"><div id="scroll-spacer"></div></div>
+	<div id="mode-toggle">
+		<button id="btn-freecam" class="mode-btn active">Free Cam</button>
+		<button id="btn-flythrough" class="mode-btn">Flythrough</button>
+	</div>
 
 
 	<script type="importmap">
@@ -327,8 +332,127 @@
 			const outputPass = new OutputPass();
 			composer.addPass( outputPass );
 
+			/** Theatre.js Flythrough System — scroll-driven with smooth interpolation */
+			let flythroughState = null;
+			let flythroughActive = false;
+			let flythroughTime = 0;
+			let flythroughTargetTime = 0;
+			const _flythroughEuler = new THREE.Euler( 0, 0, 0, 'XYZ' );
+			const scrollContainer = document.getElementById( 'scroll-container' );
+			const scrollSpacer = document.getElementById( 'scroll-spacer' );
+			const btnFreecam = document.getElementById( 'btn-freecam' );
+			const btnFlythrough = document.getElementById( 'btn-flythrough' );
+
+			function cubicBez( t, p0, p1, p2, p3 ) {
+				const mt = 1 - t;
+				return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
+			}
+
+			function solveBezT( x, cx1, cx2 ) {
+				let lo = 0, hi = 1;
+				for ( let i = 0; i < 32; i++ ) {
+					const mid = ( lo + hi ) / 2;
+					if ( cubicBez( mid, 0, cx1, cx2, 1 ) < x ) lo = mid; else hi = mid;
+				}
+				return ( lo + hi ) / 2;
+			}
+
+			function evaluateTrack( keyframes, t ) {
+				if ( !keyframes || keyframes.length === 0 ) return 0;
+				if ( t <= keyframes[ 0 ].position ) return keyframes[ 0 ].value;
+				if ( t >= keyframes[ keyframes.length - 1 ].position ) return keyframes[ keyframes.length - 1 ].value;
+				let i = 0;
+				for ( ; i < keyframes.length - 1; i++ ) {
+					if ( t <= keyframes[ i + 1 ].position ) break;
+				}
+				const kfA = keyframes[ i ], kfB = keyframes[ i + 1 ];
+				const dt = kfB.position - kfA.position;
+				if ( dt < 0.0001 ) return kfA.value;
+				const tNorm = ( t - kfA.position ) / dt;
+				const u = solveBezT( tNorm, kfA.handles[ 2 ], kfB.handles[ 0 ] );
+				const vNorm = cubicBez( u, 0, kfA.handles[ 3 ], kfB.handles[ 1 ], 1 );
+				return kfA.value + vNorm * ( kfB.value - kfA.value );
+			}
+
+			function parseTheatreState( stateJson ) {
+				const sheet = stateJson.sheetsById?.[ 'Intro' ];
+				if ( !sheet?.sequence ) return null;
+				const seq = sheet.sequence;
+				const camData = seq.tracksByObject?.[ 'Camera' ];
+				if ( !camData ) return null;
+				const tracks = {};
+				for ( const [ propPath, trackId ] of Object.entries( camData.trackIdByPropPath || {} ) ) {
+					const td = camData.trackData[ trackId ];
+					if ( td?.keyframes ) tracks[ propPath ] = td.keyframes;
+				}
+				return { duration: seq.length, tracks };
+			}
+
+			function updateFlythrough( deltaTime ) {
+				if ( !flythroughState || !flythroughActive ) return;
+				const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+				if ( maxScroll > 0 ) {
+					flythroughTargetTime = ( scrollContainer.scrollTop / maxScroll ) * flythroughState.duration;
+				}
+				const smoothing = 1 - Math.exp( -6 * deltaTime );
+				flythroughTime += ( flythroughTargetTime - flythroughTime ) * smoothing;
+				const tr = flythroughState.tracks;
+				camera.position.set(
+					evaluateTrack( tr[ '["position","x"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["position","y"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["position","z"]' ], flythroughTime )
+				);
+				_flythroughEuler.set(
+					evaluateTrack( tr[ '["rotation","x"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["rotation","y"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["rotation","z"]' ], flythroughTime ),
+					'XYZ'
+				);
+				camera.quaternion.setFromEuler( _flythroughEuler );
+			}
+
+			function enterFlythrough() {
+				if ( !flythroughState ) return;
+				flythroughActive = true;
+				flythroughTime = 0;
+				flythroughTargetTime = 0;
+				scrollContainer.style.display = 'block';
+				scrollContainer.scrollTop = 0;
+				if ( document.pointerLockElement ) document.exitPointerLock();
+				btnFlythrough.classList.add( 'active' );
+				btnFreecam.classList.remove( 'active' );
+			}
+
+			function exitFlythrough() {
+				flythroughActive = false;
+				scrollContainer.style.display = 'none';
+				if ( playerBody ) {
+					playerBody.position.set( camera.position.x, camera.position.y, camera.position.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					smoothedCameraPos.copy( camera.position );
+				}
+				camera.rotation.order = 'YXZ';
+				btnFreecam.classList.add( 'active' );
+				btnFlythrough.classList.remove( 'active' );
+			}
+
+			btnFreecam.addEventListener( 'click', () => { if ( flythroughActive ) exitFlythrough(); } );
+			btnFlythrough.addEventListener( 'click', () => { if ( !flythroughActive && flythroughState ) enterFlythrough(); } );
+
+			fetch( './flythrough-state.json' )
+				.then( r => r.json() )
+				.then( state => {
+					flythroughState = parseTheatreState( state );
+					if ( flythroughState ) {
+						const scrollPages = Math.max( 5, Math.ceil( flythroughState.duration ) );
+						scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
+						console.log( 'Flythrough loaded: ' + flythroughState.duration.toFixed( 1 ) + 's, ' + scrollPages + ' scroll pages' );
+					}
+				} )
+				.catch( e => console.warn( 'Flythrough state not loaded:', e ) );
+
 			const PHYSICS_TIMESTEP = 1/60;
-			const SPAWN_POSITION = { x: 0, y: 5, z: 0 };
+			const SPAWN_POSITION = { x: 1.74, y: 1.95, z: 93.46 };
 			const PLAYER_HEIGHT = 1.8;
 			const PLAYER_RADIUS = 0.4;
 			const PLAYER_EYE_HEIGHT = 1.6;
@@ -506,13 +630,13 @@
 
 			container.addEventListener( 'mousedown', () => {
 
-				document.body.requestPointerLock();
+				if ( !flythroughActive ) document.body.requestPointerLock();
 
 			} );
 
 			document.body.addEventListener( 'mousemove', ( event ) => {
 
-				if ( document.pointerLockElement === document.body ) {
+				if ( !flythroughActive && document.pointerLockElement === document.body ) {
 
 					camera.rotation.y -= event.movementX / 500;
 					camera.rotation.x -= event.movementY / 500;
@@ -874,16 +998,7 @@
 					}
 
 					const spawnPoint = gltf.scene.getObjectByName( 'SpawnPoint' );
-					if ( spawnPoint ) {
-						const spawnPos = new THREE.Vector3();
-						spawnPoint.getWorldPosition( spawnPos );
-						playerBody.position.set( spawnPos.x, spawnPos.y, spawnPos.z );
-						playerBody.velocity.set( 0, 0, 0 );
-						SPAWN_POSITION.x = spawnPos.x;
-						SPAWN_POSITION.y = spawnPos.y;
-						SPAWN_POSITION.z = spawnPos.z;
-						spawnPoint.visible = false;
-					}
+					
 
 					applySettings();
 
@@ -1030,9 +1145,13 @@
 
 			function animate() {
 				const deltaTime = Math.min( 0.05, clock.getDelta() );
-				updateMobileInput();
-				updatePhysics( deltaTime );
-				teleportPlayerIfOob();
+				if ( flythroughActive ) {
+					updateFlythrough( deltaTime );
+				} else {
+					updateMobileInput();
+					updatePhysics( deltaTime );
+					teleportPlayerIfOob();
+				}
 				masterPostPass.uniforms[ 'time' ].value += deltaTime;
 				composer.render( deltaTime );
 				stats.update();
