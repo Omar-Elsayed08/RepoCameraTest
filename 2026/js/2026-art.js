@@ -87,6 +87,12 @@ const ART_PIECES = [
     medium:     'Acrylic',
   },
   {
+    src:        './assets/artwork/rebecca yin & alex decosta.png',
+    title:      'The Deck of Life',
+    artist:     'Rebecca Yin & Alex Decosta',
+    medium:     'Colored Pencil and Love',
+  },
+  {
     src:        './assets/artwork/The Inscrutable.jpg',
     title:      'The Inscrutable',
     artist:     'Peter Snowden',
