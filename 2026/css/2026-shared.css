@@ -1127,6 +1127,109 @@ html.page-loaded .page-loader {
 
 .closing-cta svg { width: 16px; height: 16px; }
 
+/* ─── SPECIAL THANKS (2024 index–style sponsor strip: companies_slider) ─── */
+.special-thanks {
+  /* mirrors 2024 --main-background-color */
+  padding: clamp(48px, 6vw, 72px) clamp(20px, 4vw, 40px);
+  margin-top: 0;
+  margin-bottom: 0;
+  background: #fffdf7;
+  border-top: 1px solid rgba(65, 112, 88, 0.1);
+}
+
+.special-thanks-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ~ .index-theme-subheader (Minion / green) — Georgia stack, no extra font load */
+.special-thanks-heading {
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-size: clamp(17px, 2vw, 21px);
+  font-weight: 400;
+  color: #417058;
+  letter-spacing: 0.03em;
+  margin-bottom: clamp(28px, 3.5vw, 42px);
+}
+
+/* ~ .slider from 2024 index-styles */
+.special-thanks-strip {
+  position: relative;
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.125);
+}
+
+/* ~ .slider::before / ::after edge fades */
+.special-thanks-strip::before,
+.special-thanks-strip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: min(200px, 18vw);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.special-thanks-strip::before {
+  left: 0;
+  background: linear-gradient(to right, #fffdf7 0%, rgba(255, 253, 247, 0) 100%);
+}
+
+.special-thanks-strip::after {
+  right: 0;
+  background: linear-gradient(to left, #fffdf7 0%, rgba(255, 253, 247, 0) 100%);
+}
+
+/* flex row instead of Slick — same visual density as .slick-slide + img */
+.special-thanks-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  row-gap: 12px;
+  padding: clamp(18px, 2.5vw, 26px) min(24px, 3vw);
+  background: #fffdf7;
+}
+
+.special-thanks-slide {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 clamp(10px, 1.8vw, 20px);
+  min-height: 72px;
+}
+
+.special-thanks-slide a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.special-thanks-slide a:focus-visible {
+  outline: 2px solid #417058;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ~ .slick-slide img from 2024 index-styles */
+.special-thanks-img {
+  width: auto;
+  height: 70px;
+  max-width: min(240px, 42vw);
+  margin: 0;
+  padding: 0;
+  object-fit: contain;
+}
+
+.special-thanks-slide--hawk .special-thanks-img {
+  height: 70px;
+  max-width: min(72px, 20vw);
+}
+
 /* ─── FOOTER ─── */
 footer#contact {
   padding: 72px clamp(28px, 5vw, 56px) 48px;
@@ -1228,7 +1331,7 @@ footer#contact {
   .edition-hero-title { font-size: clamp(48px, 15vw, 82px); white-space: nowrap; }
   .edition-section { padding: 72px 20px; }
   .editors-note-inner { padding: 56px 22px; }
-  .toc-inner, .closing { padding-left: 22px; padding-right: 22px; }
+  .toc-inner, .closing, .special-thanks { padding-left: 22px; padding-right: 22px; }
   .film-body { padding: 22px 22px 26px; }
   .art-grid { column-width: auto; column-count: 1; }
 }
