@@ -1,0 +1,872 @@
+/* Font for the Post-it Notes
+Start*/
+@import url(https://fonts.googleapis.com/css?family=Give+You+Glory|The+Girl+Next+Door|Gloria+Hallelujah|Indie+Flower);
+/* Font for the Post-it Notes
+End*/
+
+
+/* Custom Variables
+Start*/
+:root {
+  --main-background-color: #FFFDF7;
+  --test-background-color-previous-issue: #dad3d0;
+  --alternate-background-color: #e7e3e0;
+  --font-color: #1D1B1A;
+  --title-font-color: #FFFDF7;
+  --dark-green-accent: #417058;
+  --light-green-accent: #87CDA1;
+  --yellow-accent: #FDD57E;
+  --pink-accent: #FFBCDF;
+  --light-purple-accent: #aabbe1;
+
+}
+
+/* Fonts Start */
+@font-face {
+  font-family: 'Deckard-Regular Regular';
+  font-style: normal;
+  font-weight: normal;
+  src: url('DeckardRegular_1_.woff') format('woff');
+}
+
+
+@font-face {
+  font-family: 'Deckard Medium Evan';
+  font-style: normal;
+  font-weight: normal;
+  src: url('DeckardMedium.woff') format('woff');
+}
+
+@font-face {
+  font-family: "acumin-variable",sans-serif;
+  font-variation-settings: 'wght' 194.2857, 'wdth' 100, 'slnt' 0;
+  src: url(https://fonts.adobe.com/fonts/acumin-variable#fonts-section);
+}
+
+@font-face {
+  font-family: 'minion-pro', serif;
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.adobe.com/fonts/minion#fonts-section);
+}
+/* Fonts End*/
+
+/* Custom Variables
+End*/
+
+/* Index Body Content 
+Start */
+
+/* Home Page Figure and Figcaption */
+
+.txtover {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    background-image: url(assets/images/index-imgs/index-backgrounds/sunflower3.jpg);
+    height: 50vh;
+
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Removes the parallax for mobile view*/
+  @media (max-width: 768px) {
+    .txtover {
+      background-attachment: local;
+    }
+    .txtover figcaption {
+      top: 47% !important;
+    }
+  }
+  
+  .txtover figcaption {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .index-header h1 {
+    color: var(--title-font-color);
+    font-family: 'Playfair Display';
+    font-size: 100px !important;
+    font-weight: 700 !important;
+    letter-spacing: 7px;
+
+    text-shadow: 1px 1px 14px rgb(58, 58, 58);
+
+
+  }
+
+  @media (max-width: 768px) {
+    .index-header h1 { 
+          font-size: 50px !important; 
+      }
+  }
+    /* For Cursor Border typing animation 
+    Start */
+  .type_writer-effect {
+    animation: blink .5s step-end infinite alternate;
+    white-space: nonwrap;
+    overflow: hidden;
+    border-right: 3px solid;
+    padding-right: 4px;
+
+    /* For Cursor Border typing animation 
+    End */
+
+  }
+
+/* Also For Cursor Border typing animation 
+Start*/
+  @keyframes blink {
+    50% {
+      border-color: transparent
+    }
+  }
+
+/* Also For Cursor Border typing animation 
+End*/
+
+
+
+/* Home Page Figure and Figcaption */
+
+/* Index Intro 
+Start */
+
+.index-intro {
+    margin-top: 70px;
+    margin-bottom: 140px;
+}
+
+.index-intro-header {
+    font-family: 'minion-pro';
+    font-size: 50px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    text-align: left;
+}
+
+@media (max-width: 768px) {
+  .index-intro-header {
+    text-align: center;
+  }
+}
+.index-intro-subheader {
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 30px !important;
+    color: var(--light-green-accent);
+}
+
+.index-intro-quote {
+    text-align: right;
+}
+.index-intro-quote-title {
+    font-family: 'minion-pro';
+    font-weight: 700 !important;
+}
+.index-intro-quote-subtitle {
+    font-family: 'minion-pro';
+    font-size: 14px;
+    color: #777c77;
+}
+.index-intro-quote-text {
+    font-family: 'minion-pro';
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+}
+
+
+@media (max-width: 768px) {
+
+    .index-intro-desc {
+        margin-bottom: 40px !important;
+    }
+
+    .index-intro-subheader {
+        text-align: center;
+    }
+
+    .index-intro-quote {
+        margin-top: 30px !important;
+        text-align: center;
+    }
+
+
+}
+
+/* Index Intro 
+End */
+
+
+/* Sponsors Slider 
+Start */
+
+.companies_slider {
+  background-color: var(--main-background-color);
+
+  /* added by us 
+  Start*/
+  margin-top: 70px;
+  margin-bottom: 70px;
+  /* added by us 
+  End */
+
+}
+
+.slider {
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, .125);
+}
+
+.slider::before, .slider::after {
+  background: linear-gradient(to right, var(--main-background-color) 0%, rgba(255, 255, 255, 0) 100%);
+  content: "";
+  height: 100px;
+  position: absolute;
+  width: 200px;
+  z-index: 2;
+
+}
+
+.slick-slide {
+    margin: 0px 20px;
+}
+
+.slick-slide img {
+  width: auto;
+  height: 70px;
+  margin: 0;
+  padding: 0;
+}
+
+.slick-slider
+{
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+            user-select: none;
+    -webkit-touch-callout: none;
+    -khtml-user-select: none;
+    -ms-touch-action: pan-y;
+        touch-action: pan-y;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.slick-list
+{
+    position: relative;
+    display: block;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+.slick-list:focus
+{
+    outline: none;
+}
+.slick-list.dragging
+{
+    cursor: pointer;
+    cursor: hand;
+}
+
+.slick-slider .slick-track,
+.slick-slider .slick-list
+{
+    -webkit-transform: translate3d(0, 0, 0);
+       -moz-transform: translate3d(0, 0, 0);
+        -ms-transform: translate3d(0, 0, 0);
+         -o-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+}
+
+.slick-track
+{
+    position: relative;
+    top: 0;
+    left: 0;
+    display: block;
+}
+.slick-track:before,
+.slick-track:after
+{
+    display: table;
+    content: '';
+}
+.slick-track:after
+{
+    clear: both;
+}
+.slick-loading .slick-track
+{
+    visibility: hidden;
+}
+
+.slick-slide
+{
+    display: none;
+    float: left;
+    height: 100px;
+    min-height: 1px;
+}
+[dir='rtl'] .slick-slide
+{
+    float: right;
+}
+.slick-slide img
+{
+    display: block;
+}
+.slick-slide.slick-loading img
+{
+    display: none;
+}
+.slick-slide.dragging img
+{
+    pointer-events: none;
+}
+.slick-initialized .slick-slide
+{
+    display: block;
+}
+.slick-loading .slick-slide
+{
+    visibility: hidden;
+}
+.slick-vertical .slick-slide
+{
+    display: block;
+    height: auto;
+    border: 1px solid transparent;
+}
+.slick-arrow.slick-hidden {
+    display: none;
+}
+
+/* Sponsors Slider 
+End */
+
+/* Index Theme
+ Start */
+
+.index-theme {
+  margin-top: 140px;
+  margin-bottom: 70px;
+  width: 100%;
+}
+
+.index-theme-title {
+  align-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.index-theme-subheader {
+  font-family: 'minion-pro';
+  font-size: 21px;
+  color: var(--light-green-accent);
+}
+
+.index-theme-header {
+  font-family: 'Playfair Display';
+  font-weight: 700 !important;
+  font-size: 140px;
+}
+
+.index-theme-emphasis {
+  color: var(--light-green-accent);
+  font-family: 'minion-pro';
+  font-weight: bold;
+}
+
+/* Making the Growth header responsive for phones 
+Start*/
+
+@media (max-width: 768px) {
+
+  .index-theme-subheader {
+    font-size: 17px;
+  }
+
+	.index-theme-header {
+    font-size: 80px;
+  }
+
+  .index-theme-desc {
+    font-size: 17px;
+  }
+
+}
+
+/* Making the Growth header responsive for phones 
+End*/
+
+/* Index Theme 
+End */
+
+/* Index Theme Testimonials 
+Start */
+
+.index-theme-testimonials {
+  margin-top: 70px;
+  padding-bottom: 70px;
+}
+
+/* 
+This section was deleted.
+However I still want to keep the code.
+
+.index-theme-testimonials-header {
+  font-family: 'minion-pro';
+  font-size: 28px;
+  padding-bottom: 42px;
+
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .index-theme-testimonials-header {
+    text-align: center;
+  }
+}
+
+*/ 
+
+.index-theme-testimonials-title {
+  font-family: 'Playfair Display';
+  font-weight: 700 !important;
+  font-size: 32px;
+}
+
+.index-theme-testimonials-subtitle {
+  font-family: 'minion-pro';
+  font-size: 14px;
+  color: #777c77;
+}
+
+.index-theme-testimonials-text {
+  border-top: 1px dashed var(--light-green-accent);
+  padding-top: 14px;
+  font-style: italic;
+  font-family: 'minion-pro';
+  font-size: 16px;
+}
+
+/* Post-it Note
+Copied from Codepen: https://codepen.io/mingabire/pen/kXPeqx
+Start
+*/
+
+.sticky {
+  -webkit-box-shadow: #DDD 0px 1px 2px;
+  position: relative;
+  background-color: var(--pink-accent);
+  border-color: #DEE184;
+  color: #47576B;
+  text-align: center;
+  margin: 2.5em 0px;
+  padding: 1.5em 1em;
+  -webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.25);
+  -moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.25);
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.25);
+  -webkit-transform: rotate(-2deg); /* Added rotation*/
+  -moz-transform: rotate(-2deg);
+  -o-transform: rotate(-2deg);
+  -ms-transform: rotate(-2deg);
+  transform: rotate(-2deg);
+  width: 480px;
+
+  font-size: 21px;
+
+  font-family: 'Indie Flower', cursive;
+  font-family: 'Give You Glory', cursive;
+  font-family: 'The Girl Next Door', cursive;
+  font-family: 'Gloria Hallelujah', cursive;
+}
+.post-it {
+  display: table;
+  margin: 1em auto 0;  
+}
+.taped {
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
+}
+.sticky.taped:after {
+  display: block;
+  content: "";
+  position: absolute; 
+  width: 110px;
+  height: 30px;
+  top: -21px;
+  left: 30%;    
+  border: 1px solid #fff;
+  background: rgba(254, 254, 254, .6);
+  -webkit-box-shadow: 0px 0 3px rgba(0,0,0,0.1);
+  -moz-box-shadow: 0px 0 3px rgba(0,0,0,0.1);
+  box-shadow: 0px 0 3px rgba(0,0,0,0.1);  
+}
+
+.note { 
+-webkit-box-shadow: #DDD 0px 1px 2px;
+  position: relative;
+  background-color: var(--pink-accent);
+  border-color: #DEE184;
+  color: #47576B;
+  text-align: center;
+  padding: 1.5em 1em;
+  -webkit-box-shadow: 0px 1px 3px rgba(0,0,0,0.25);
+  -moz-box-shadow: 0px 1px 3px rgba(0,0,0,0.25);
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.25);
+  -webkit-transform: rotate(2deg);
+  -moz-transform: rotate(2deg);
+  -o-transform: rotate(2deg);
+  -ms-transform: rotate(2deg);
+  transform: rotate(2deg);
+  width: 480px;
+
+  font-size: 1em;
+
+  font-family: 'Indie Flower', cursive;
+  font-family: 'Give You Glory', cursive;
+  font-family: 'The Girl Next Door', cursive;
+  font-family: 'Gloria Hallelujah', cursive; 
+
+}
+.note:after {
+  display: block;
+  content: "";
+  position: absolute; 
+  width: 110px;
+  height: 30px;
+  top: -21px;
+  right: 30%;    /* Changed this so that the tape is on the other side*/
+  border: 1px solid #fff;
+  background: rgba(254, 254, 254, .6);
+  -webkit-box-shadow: 0px 0 3px rgba(0,0,0,0.1);
+  -moz-box-shadow: 0px 0 3px rgba(0,0,0,0.1);
+  box-shadow: 0px 0 3px rgba(0,0,0,0.1);  
+}
+
+@media (max-width: 768px) {
+
+  .note {
+    width: 320px;
+    margin: 2.5em auto; /* To add spacing between the two notes with margins when viewed on mobile*/
+  }
+
+  .sticky {
+    width: 320px;
+  }
+}
+
+/* Post-it Note
+Copied from Codepen: https://codepen.io/mingabire/pen/kXPeqx
+End
+*/
+
+
+/* Index Theme Testimonials 
+End */
+
+
+/* Index Tree
+Begin */
+
+
+
+
+
+.index-tree {
+  padding-top: 140px;
+  padding-bottom: 140px;
+  width: 100%;
+}
+
+.index-tree-subheader {
+  font-family: 'minion-pro';
+  font-size: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .index-tree-subheader {
+    padding-top: 44px;
+  }
+}
+
+.index-tree-growth-emphasis {
+  color: var(--light-green-accent);
+  font-weight: bold;
+}
+
+.index-tree-header {
+  font-family: 'Playfair Display';
+  font-weight: 700 !important;
+  font-size: 100px;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding-top: 21px;
+  padding-bottom: 21px;
+
+}
+
+.index-tree-video {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#tree-video {
+  height: 75%;
+  width: 75%;
+}
+
+#index-tree-desc {
+  margin-top: 40px;
+}
+
+.index-tree-text {
+  font-family: 'minion-pro';
+  font-size: 16px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Index Tree
+End */
+
+
+/* Index Previous Issue 
+Start*/
+
+.index-previous-issue {
+  padding-top: 5vh;
+  padding-bottom: 5vh;
+  background-color: var(--alternate-background-color);
+}
+
+.index-previous-issue-title-column {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  align-content: flex-start;
+}
+
+.index-previous-issue-header {
+  font-family: 'Playfair Display';
+  font-weight: 700 !important;
+  font-size: 80px;
+}
+
+.index-previous-issue-desc-column {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  align-content: c;
+}
+
+.index-previous-issue-subheader {
+  font-family: 'minion-pro';
+  font-size: 16px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .index-previous-issue-header {
+    text-align: center;
+  }
+  .index-previous-issue-subheader {
+    padding-top: 28px;
+  }
+}
+
+.index-previous-growth-emphasis {
+  color: var(--dark-green-accent);
+  font-weight: bold;
+}
+
+.index-previous-issue-link {
+  font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  padding-top: 21px;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.index-previous-issue-link a{
+  text-decoration: underline wavy var(--light-green-accent) 2px !important;
+  text-underline-offset: 7px;
+  color: inherit;
+}
+
+/* Makes the underline color change on hover
+Start */
+.index-previous-issue-link a:hover {
+  text-decoration: underline wavy black 2px !important;
+  
+}
+
+/* Makes the underline color change on hover
+End */
+
+/* Index Previous Issue
+End*/
+
+/* Index Snippets 
+Start*/
+
+.index-snippets {
+  margin-top: 70px !important;
+  margin-bottom: 70px !important;
+}
+
+
+.index-snippets-overall-heading {
+  display: flex;
+  flex-flow: column wrap;
+  place-content: center;
+  align-items: flex-start;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+
+.index-snippets-header {
+  font-style: italic;
+  font-family: 'Playfair Display';
+  font-weight: 800 !important;
+  font-size: 140px;
+  padding-bottom: 21px;
+
+}
+
+.index-snippets-overall-piece {
+  display: flex;
+  flex-flow: column wrap;
+  place-content: center;
+  align-items: flex-end;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-end;
+}
+.index-snippets-single-piece {
+  margin-bottom: 32px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+
+}
+
+.index-snippets-title {
+  font-family: 'minion-pro';
+  font-weight: 700 !important;
+  font-size: 32px;
+}
+
+.index-snippets-subtitle {
+  font-family: 'minion-pro';
+  font-size: 16px;
+  color: #777c77;
+}
+
+.index-snippets-read-more {
+  font-family: 'minion-pro';
+  padding-top: 21px;
+  font-size: 16px;
+}
+
+.index-snippets-read-more a{
+  text-decoration: underline wavy var(--light-green-accent) 2px !important;
+  text-underline-offset: 7px;
+  color: inherit;
+}
+
+/* Makes the underline color change on hover
+Start */
+.index-snippets-read-more a:hover {
+  text-decoration: underline wavy black 2px !important;
+  
+}
+
+/* Makes the underline color change on hover
+End */
+
+.index-snippets-text-subheader {
+  padding-top: 21px;
+}
+
+.index-snippets-text {
+  border-top: 1px dashed var(--light-green-accent);
+  padding-top: 14px;
+  font-family: 'minion-pro';
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .index-snippets-text {
+    margin-top: 28px;
+  }
+}
+
+.index-snippets-img-container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  text-align: center;
+
+  padding-top: 1rem;
+
+}
+
+@media (max-width: 768px) {
+  .index-snippets-img-container {
+    padding-top: 2rem;
+  }
+}
+
+
+.index-snippets-img {
+  width: 400px;
+}
+
+.index-snippets-img-container h1 {
+  font-family: 'minion-pro';
+  font-weight: 700 !important;
+  font-size: 32px;
+
+  padding-top: 2rem;
+}
+
+.index-snippets-img-container p {
+  font-family: 'minion-pro';
+  font-size: 16px;
+  color: #777c77;
+  padding-top: 1rem;
+}
+/* Index Snippets 
+End*/
+
+/* Index Body Content 
+End */

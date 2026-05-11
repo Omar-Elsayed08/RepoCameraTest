@@ -1,0 +1,112 @@
+/* Shared Magnet stroke-draw loader (matches main site + 2026 edition).
+ * Per-page: set --magnet-loader-bg, --magnet-loader-stroke, --magnet-loader-title-fill on :root.
+ */
+:root {
+  --magnet-loader-bg: #faf3e0;
+  --magnet-loader-stroke: #000000;
+  --magnet-loader-title-fill: #001244;
+}
+
+html.page-loading,
+html.page-loading body {
+  overflow: hidden;
+  height: 100%;
+}
+
+.page-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--magnet-loader-bg);
+  transition: opacity 0.55s ease, visibility 0.55s ease;
+}
+
+html.page-loaded .page-loader {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.page-loader-inner {
+  width: min(72vmin, 420px);
+  height: min(72vmin, 420px);
+}
+
+.page-loader-inner svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#page-loader svg path[class^="xdcUuKEJ_"] {
+  stroke: var(--magnet-loader-stroke) !important;
+  animation-iteration-count: infinite !important;
+  animation-direction: alternate !important;
+  animation-fill-mode: both !important;
+}
+
+#page-loader svg .loader-title-stroke {
+  stroke: var(--magnet-loader-stroke) !important;
+  stroke-dasharray: 7200 7202;
+  stroke-dashoffset: 7201;
+  paint-order: stroke fill;
+  animation: magnet_loader_title_stroke 1.75s linear 0.22s infinite alternate;
+}
+
+@keyframes magnet_loader_title_stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #page-loader svg path[class^="xdcUuKEJ_"] {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+
+  #page-loader svg .loader-title-stroke {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    fill: var(--magnet-loader-title-fill);
+  }
+
+  .page-loader {
+    transition-duration: 0.12s;
+  }
+}
+
+/* Vivus stroke animation (dash lengths from SVG export) */
+.xdcUuKEJ_0 {
+  stroke-dasharray: 11803 11805;
+  stroke-dashoffset: 11804;
+  animation: xdcUuKEJ_draw 1333ms linear 0ms forwards;
+}
+.xdcUuKEJ_1 {
+  stroke-dasharray: 12831 12833;
+  stroke-dashoffset: 12832;
+  animation: xdcUuKEJ_draw 1333ms linear 166ms forwards;
+}
+.xdcUuKEJ_2 {
+  stroke-dasharray: 16977 16979;
+  stroke-dashoffset: 16978;
+  animation: xdcUuKEJ_draw 1333ms linear 333ms forwards;
+}
+.xdcUuKEJ_3 {
+  stroke-dasharray: 596 598;
+  stroke-dashoffset: 597;
+  animation: xdcUuKEJ_draw 1333ms linear 500ms forwards;
+}
+.xdcUuKEJ_4 {
+  stroke-dasharray: 2175 2177;
+  stroke-dashoffset: 2176;
+  animation: xdcUuKEJ_draw 1333ms linear 666ms forwards;
+}
+@keyframes xdcUuKEJ_draw {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}

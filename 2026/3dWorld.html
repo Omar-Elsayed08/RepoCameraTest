@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Free Cam test</title>
+	<meta charset=utf-8 />
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+	<a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:10002;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#2e1c0a;text-decoration:none;background:rgba(250,243,224,0.92);padding:8px 14px;border-radius:4px;border:1px solid rgba(46,28,10,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.08);">← The Magnet home</a>
+	<div id="info">
+		<br />
+		<span class="desktop-controls"></span>
+		<span class="mobile-controls" style="display: none;"></span>
+	</div>
+	<div id="container"></div>
+	<div id="scroll-container"><div id="scroll-spacer"></div></div>
+	<div id="mode-toggle">
+		<button id="btn-freecam" class="mode-btn active">Free Cam</button>
+		<button id="btn-flythrough" class="mode-btn">Flythrough</button>
+	</div>
+
+
+	<script type="importmap">
+		{
+				"imports": {
+					"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+					"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+					"cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+					"three-particle-fire": "https://unpkg.com/three-particle-fire@0.1.0/dist/three-particle-fire.module.js"
+				}
+			}
+		</script>
+
+	<script type="module">
+
+		import * as THREE from 'three';
+		import * as CANNON from 'cannon-es';
+		import particleFire from 'three-particle-fire';
+
+			import Stats from 'three/addons/libs/stats.module.js';
+
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+			import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+			import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+			import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+			import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+			import { LUTPass } from 'three/addons/postprocessing/LUTPass.js';
+			import { LUTCubeLoader } from 'three/addons/loaders/LUTCubeLoader.js';
+			import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+			import { Water } from 'three/addons/objects/Water2.js';
+
+			particleFire.install( { THREE: THREE } );
+
+			/** Consolidated post-processing shader (vignette, tilt-shift, film grain) */
+			const MasterPostShader = {
+				uniforms: {
+					'tDiffuse': { value: null },
+					'time': { value: 0.0 },
+					'resolution': { value: new THREE.Vector2( window.innerWidth, window.innerHeight ) },
+					'vignetteEnabled': { value: true },
+					'vignetteOffset': { value: 1.0 },
+					'vignetteDarkness': { value: 1.2 },
+					'grainEnabled': { value: true },
+					'grainIntensity': { value: 0.03 },
+					'tiltShiftEnabled': { value: false },
+					'focusY': { value: 0.5 },
+					'focusWidth': { value: 0.35 },
+					'blurAmount': { value: 2.0 }
+				},
+				vertexShader: `
+					varying vec2 vUv;
+					void main() {
+						vUv = uv;
+						gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+					}
+				`,
+				fragmentShader: `
+					uniform sampler2D tDiffuse;
+					uniform float time;
+					uniform vec2 resolution;
+					uniform bool vignetteEnabled;
+					uniform float vignetteOffset;
+					uniform float vignetteDarkness;
+					uniform bool grainEnabled;
+					uniform float grainIntensity;
+					uniform bool tiltShiftEnabled;
+					uniform float focusY;
+					uniform float focusWidth;
+					uniform float blurAmount;
+					varying vec2 vUv;
+					
+					float rand( vec2 co ) {
+						return fract( sin( dot( co.xy, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
+					}
+					
+					void main() {
+						vec2 texelSize = 1.0 / resolution;
+						vec4 color;
+						
+						if ( tiltShiftEnabled && blurAmount > 0.0 ) {
+							float dist = abs( vUv.y - focusY );
+							float blur = smoothstep( 0.0, focusWidth, dist ) * blurAmount;
+							vec4 sum = vec4( 0.0 );
+							float total = 0.0;
+							for ( float i = -2.0; i <= 2.0; i++ ) {
+								float weight = 1.0 - abs( i ) / 2.0;
+								vec2 offset = vec2( 0.0, i * blur * texelSize.y );
+								sum += texture2D( tDiffuse, vUv + offset ) * weight;
+								total += weight;
+							}
+							for ( float i = -2.0; i <= 2.0; i++ ) {
+								float weight = 1.0 - abs( i ) / 2.0;
+								vec2 offset = vec2( i * blur * texelSize.x * 0.5, 0.0 );
+								sum += texture2D( tDiffuse, vUv + offset ) * weight;
+								total += weight;
+							}
+							color = sum / total;
+						} else {
+							color = texture2D( tDiffuse, vUv );
+						}
+						
+						if ( grainEnabled && grainIntensity > 0.0 ) {
+							float grain = rand( vUv + fract( time ) ) * 2.0 - 1.0;
+							color.rgb += grain * grainIntensity;
+						}
+						
+						if ( vignetteEnabled ) {
+							vec2 uv = ( vUv - vec2( 0.5 ) ) * vec2( vignetteOffset );
+							float vignette = 1.0 - dot( uv, uv );
+							vignette = clamp( pow( vignette, vignetteDarkness ), 0.0, 1.0 );
+							color.rgb *= vignette;
+						}
+						
+						gl_FragColor = color;
+					}
+				`
+			};
+
+			/** Screen-space light shafts toward the theater screen (stable radial sampling; theater only via strength) */
+			const TheaterGodRaysShader = {
+				uniforms: {
+					tDiffuse: { value: null },
+					sunPosition: { value: new THREE.Vector2( 0.5, 0.5 ) },
+					decay: { value: 0.968 },
+					density: { value: 1.0 },
+					weight: { value: 0.56 },
+					exposure: { value: 0.52 },
+					strength: { value: 0.0 }
+				},
+				vertexShader: `
+					varying vec2 vUv;
+					void main() {
+						vUv = uv;
+						gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+					}
+				`,
+				fragmentShader: `
+					uniform sampler2D tDiffuse;
+					uniform vec2 sunPosition;
+					uniform float decay;
+					uniform float density;
+					uniform float weight;
+					uniform float exposure;
+					uniform float strength;
+					varying vec2 vUv;
+					void main() {
+						vec4 origC = texture2D( tDiffuse, vUv );
+						if ( strength < 0.001 ) {
+							gl_FragColor = origC;
+						} else {
+							vec3 orig = origC.rgb;
+							vec2 delta = ( vUv - sunPosition ) * density * ( 1.0 / 32.0 );
+							vec3 scatter = vec3( 0.0 );
+							vec2 coord = vUv;
+							float illum = 1.0;
+							for ( int i = 0; i < 32; i++ ) {
+								coord -= delta;
+								vec2 c = clamp( coord, vec2( 0.002 ), vec2( 0.998 ) );
+								vec3 s = texture2D( tDiffuse, c ).rgb;
+								float lum = dot( s, vec3( 0.2126, 0.7152, 0.0722 ) );
+								scatter += s * illum * weight * smoothstep( 0.01, 0.92, lum );
+								illum *= decay;
+							}
+							vec3 outRgb = orig + scatter * exposure * strength;
+							gl_FragColor = vec4( outRgb, origC.a );
+						}
+					}
+				`
+			};
+
+			const clock = new THREE.Clock();
+			const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test( navigator.userAgent );
+
+			const scene = new THREE.Scene();
+			scene.background = new THREE.Color( 0x88ccee );
+			scene.fog = new THREE.Fog( 0x88ccee, 0, isMobileDevice ? 30 : 50 );
+
+			const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 200 );
+			camera.rotation.order = 'YXZ';
+
+			const fillLight1 = new THREE.HemisphereLight( 0x8dc1de, 0x00668d, 1.5 );
+			fillLight1.position.set( 2, 1, 1 );
+			scene.add( fillLight1 );
+
+			const sun = new THREE.PointLight( 0xff0000, 1000, 0 );
+			sun.position.set( 50, 1, 200 );
+			sun.castShadow = true;
+			scene.add( sun );
+
+			const directionalLight = new THREE.DirectionalLight( 0xffffff, 2.5 );
+			directionalLight.position.set( -5, 25, -1 );
+			directionalLight.castShadow = true;
+			directionalLight.shadow.camera.near = 0.1;
+			directionalLight.shadow.camera.far = 100;
+			directionalLight.shadow.camera.right = 20;
+			directionalLight.shadow.camera.left = -20;
+			directionalLight.shadow.camera.top = 20;
+			directionalLight.shadow.camera.bottom = -20;
+			const shadowRes = isMobileDevice ? 256 : 512;
+			directionalLight.shadow.mapSize.width = shadowRes;
+			directionalLight.shadow.mapSize.height = shadowRes;
+			directionalLight.shadow.radius = 2;
+			directionalLight.shadow.bias = -0.0001;
+			directionalLight.shadow.autoUpdate = false;
+			directionalLight.shadow.needsUpdate = true;
+			scene.add( directionalLight );
+
+			const ambientLight = new THREE.AmbientLight( 0x404040, 0.5 );
+			scene.add( ambientLight );
+
+			/** Water plane */
+			let water = null;
+			const textureLoader = new THREE.TextureLoader();
+			const waterParams = { color: 0x0088aa, scale: 4, flowX: 1, flowY: 1 };
+			const waterTextureBase = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/water/';
+			
+			const container = document.getElementById( 'container' );
+			const isMobile = isMobileDevice;
+			
+			/** Water - full shader on all platforms, optimizations only affect other systems */
+			Promise.all( [
+				new Promise( ( resolve ) => {
+					textureLoader.load( waterTextureBase + 'Water_1_M_Normal.jpg', ( tex ) => {
+						tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+						resolve( tex );
+					}, undefined, () => resolve( null ) );
+				} ),
+				new Promise( ( resolve ) => {
+					textureLoader.load( waterTextureBase + 'Water_2_M_Normal.jpg', ( tex ) => {
+						tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+						resolve( tex );
+					}, undefined, () => resolve( null ) );
+				} )
+			] ).then( ( [ normalMap0, normalMap1 ] ) => {
+				if ( normalMap0 && normalMap1 ) {
+					const waterGeometry = new THREE.PlaneGeometry( 500, 500 );
+					water = new Water( waterGeometry, {
+						color: waterParams.color,
+						scale: waterParams.scale,
+						flowDirection: new THREE.Vector2( waterParams.flowX, waterParams.flowY ),
+						normalMap0: normalMap0,
+						normalMap1: normalMap1
+					} );
+					water.position.set( 0, -0.1, 0 );
+					water.rotation.x = Math.PI * -0.5;
+					scene.add( water );
+				}
+			} );
+
+			const renderer = new THREE.WebGLRenderer( { 
+				antialias: !isMobile,
+				powerPreference: isMobile ? 'low-power' : 'high-performance',
+				precision: isMobile ? 'mediump' : 'highp'
+			} );
+			renderer.setPixelRatio( isMobile ? 1.0 : Math.min( window.devicePixelRatio, 1.5 ) );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.setAnimationLoop( animate );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+			renderer.toneMapping = THREE.ACESFilmicToneMapping;
+			renderer.toneMappingExposure = 1.0;
+			container.appendChild( renderer.domElement );
+
+			const theaterHoverOverlay = document.createElement( 'div' );
+			theaterHoverOverlay.setAttribute( 'aria-hidden', 'true' );
+			theaterHoverOverlay.style.cssText = 'display:none;position:fixed;pointer-events:none;z-index:10060;box-sizing:border-box;background:transparent;border-radius:4px;';
+			document.body.appendChild( theaterHoverOverlay );
+
+			/** Stats and coordinates display - enabled for both mobile and desktop */
+			let stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+			let coordsDisplay = document.createElement( 'div' );
+			coordsDisplay.style.cssText = 'position:absolute;top:50px;left:0;background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;font:12px monospace;z-index:100;border-radius:0 4px 4px 0;';
+			coordsDisplay.innerHTML = 'X: 0.00<br>Y: 0.00<br>Z: 0.00';
+			container.appendChild( coordsDisplay );
+
+			const defaultPostProcessingSettings = {
+				bloomEnabled: true,
+				bloomStrength: 0.2,
+				bloomRadius: 1,
+				bloomThreshold: 1,
+				filmEnabled: true,
+				filmNoiseIntensity: 0.03,
+				vignetteEnabled: true,
+				vignetteOffset: 1.0,
+				vignetteDarkness: 1.2,
+				tiltShiftEnabled: false,
+				tiltShiftFocusY: 0.5,
+				tiltShiftFocusWidth: 0.35,
+				tiltShiftBlurAmount: 2.0,
+				lutEnabled: true,
+				lutIntensity: 1
+			};
+
+			function loadPostProcessingSettings() {
+				try {
+					const saved = localStorage.getItem( 'postProcessingSettings' );
+					if ( saved ) return { ...defaultPostProcessingSettings, ...JSON.parse( saved ) };
+				} catch ( e ) { console.warn( 'Failed to load post-processing settings:', e ); }
+				return { ...defaultPostProcessingSettings };
+			}
+
+			const postProcessingSettings = loadPostProcessingSettings();
+
+			function savePostProcessingSettings() {
+				try { localStorage.setItem( 'postProcessingSettings', JSON.stringify( postProcessingSettings ) ); }
+				catch ( e ) { console.warn( 'Failed to save post-processing settings:', e ); }
+			}
+
+			/** Post-processing pipeline */
+			const composer = new EffectComposer( renderer );
+
+			const renderPass = new RenderPass( scene, camera );
+			composer.addPass( renderPass );
+
+			const theaterGodRaysPass = new ShaderPass( TheaterGodRaysShader );
+			composer.addPass( theaterGodRaysPass );
+
+			const bloomPass = new UnrealBloomPass(
+				new THREE.Vector2( window.innerWidth, window.innerHeight ),
+				postProcessingSettings.bloomStrength,
+				postProcessingSettings.bloomRadius,
+				postProcessingSettings.bloomThreshold
+			);
+			composer.addPass( bloomPass );
+
+			const masterPostPass = new ShaderPass( MasterPostShader );
+			masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
+			composer.addPass( masterPostPass );
+
+			let lutPass = null;
+
+			function applyPostProcessingSettings() {
+				bloomPass.enabled = postProcessingSettings.bloomEnabled;
+				bloomPass.strength = postProcessingSettings.bloomStrength;
+				bloomPass.radius = postProcessingSettings.bloomRadius;
+				bloomPass.threshold = postProcessingSettings.bloomThreshold;
+				masterPostPass.uniforms[ 'grainEnabled' ].value = postProcessingSettings.filmEnabled;
+				masterPostPass.uniforms[ 'grainIntensity' ].value = postProcessingSettings.filmNoiseIntensity;
+				masterPostPass.uniforms[ 'vignetteEnabled' ].value = postProcessingSettings.vignetteEnabled;
+				masterPostPass.uniforms[ 'vignetteOffset' ].value = postProcessingSettings.vignetteOffset;
+				masterPostPass.uniforms[ 'vignetteDarkness' ].value = postProcessingSettings.vignetteDarkness;
+				masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = postProcessingSettings.tiltShiftEnabled;
+				masterPostPass.uniforms[ 'focusY' ].value = postProcessingSettings.tiltShiftFocusY;
+				masterPostPass.uniforms[ 'focusWidth' ].value = postProcessingSettings.tiltShiftFocusWidth;
+				masterPostPass.uniforms[ 'blurAmount' ].value = postProcessingSettings.tiltShiftBlurAmount;
+				if ( lutPass ) {
+					lutPass.enabled = postProcessingSettings.lutEnabled;
+					lutPass.intensity = postProcessingSettings.lutIntensity;
+				}
+			}
+
+			applyPostProcessingSettings();
+
+			const lutLoader = new LUTCubeLoader();
+
+			lutLoader.load( './freecam/HardBoost.cube', ( result ) => {
+				lutPass = new LUTPass( { lut: result.texture3D, intensity: postProcessingSettings.lutIntensity } );
+				lutPass.enabled = postProcessingSettings.lutEnabled;
+				composer.insertPass( lutPass, composer.passes.length - 1 );
+			} );
+
+			const outputPass = new OutputPass();
+			composer.addPass( outputPass );
+
+			/** Theatre.js Flythrough System — scroll-driven with smooth interpolation */
+			let flythroughState = null;
+			let flythroughActive = false;
+			let flythroughTime = 0;
+			let flythroughTargetTime = 0;
+			const _flythroughEuler = new THREE.Euler( 0, 0, 0, 'XYZ' );
+			const scrollContainer = document.getElementById( 'scroll-container' );
+			const scrollSpacer = document.getElementById( 'scroll-spacer' );
+			const btnFreecam = document.getElementById( 'btn-freecam' );
+			const btnFlythrough = document.getElementById( 'btn-flythrough' );
+
+			function cubicBez( t, p0, p1, p2, p3 ) {
+				const mt = 1 - t;
+				return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
+			}
+
+			function solveBezT( x, cx1, cx2 ) {
+				let lo = 0, hi = 1;
+				for ( let i = 0; i < 32; i++ ) {
+					const mid = ( lo + hi ) / 2;
+					if ( cubicBez( mid, 0, cx1, cx2, 1 ) < x ) lo = mid; else hi = mid;
+				}
+				return ( lo + hi ) / 2;
+			}
+
+			function evaluateTrack( keyframes, t ) {
+				if ( !keyframes || keyframes.length === 0 ) return 0;
+				if ( t <= keyframes[ 0 ].position ) return keyframes[ 0 ].value;
+				if ( t >= keyframes[ keyframes.length - 1 ].position ) return keyframes[ keyframes.length - 1 ].value;
+				let i = 0;
+				for ( ; i < keyframes.length - 1; i++ ) {
+					if ( t <= keyframes[ i + 1 ].position ) break;
+				}
+				const kfA = keyframes[ i ], kfB = keyframes[ i + 1 ];
+				const dt = kfB.position - kfA.position;
+				if ( dt < 0.0001 ) return kfA.value;
+				const tNorm = ( t - kfA.position ) / dt;
+				const u = solveBezT( tNorm, kfA.handles[ 2 ], kfB.handles[ 0 ] );
+				const vNorm = cubicBez( u, 0, kfA.handles[ 3 ], kfB.handles[ 1 ], 1 );
+				return kfA.value + vNorm * ( kfB.value - kfA.value );
+			}
+
+			function parseTheatreState( stateJson ) {
+				const sheet = stateJson.sheetsById?.[ 'Intro' ];
+				if ( !sheet?.sequence ) return null;
+				const seq = sheet.sequence;
+				const camData = seq.tracksByObject?.[ 'Camera' ];
+				if ( !camData ) return null;
+				const tracks = {};
+				for ( const [ propPath, trackId ] of Object.entries( camData.trackIdByPropPath || {} ) ) {
+					const td = camData.trackData[ trackId ];
+					if ( td?.keyframes ) tracks[ propPath ] = td.keyframes;
+				}
+				return { duration: seq.length, tracks };
+			}
+
+			function updateFlythrough( deltaTime ) {
+				if ( !flythroughState || !flythroughActive ) return;
+				const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+				if ( maxScroll > 0 ) {
+					flythroughTargetTime = ( scrollContainer.scrollTop / maxScroll ) * flythroughState.duration;
+				}
+				const smoothing = 1 - Math.exp( -6 * deltaTime );
+				flythroughTime += ( flythroughTargetTime - flythroughTime ) * smoothing;
+				const tr = flythroughState.tracks;
+				camera.position.set(
+					evaluateTrack( tr[ '["position","x"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["position","y"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["position","z"]' ], flythroughTime )
+				);
+				_flythroughEuler.set(
+					evaluateTrack( tr[ '["rotation","x"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["rotation","y"]' ], flythroughTime ),
+					evaluateTrack( tr[ '["rotation","z"]' ], flythroughTime ),
+					'XYZ'
+				);
+				camera.quaternion.setFromEuler( _flythroughEuler );
+			}
+
+			function enterFlythrough() {
+				if ( !flythroughState ) return;
+				flythroughActive = true;
+				flythroughTime = 0;
+				flythroughTargetTime = 0;
+				scrollContainer.style.display = 'block';
+				scrollContainer.scrollTop = 0;
+				if ( document.pointerLockElement ) document.exitPointerLock();
+				btnFlythrough.classList.add( 'active' );
+				btnFreecam.classList.remove( 'active' );
+			}
+
+			function exitFlythrough() {
+				flythroughActive = false;
+				scrollContainer.style.display = 'none';
+				if ( playerBody ) {
+					playerBody.position.set( camera.position.x, camera.position.y, camera.position.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					smoothedCameraPos.copy( camera.position );
+				}
+				camera.rotation.order = 'YXZ';
+				btnFreecam.classList.add( 'active' );
+				btnFlythrough.classList.remove( 'active' );
+			}
+
+			btnFreecam.addEventListener( 'click', () => { if ( flythroughActive ) exitFlythrough(); } );
+			btnFlythrough.addEventListener( 'click', () => { if ( !flythroughActive && flythroughState ) enterFlythrough(); } );
+
+			let _flyTouchY = null;
+			scrollContainer.addEventListener( 'touchstart', ( e ) => {
+				if ( !flythroughActive || e.touches.length !== 1 ) return;
+				_flyTouchY = e.touches[ 0 ].clientY;
+			}, { passive: true } );
+			scrollContainer.addEventListener( 'touchmove', ( e ) => {
+				if ( !flythroughActive || _flyTouchY === null || e.touches.length !== 1 ) return;
+				e.preventDefault();
+				const currentY = e.touches[ 0 ].clientY;
+				const delta = currentY - _flyTouchY;
+				scrollContainer.scrollTop += delta;
+				_flyTouchY = currentY;
+			}, { passive: false } );
+			scrollContainer.addEventListener( 'touchend', () => { _flyTouchY = null; }, { passive: true } );
+			scrollContainer.addEventListener( 'touchcancel', () => { _flyTouchY = null; }, { passive: true } );
+
+			fetch( './freecam/flythrough-state.json' )
+				.then( r => r.json() )
+				.then( state => {
+					flythroughState = parseTheatreState( state );
+					if ( flythroughState ) {
+						const scrollPages = Math.max( 5, Math.ceil( flythroughState.duration ) );
+						scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
+						console.log( 'Flythrough loaded: ' + flythroughState.duration.toFixed( 1 ) + 's, ' + scrollPages + ' scroll pages' );
+					}
+				} )
+				.catch( e => console.warn( 'Flythrough state not loaded:', e ) );
+
+			const PHYSICS_TIMESTEP = 1/60;
+			const SPAWN_POSITION = { x: 1.74, y: 1.95, z: 93.46 };
+			const PLAYER_HEIGHT = 1.8;
+			const PLAYER_RADIUS = 0.4;
+			const PLAYER_EYE_HEIGHT = 1.6;
+			let cameraMode = 'firstPerson';
+
+			/** Default environment settings */
+			const defaultEnvSettings = {
+				backgroundColor: '#88ccee',
+				fogEnabled: false,
+				fogColor: '#88ccee',
+				fogNear: 0,
+				fogFar: 50,
+				hemiSkyColor: '#ffffff',
+				hemiGroundColor: '#000000',
+				hemiIntensity: 0,
+				sunColor: '#ffffff',
+				sunIntensity: 0.3,
+				sunPosX: -5,
+				sunPosY: 25,
+				sunPosZ: -1,
+				ambientColor: '#ffffff',
+				ambientIntensity: 0.4,
+				toneMapping: 'ACESFilmic',
+				exposure: 1.0,
+				showCollisionWireframe: false,
+				showColliderVisualization: false,
+				cameraMode: 'firstPerson',
+				thirdPersonDistance: 5,
+				thirdPersonHeight: 2,
+				thirdPersonAngle: 0.3,
+				moveSpeed: 9,
+				acceleration: 50,
+				deceleration: 30,
+				gravity: 25,
+				jumpVelocity: 6,
+				friction: 0,
+				airControl: 0.3,
+				playerMass: 10,
+				cameraSmoothing: 30
+			};
+
+			function loadSettings() {
+				try {
+					const saved = localStorage.getItem( 'envSettings' );
+					if ( saved ) return { ...defaultEnvSettings, ...JSON.parse( saved ) };
+				} catch ( e ) { console.warn( 'Failed to load settings:', e ); }
+				return { ...defaultEnvSettings };
+			}
+
+			function saveSettings() {
+				try { localStorage.setItem( 'envSettings', JSON.stringify( envSettings ) ); }
+				catch ( e ) { console.warn( 'Failed to save settings:', e ); }
+			}
+/**
+ * Creates a debounced function that delays invoking func until after 
+ * wait milliseconds have elapsed since the last time the debounced function 
+ * was invoked.
+ *
+ * @param {Function} func The function to debounce.
+ * @param {number} wait The number of milliseconds to wait (cooldown period).
+ * @returns {Function} A new, debounced function.
+ */
+ function debounce(func, wait = 500) {
+    let timeoutId;
+
+    return function(...args) {
+        // 'this' context is preserved using apply or call
+        const context = this; 
+
+        // Clear the previous timeout if the function is called again
+        clearTimeout(timeoutId); 
+
+        // Set a new timeout to execute the function after the wait period
+        timeoutId = setTimeout(() => {
+            func.apply(context, args);
+        }, wait);
+    };
+}
+			const envSettings = loadSettings();
+
+			/** Physics world */
+			const world = new CANNON.World();
+			world.gravity.set( 0, -envSettings.gravity, 0 );
+			world.broadphase = new CANNON.SAPBroadphase( world );
+			world.allowSleep = false;
+			world.solver.iterations = 10;
+
+			const groundMaterial = new CANNON.Material( 'ground' );
+			const playerMaterial = new CANNON.Material( 'player' );
+			const playerGroundContact = new CANNON.ContactMaterial( playerMaterial, groundMaterial, {
+				friction: envSettings.friction,
+				restitution: 0.0
+			} );
+			world.addContactMaterial( playerGroundContact );
+
+			const playerBody = new CANNON.Body( {
+				mass: envSettings.playerMass,
+				material: playerMaterial,
+				linearDamping: 0.01,
+				angularDamping: 1.0,
+				fixedRotation: true,
+				position: new CANNON.Vec3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z )
+			} );
+
+			const cylinderHeight = PLAYER_HEIGHT - PLAYER_RADIUS * 2;
+			const cylinderShape = new CANNON.Cylinder( PLAYER_RADIUS, PLAYER_RADIUS, cylinderHeight, 8 );
+			const topSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
+			const bottomSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
+
+			const cylinderQuaternion = new CANNON.Quaternion();
+			cylinderQuaternion.setFromAxisAngle( new CANNON.Vec3( 1, 0, 0 ), Math.PI / 2 );
+			playerBody.addShape( cylinderShape, new CANNON.Vec3( 0, 0, 0 ), cylinderQuaternion );
+			playerBody.addShape( topSphereShape, new CANNON.Vec3( 0, cylinderHeight / 2, 0 ) );
+			playerBody.addShape( bottomSphereShape, new CANNON.Vec3( 0, -cylinderHeight / 2, 0 ) );
+			world.addBody( playerBody );
+
+			let playerOnFloor = false;
+			let groundContactNormal = new CANNON.Vec3();
+			const upAxis = new CANNON.Vec3( 0, 1, 0 );
+
+			playerBody.addEventListener( 'collide', ( event ) => {
+				const contact = event.contact;
+				let contactNormal;
+				if ( contact.bi.id === playerBody.id ) {
+					contactNormal = contact.ni.negate( new CANNON.Vec3() );
+				} else {
+					contactNormal = contact.ni;
+				}
+				if ( contactNormal.dot( upAxis ) > 0.5 ) {
+					playerOnFloor = true;
+					groundContactNormal.copy( contactNormal );
+				}
+			} );
+
+			const playerDirection = new THREE.Vector3();
+			const keyStates = {};
+
+			function applySettings() {
+				scene.background = new THREE.Color( envSettings.backgroundColor );
+				scene.fog = envSettings.fogEnabled ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null;
+				fillLight1.color.set( envSettings.hemiSkyColor );
+				fillLight1.groundColor.set( envSettings.hemiGroundColor );
+				fillLight1.intensity = envSettings.hemiIntensity;
+				directionalLight.color.set( envSettings.sunColor );
+				directionalLight.intensity = envSettings.sunIntensity;
+				directionalLight.position.set( envSettings.sunPosX, envSettings.sunPosY, envSettings.sunPosZ );
+				ambientLight.color.set( envSettings.ambientColor );
+				ambientLight.intensity = envSettings.ambientIntensity;
+				renderer.toneMapping = toneMappingOptions[ envSettings.toneMapping ];
+				renderer.toneMappingExposure = envSettings.exposure;
+				if ( world ) world.gravity.set( 0, -envSettings.gravity, 0 );
+				if ( playerGroundContact ) playerGroundContact.friction = envSettings.friction;
+				if ( playerBody ) { playerBody.mass = envSettings.playerMass; playerBody.updateMassProperties(); }
+			}
+
+			const toneMappingOptions = {
+				'None': THREE.NoToneMapping,
+				'Linear': THREE.LinearToneMapping,
+				'Reinhard': THREE.ReinhardToneMapping,
+				'Cineon': THREE.CineonToneMapping,
+				'ACESFilmic': THREE.ACESFilmicToneMapping
+			};
+
+			document.addEventListener( 'keydown', ( event ) => {
+
+				keyStates[ event.code ] = true;
+
+			} );
+
+			document.addEventListener( 'keyup', ( event ) => {
+
+				keyStates[ event.code ] = false;
+
+			} );
+
+			function theaterClickIsOnCanvas( e ) {
+				const canvas = renderer?.domElement;
+				if ( !canvas ) return false;
+				if ( document.pointerLockElement === document.body ) {
+					const r = canvas.getBoundingClientRect();
+					return e.clientX >= r.left && e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom;
+				}
+				return e.target === canvas || canvas.contains( e.target );
+			}
+
+			window.addEventListener( 'mousedown', ( e ) => {
+				if ( e.button !== 0 ) return;
+				if ( !theaterClickIsOnCanvas( e ) ) return;
+				if ( activeMap === 'theater' && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
+					enterTheaterVideoFullscreen();
+					e.preventDefault();
+					return;
+				}
+				if ( !flythroughActive ) document.body.requestPointerLock();
+			}, true );
+
+			document.body.addEventListener( 'mousemove', ( event ) => {
+
+				if ( !flythroughActive && document.pointerLockElement === document.body ) {
+
+					if ( isTheaterVideoFullscreen() ) return;
+					camera.rotation.y -= event.movementX / 500;
+					camera.rotation.x -= event.movementY / 500;
+
+				}
+
+			} );
+
+			/** Mobile touch controls */
+			const touchState = {
+				active: false, startX: 0, startY: 0, currentX: 0, currentY: 0,
+				lastX: 0, lastY: 0, isHolding: false, holdThreshold: 15,
+				touchStartTime: 0, holdDelay: 100
+			};
+			let mobileMovingForward = false;
+			const touchSensitivity = 0.003;
+			const isTouchDevice = isMobile || ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 );
+			
+			container.addEventListener( 'touchstart', ( e ) => {
+				e.preventDefault();
+				if ( e.touches.length === 1 ) {
+					const t = e.touches[ 0 ];
+					touchState.active = true;
+					touchState.startX = touchState.currentX = touchState.lastX = t.clientX;
+					touchState.startY = touchState.currentY = touchState.lastY = t.clientY;
+					touchState.isHolding = true;
+					touchState.touchStartTime = performance.now();
+					mobileMovingForward = false;
+				}
+			}, { passive: false } );
+			
+			container.addEventListener( 'touchmove', ( e ) => {
+				e.preventDefault();
+				if ( isTheaterVideoFullscreen() ) return;
+				if ( !touchState.active || e.touches.length !== 1 ) return;
+				const t = e.touches[ 0 ];
+				touchState.currentX = t.clientX;
+				touchState.currentY = t.clientY;
+				const deltaX = touchState.currentX - touchState.lastX;
+				const deltaY = touchState.currentY - touchState.lastY;
+				const totalMovement = Math.hypot( touchState.currentX - touchState.startX, touchState.currentY - touchState.startY );
+				
+				if ( totalMovement > touchState.holdThreshold ) {
+					touchState.isHolding = false;
+					mobileMovingForward = false;
+					camera.rotation.y -= deltaX * touchSensitivity;
+					camera.rotation.x -= deltaY * touchSensitivity;
+					camera.rotation.x = Math.max( -Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
+				} else if ( performance.now() - touchState.touchStartTime > touchState.holdDelay && touchState.isHolding ) {
+					mobileMovingForward = true;
+				}
+				touchState.lastX = touchState.currentX;
+				touchState.lastY = touchState.currentY;
+			}, { passive: false } );
+			
+			container.addEventListener( 'touchend', ( e ) => {
+				e.preventDefault();
+				if ( activeMap === 'theater' && e.changedTouches.length === 1 && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
+					enterTheaterVideoFullscreen();
+				}
+				touchState.active = touchState.isHolding = mobileMovingForward = false;
+			}, { passive: false } );
+			
+			container.addEventListener( 'touchcancel', () => {
+				touchState.active = touchState.isHolding = mobileMovingForward = false;
+			} );
+			
+			function updateMobileInput() {
+				if ( touchState.active && touchState.isHolding && performance.now() - touchState.touchStartTime > touchState.holdDelay ) {
+					mobileMovingForward = true;
+				}
+			}
+			
+			if ( isTouchDevice ) {
+				document.querySelector( '.desktop-controls' ).style.display = 'none';
+				document.querySelector( '.mobile-controls' ).style.display = 'inline';
+			}
+
+			window.addEventListener( 'resize', onWindowResize );
+
+			function onWindowResize() {
+				const h = window.innerHeight;
+				camera.aspect = window.innerWidth / h;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, h );
+				composer.setSize( window.innerWidth, h );
+				bloomPass.setSize( window.innerWidth, h );
+				masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, h );
+				for ( let i = 0; i < torchFireMeshes.length; i ++ ) {
+					torchFireMeshes[ i ].material.setPerspective( camera.fov, h );
+				}
+			}
+
+			function createColliderVisualization() {
+				if ( colliderVisualization ) scene.remove( colliderVisualization );
+				const group = new THREE.Group();
+				const radius = PLAYER_RADIUS;
+				const cylHeight = PLAYER_HEIGHT - ( PLAYER_RADIUS * 2 );
+				const lineMat = new THREE.LineBasicMaterial( { color: 0xff0000, transparent: true, opacity: 0.9 } );
+				
+				const cylGeo = new THREE.CylinderGeometry( radius, radius, cylHeight, 16, 1 );
+				group.add( new THREE.LineSegments( new THREE.EdgesGeometry( cylGeo ), lineMat ) );
+				
+				const topGeo = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2 );
+				const topLines = new THREE.LineSegments( new THREE.EdgesGeometry( topGeo ), lineMat );
+				topLines.position.y = cylHeight / 2;
+				group.add( topLines );
+				
+				const botGeo = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2 );
+				const botLines = new THREE.LineSegments( new THREE.EdgesGeometry( botGeo ), lineMat );
+				botLines.position.y = -cylHeight / 2;
+				group.add( botLines );
+				
+				const topMarker = new THREE.Mesh( new THREE.CircleGeometry( radius * 0.25, 16 ), new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } ) );
+				topMarker.rotation.x = -Math.PI / 2;
+				topMarker.position.y = PLAYER_HEIGHT / 2;
+				group.add( topMarker );
+				
+				const botMarker = new THREE.Mesh( new THREE.CircleGeometry( radius * 0.25, 16 ), new THREE.MeshBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } ) );
+				botMarker.rotation.x = -Math.PI / 2;
+				botMarker.position.y = -PLAYER_HEIGHT / 2;
+				group.add( botMarker );
+				
+				colliderVisualization = group;
+				colliderVisualization.name = 'PlayerColliderVisualization';
+				scene.add( colliderVisualization );
+			}
+
+			function updateColliderVisualization() {
+				if ( !playerBody || !colliderVisualization ) return;
+				colliderVisualization.position.set( playerBody.position.x, playerBody.position.y, playerBody.position.z );
+			}
+
+			const targetVelocity = new THREE.Vector3( 0, 0, 0 );
+			const JUMP_DEBOUNCE_SEC = 0.6;
+			let jumpCooldownRemaining = 0;
+			
+			const _rayFrom = new CANNON.Vec3();
+			const _rayTo = new CANNON.Vec3();
+			const _rayResult = new CANNON.RaycastResult();
+			
+			function checkGroundContact() {
+				if ( !playerBody ) return;
+				_rayFrom.set( playerBody.position.x, playerBody.position.y, playerBody.position.z );
+				_rayTo.set( playerBody.position.x, playerBody.position.y - PLAYER_HEIGHT / 2 - 0.2, playerBody.position.z );
+				world.raycastClosest( _rayFrom, _rayTo, {}, _rayResult );
+				playerOnFloor = _rayResult.hasHit && _rayResult.distance < PLAYER_HEIGHT / 2 + 0.15;
+			}
+
+			const _inputDirection = new THREE.Vector3();
+			const _currentHorizontalVel = new THREE.Vector3();
+			const _velocityDiff = new THREE.Vector3();
+			
+			function applyPlayerMovement( deltaTime ) {
+				if ( !playerBody ) return;
+				jumpCooldownRemaining = Math.max( 0, jumpCooldownRemaining - deltaTime );
+				_inputDirection.set( 0, 0, 0 );
+				
+				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
+				if ( keyStates[ 'KeyS' ] ) { const f = getForwardVector(); _inputDirection.x -= f.x; _inputDirection.z -= f.z; }
+				if ( keyStates[ 'KeyA' ] ) { const s = getSideVector(); _inputDirection.x -= s.x; _inputDirection.z -= s.z; }
+				if ( keyStates[ 'KeyD' ] ) { const s = getSideVector(); _inputDirection.x += s.x; _inputDirection.z += s.z; }
+				if ( mobileMovingForward ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
+				
+				const hasInput = _inputDirection.lengthSq() > 0.001;
+				if ( hasInput ) _inputDirection.normalize();
+				
+				_currentHorizontalVel.set( playerBody.velocity.x, 0, playerBody.velocity.z );
+				hasInput ? targetVelocity.copy( _inputDirection ).multiplyScalar( envSettings.moveSpeed ) : targetVelocity.set( 0, 0, 0 );
+				
+				const accelRate = playerOnFloor ? envSettings.acceleration : envSettings.acceleration * envSettings.airControl;
+				const decelRate = playerOnFloor ? envSettings.deceleration : envSettings.deceleration * envSettings.airControl * 0.5;
+				_velocityDiff.subVectors( targetVelocity, _currentHorizontalVel );
+				const velocityDiffLength = _velocityDiff.length();
+				
+				if ( velocityDiffLength > 0.01 ) {
+					const rate = hasInput ? accelRate : decelRate;
+					const maxChange = rate * deltaTime;
+					if ( velocityDiffLength <= maxChange || accelRate > 150 ) {
+						playerBody.velocity.x = targetVelocity.x;
+						playerBody.velocity.z = targetVelocity.z;
+					} else {
+						_velocityDiff.normalize().multiplyScalar( maxChange );
+						playerBody.velocity.x += _velocityDiff.x;
+						playerBody.velocity.z += _velocityDiff.z;
+					}
+				}
+				
+				const horizontalSpeed = Math.hypot( playerBody.velocity.x, playerBody.velocity.z );
+				if ( horizontalSpeed > envSettings.moveSpeed ) {
+					const scale = envSettings.moveSpeed / horizontalSpeed;
+					playerBody.velocity.x *= scale;
+					playerBody.velocity.z *= scale;
+				}
+				
+				if ( keyStates[ 'Space' ] && playerOnFloor && jumpCooldownRemaining <= 0 ) {
+					playerBody.velocity.y = envSettings.jumpVelocity;
+					keyStates[ 'Space' ] = false;
+					jumpCooldownRemaining = JUMP_DEBOUNCE_SEC;
+				}
+			}
+
+			const smoothedCameraPos = new THREE.Vector3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
+			/** Main world → theater portal at (-12, 7, -30); exit theater near back row */
+			const THEATER_PORTAL_MAIN = new THREE.Vector3( -12, 7, -30 );
+			const THEATER_PORTAL_ENTER_RADIUS = 5;
+			const THEATER_EXIT_POS = new THREE.Vector3( 0, 2, 20 );
+			const THEATER_PORTAL_EXIT_RADIUS = 4;
+			const THEATER_SPAWN = new THREE.Vector3( 0, 1.95, 12 );
+			const MAIN_RETURN_POS = new THREE.Vector3( -8, 7, -26 );
+			let activeMap = 'main';
+			let mainMapRoot = null;
+			const mainWorldStaticBodies = [];
+			let theaterMapCache = null;
+			let mapTeleportCooldownUntil = 0;
+			/** While in theater: bloom is off so the screen has no bloom halo (UnrealBloomPass is scene-wide). */
+			let theaterSavedBloomEnabled = null;
+			const theaterScreenRaycaster = new THREE.Raycaster();
+			const theaterScreenNdcCenter = new THREE.Vector2( 0, 0 );
+			const _theaterScrVerts = [
+				new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
+			];
+			const _theaterProj = new THREE.Vector3();
+			const _theaterGodRayWorld = new THREE.Vector3();
+
+			function isTheaterVideoFullscreen() {
+				const v = theaterMapCache?.videoEl;
+				if ( !v ) return false;
+				if ( document.fullscreenElement === v || document.webkitFullscreenElement === v ) return true;
+				return !!v.webkitDisplayingFullscreen;
+			}
+
+			function exitTheaterVideoFullscreenIfActive() {
+				const v = theaterMapCache?.videoEl;
+				if ( !v ) return;
+				if ( document.fullscreenElement === v || document.webkitFullscreenElement === v ) {
+					const ex = document.exitFullscreen || document.webkitExitFullscreen;
+					if ( ex ) ex.call( document ).catch( () => {} );
+				}
+			}
+
+			function onTheaterDocumentFullscreenChange() {
+				const v = theaterMapCache?.videoEl;
+				if ( !v ) return;
+				if ( document.fullscreenElement === v || document.webkitFullscreenElement === v ) return;
+				if ( v.webkitDisplayingFullscreen ) return;
+				v.controls = false;
+				v.muted = true;
+				restoreTheaterVideoDomPeek();
+			}
+
+			document.addEventListener( 'fullscreenchange', onTheaterDocumentFullscreenChange );
+			document.addEventListener( 'webkitfullscreenchange', onTheaterDocumentFullscreenChange );
+
+			function enterTheaterVideoFullscreen() {
+				if ( activeMap !== 'theater' || !theaterMapCache?.videoEl ) return;
+				if ( isTheaterVideoFullscreen() ) return;
+				const v = theaterMapCache.videoEl;
+				if ( document.pointerLockElement ) document.exitPointerLock();
+				v.muted = false;
+				v.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;max-width:100vw;max-height:100vh;object-fit:contain;background:#000;z-index:2147483646;opacity:1;pointer-events:auto;';
+				v.play().catch( () => {} );
+				let req = null;
+				if ( typeof v.requestFullscreen === 'function' ) req = v.requestFullscreen();
+				else if ( typeof v.webkitRequestFullscreen === 'function' ) req = v.webkitRequestFullscreen();
+				else if ( typeof v.mozRequestFullScreen === 'function' ) req = v.mozRequestFullScreen();
+				else if ( typeof v.msRequestFullscreen === 'function' ) req = v.msRequestFullscreen();
+				if ( req && typeof req.then === 'function' ) {
+					req.then( () => { v.controls = true; } ).catch( () => {
+						v.controls = false;
+						v.muted = true;
+						restoreTheaterVideoDomPeek();
+					} );
+				} else if ( typeof v.webkitEnterFullScreen === 'function' ) {
+					try {
+						v.webkitEnterFullScreen();
+						v.controls = true;
+					} catch ( err ) {
+						v.controls = false;
+						v.muted = true;
+						restoreTheaterVideoDomPeek();
+					}
+				} else {
+					v.controls = false;
+					v.muted = true;
+					restoreTheaterVideoDomPeek();
+				}
+			}
+
+			function syncTheaterScreenRaycastMatrices() {
+				camera.updateMatrixWorld( true );
+				if ( theaterMapCache?.screenFront ) theaterMapCache.screenFront.updateMatrixWorld( true );
+			}
+			const _targetCameraPos = new THREE.Vector3();
+			const _playerCenter = new THREE.Vector3();
+			const _forward = new THREE.Vector3();
+			const _offset = new THREE.Vector3();
+			const _lookAtTarget = new THREE.Vector3();
+			
+			/** Physics sub-steps: limit to prevent "spiral of death" when frames drop */
+			const PHYSICS_MAX_SUBSTEPS = 2;
+			
+			function updatePhysics( deltaTime ) {
+				if ( !playerBody ) return;
+				checkGroundContact();
+				applyPlayerMovement( deltaTime );
+				world.step( PHYSICS_TIMESTEP, deltaTime, PHYSICS_MAX_SUBSTEPS );
+				updateColliderVisualization();
+				
+				const playerPos = playerBody.position;
+				const eyeHeight = PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT;
+				_targetCameraPos.set( playerPos.x, playerPos.y + eyeHeight, playerPos.z );
+				smoothedCameraPos.lerp( _targetCameraPos, Math.min( 1, deltaTime * envSettings.cameraSmoothing ) );
+				
+				if ( cameraMode === 'firstPerson' ) {
+					camera.position.copy( smoothedCameraPos );
+				} else {
+					_playerCenter.copy( smoothedCameraPos );
+					camera.getWorldDirection( _forward );
+					_forward.y = 0;
+					_forward.normalize();
+					_offset.copy( _forward ).multiplyScalar( -envSettings.thirdPersonDistance );
+					_offset.y = envSettings.thirdPersonHeight;
+					camera.position.copy( _playerCenter ).add( _offset );
+					_lookAtTarget.copy( _playerCenter );
+					_lookAtTarget.y += envSettings.thirdPersonAngle * 2;
+					camera.lookAt( _lookAtTarget );
+				}
+			}
+
+			function createTrimeshFromGeometry( geometry, scale = new THREE.Vector3( 1, 1, 1 ) ) {
+				const position = geometry.attributes.position;
+				const vertices = [], indices = [];
+				for ( let i = 0; i < position.count; i++ ) {
+					vertices.push( position.getX( i ) * scale.x, position.getY( i ) * scale.y, position.getZ( i ) * scale.z );
+				}
+				if ( geometry.index ) {
+					for ( let i = 0; i < geometry.index.count; i++ ) indices.push( geometry.index.getX( i ) );
+				} else {
+					for ( let i = 0; i < position.count; i++ ) indices.push( i );
+				}
+				return new CANNON.Trimesh( vertices, indices );
+			}
+
+			function addCollisionMeshToWorld( mesh ) {
+				mesh.traverse( ( child ) => {
+					if ( child.isMesh && child.geometry ) {
+						child.updateMatrixWorld( true );
+						const worldPos = new THREE.Vector3();
+						const worldQuat = new THREE.Quaternion();
+						const worldScale = new THREE.Vector3();
+						child.matrixWorld.decompose( worldPos, worldQuat, worldScale );
+						
+						/** 
+						 * Optimization: Reference geometry directly instead of cloning.
+						 * Pass scale to createTrimeshFromGeometry to apply during vertex extraction.
+						 * This avoids doubling RAM usage on high-poly collision meshes.
+						 */
+						const trimesh = createTrimeshFromGeometry( child.geometry, worldScale );
+						const body = new CANNON.Body( {
+							mass: 0,
+							material: groundMaterial,
+							position: new CANNON.Vec3( worldPos.x, worldPos.y, worldPos.z ),
+							quaternion: new CANNON.Quaternion( worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w )
+						} );
+						body.addShape( trimesh );
+						world.addBody( body );
+						mainWorldStaticBodies.push( body );
+					}
+				} );
+			}
+
+			function getForwardVector() {
+				camera.getWorldDirection( playerDirection );
+				playerDirection.y = 0;
+				playerDirection.normalize();
+				return playerDirection;
+			}
+
+			function getSideVector() {
+				camera.getWorldDirection( playerDirection );
+				playerDirection.y = 0;
+				playerDirection.normalize();
+				playerDirection.cross( camera.up );
+				return playerDirection;
+			}
+
+			let collisionWireframe = null;
+			let colliderVisualization = null;
+			const torchFireMeshes = [];
+			const torchPointLights = [];
+
+			function setMainMapTorchEffectsVisible( visible ) {
+				for ( let i = 0; i < torchFireMeshes.length; i ++ ) torchFireMeshes[ i ].visible = visible;
+				for ( let i = 0; i < torchPointLights.length; i ++ ) torchPointLights[ i ].visible = visible;
+			}
+
+			/** Point lights + three-particle-fire red emitter per object whose name contains "torch" (github.com/yomotsu/three-particle-fire basic.html). */
+			function addTorchPointLights( root ) {
+				for ( let i = torchFireMeshes.length - 1; i >= 0; i -- ) {
+					const m = torchFireMeshes.pop();
+					scene.remove( m );
+					m.geometry.dispose();
+					m.material.dispose();
+				}
+				for ( let i = torchPointLights.length - 1; i >= 0; i -- ) {
+					const pl = torchPointLights.pop();
+					scene.remove( pl );
+				}
+				root.updateMatrixWorld( true );
+				const studsAbove = 0.1;
+				const torchLightColor = 0xff0000;
+				const torchLightIntensity =50;
+				const torchLightDistance = 0;
+				const fireRadius = 0.5;
+				const fireHeight = 5;
+				const particleCount = isMobileDevice ? 200 : 400;
+				const box = new THREE.Box3();
+				const pos = new THREE.Vector3();
+
+				root.traverse( ( child ) => {
+					if ( !child.name || child.isLight || !child.name.toLowerCase().includes( 'torch' ) ) return;
+
+					const pl = new THREE.PointLight( torchLightColor, torchLightIntensity, torchLightDistance );
+					pl.castShadow = false;
+
+					box.setFromObject( child );
+					if ( box.isEmpty() === false ) {
+						pos.set(
+							( box.min.x + box.max.x ) * 0.5,
+							box.max.y + studsAbove,
+							( box.min.z + box.max.z ) * 0.5
+						);
+					} else {
+						child.getWorldPosition( pos );
+						pos.y += studsAbove;
+					}
+					pl.position.copy( pos );
+					scene.add( pl );
+					torchPointLights.push( pl );
+
+					const fireGeo = new particleFire.Geometry( fireRadius, fireHeight, particleCount );
+					const fireMat = new particleFire.Material( { color: 0xff2200 } );
+					fireMat.setPerspective( camera.fov, window.innerHeight );
+					const fireMesh = new THREE.Points( fireGeo, fireMat );
+					fireMesh.position.copy( pos );
+					scene.add( fireMesh );
+					torchFireMeshes.push( fireMesh );
+				} );
+			}
+
+			const loader = new GLTFLoader();
+			const loadingInfo = document.getElementById( 'info' );
+			const originalInfoText = loadingInfo.innerHTML;
+			loadingInfo.innerHTML = 'Loading model...';
+
+			loader.load( './freecam/maptest2-compressed.glb',
+				( gltf ) => {
+					loadingInfo.innerHTML = originalInfoText;
+					scene.add( gltf.scene );
+					mainMapRoot = gltf.scene;
+
+					let collisionMesh = null;
+					const collisionNameSet = new Set( [ 'collisionmesh', 'collision', 'collision1' ] );
+
+				gltf.scene.traverse( ( child ) => {
+					if ( child.isMesh ) {
+						child.castShadow = !isMobile; // Disable shadow casting on mobile
+						child.receiveShadow = !isMobile; // Disable shadow receiving on mobile
+						if ( child.material?.map ) child.material.map.anisotropy = isMobile ? 1 : 4;
+						child.frustumCulled = true;
+					}
+					/** Hide flame objects */
+					if ( child.name && child.name.toLowerCase().includes( 'flame' ) ) {
+						child.visible = false;
+					}
+					if ( !collisionMesh && child.name ) {
+						const nameLower = child.name.toLowerCase();
+						if ( collisionNameSet.has( nameLower ) || nameLower.includes( 'collision' ) ) collisionMesh = child;
+					}
+				} );
+
+					if ( collisionMesh ) {
+						let totalTriangles = 0, hasValidGeometry = false;
+						collisionMesh.traverse( ( child ) => {
+							if ( child.isMesh && child.geometry ) {
+								hasValidGeometry = true;
+								const vertexCount = child.geometry.attributes?.position?.count || 0;
+								totalTriangles += vertexCount >= 3 ? Math.floor( vertexCount / 3 ) : 0;
+							}
+						} );
+						
+						if ( !hasValidGeometry || totalTriangles === 0 ) {
+							addCollisionMeshToWorld( gltf.scene );
+						} else {
+							addCollisionMeshToWorld( collisionMesh );
+							collisionMesh.visible = false;
+							
+							if ( !isMobile && envSettings.showCollisionWireframe ) {
+								requestAnimationFrame( () => {
+									collisionWireframe = new THREE.Group();
+									collisionWireframe.name = 'CollisionWireframe';
+									collisionMesh.traverse( ( child ) => {
+										if ( child.isMesh && child.geometry ) {
+											const wireMat = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.5, depthTest: true, depthWrite: false } );
+											const wireMesh = new THREE.Mesh( child.geometry.clone(), wireMat );
+											wireMesh.position.copy( child.position );
+											wireMesh.rotation.copy( child.rotation );
+											wireMesh.scale.copy( child.scale );
+											collisionWireframe.add( wireMesh );
+										}
+									} );
+									scene.add( collisionWireframe );
+									collisionWireframe.visible = envSettings.showCollisionWireframe;
+								} );
+							}
+						}
+					} else {
+						addCollisionMeshToWorld( gltf.scene );
+					}
+
+					addTorchPointLights( gltf.scene );
+
+					const spawnPoint = gltf.scene.getObjectByName( 'SpawnPoint' );
+					
+
+					applySettings();
+
+					requestAnimationFrame( () => {
+						createColliderVisualization();
+						if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
+					} );
+
+					cameraMode = envSettings.cameraMode;
+					createGUI(); // Create GUI for both mobile and desktop
+				},
+				( progress ) => {
+					if ( progress.lengthComputable ) loadingInfo.innerHTML = `Loading model... ${ Math.round( progress.loaded / progress.total * 100 ) }%`;
+				},
+				( error ) => {
+					console.error( 'Error loading model:', error );
+					loadingInfo.innerHTML = 'Error loading model. Check console.';
+				}
+			);
+
+
+
+
+			function createGUI() {
+				const gui = new GUI( { width: isMobile ? 260 : 280, title: 'Environment Settings' } );
+				// Keep GUI open on mobile as requested
+
+				const skyFolder = gui.addFolder( 'Sky & Background' );
+				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background' ).onChange( ( v ) => { scene.background = new THREE.Color( v ); saveSettings(); } );
+
+				const fogFolder = gui.addFolder( 'Fog' );
+				fogFolder.add( envSettings, 'fogEnabled' ).name( 'Enabled' ).onChange( ( v ) => { scene.fog = v ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null; saveSettings(); } );
+				fogFolder.addColor( envSettings, 'fogColor' ).name( 'Color' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.color.set( v ); saveSettings(); } );
+				fogFolder.add( envSettings, 'fogNear', 0, 100, 1 ).name( 'Near' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.near = v; saveSettings(); } );
+				fogFolder.add( envSettings, 'fogFar', 10, 500, 1 ).name( 'Far' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.far = v; saveSettings(); } );
+
+				const hemiFolder = gui.addFolder( 'Hemisphere Light' );
+				hemiFolder.addColor( envSettings, 'hemiSkyColor' ).name( 'Sky' ).onChange( ( v ) => { fillLight1.color.set( v ); saveSettings(); } );
+				hemiFolder.addColor( envSettings, 'hemiGroundColor' ).name( 'Ground' ).onChange( ( v ) => { fillLight1.groundColor.set( v ); saveSettings(); } );
+				hemiFolder.add( envSettings, 'hemiIntensity', 0, 5, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { fillLight1.intensity = v; saveSettings(); } );
+
+				const sunFolder = gui.addFolder( 'Sun Light' );
+				sunFolder.addColor( envSettings, 'sunColor' ).name( 'Color' ).onChange( ( v ) => { directionalLight.color.set( v ); saveSettings(); } );
+				sunFolder.add( envSettings, 'sunIntensity', 0, 10, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { directionalLight.intensity = v; saveSettings(); } );
+				sunFolder.add( envSettings, 'sunPosX', -50, 50, 1 ).name( 'X' ).onChange( ( v ) => { directionalLight.position.x = v; saveSettings(); } );
+				sunFolder.add( envSettings, 'sunPosY', 0, 100, 1 ).name( 'Y' ).onChange( ( v ) => { directionalLight.position.y = v; saveSettings(); } );
+				sunFolder.add( envSettings, 'sunPosZ', -50, 50, 1 ).name( 'Z' ).onChange( ( v ) => { directionalLight.position.z = v; saveSettings(); } );
+
+				const ambientFolder = gui.addFolder( 'Ambient Light' );
+				ambientFolder.addColor( envSettings, 'ambientColor' ).name( 'Color' ).onChange( ( v ) => { ambientLight.color.set( v ); saveSettings(); } );
+				ambientFolder.add( envSettings, 'ambientIntensity', 0, 3, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { ambientLight.intensity = v; saveSettings(); } );
+
+				const renderFolder = gui.addFolder( 'Renderer' );
+				renderFolder.add( envSettings, 'toneMapping', Object.keys( toneMappingOptions ) ).name( 'Tone Mapping' ).onChange( ( v ) => { renderer.toneMapping = toneMappingOptions[ v ]; saveSettings(); } );
+				renderFolder.add( envSettings, 'exposure', 0, 3, 0.05 ).name( 'Exposure' ).onChange( ( v ) => { renderer.toneMappingExposure = v; saveSettings(); } );
+
+				const movementFolder = gui.addFolder( 'Movement & Physics' );
+				movementFolder.add( envSettings, 'moveSpeed', 1, 100, 1 ).name( 'Speed' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'acceleration', 10, 500, 10 ).name( 'Acceleration' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'deceleration', 1, 100, 1 ).name( 'Deceleration' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'gravity', 5, 50, 1 ).name( 'Gravity' ).onChange( ( v ) => { world.gravity.set( 0, -v, 0 ); saveSettings(); } );
+				movementFolder.add( envSettings, 'jumpVelocity', 1, 15, 0.5 ).name( 'Jump' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'friction', 0, 1, 0.01 ).name( 'Friction' ).onChange( ( v ) => { playerGroundContact.friction = v; saveSettings(); } );
+				movementFolder.add( envSettings, 'airControl', 0, 1, 0.05 ).name( 'Air Control' ).onChange( saveSettings );
+				movementFolder.add( envSettings, 'playerMass', 1, 100, 1 ).name( 'Mass' ).onChange( ( v ) => { playerBody.mass = v; playerBody.updateMassProperties(); saveSettings(); } );
+				movementFolder.add( envSettings, 'cameraSmoothing', 1, 30, 1 ).name( 'Cam Smoothing' ).onChange( saveSettings );
+
+				const debugFolder = gui.addFolder( 'Debug' );
+				debugFolder.add( envSettings, 'showCollisionWireframe' ).name( 'Collision Wireframe' ).onChange( ( v ) => { if ( collisionWireframe ) collisionWireframe.visible = v; saveSettings(); } );
+				debugFolder.add( envSettings, 'showColliderVisualization' ).name( 'Player Collider' ).onChange( ( v ) => { if ( colliderVisualization ) colliderVisualization.visible = v; saveSettings(); } );
+
+				const cameraFolder = gui.addFolder( 'Camera' );
+				cameraFolder.add( envSettings, 'cameraMode', [ 'firstPerson', 'thirdPerson' ] ).name( 'Mode' ).onChange( ( v ) => { cameraMode = v; saveSettings(); } );
+				cameraFolder.add( envSettings, 'thirdPersonDistance', 2, 15, 0.5 ).name( '3P Distance' ).onChange( saveSettings );
+				cameraFolder.add( envSettings, 'thirdPersonHeight', 0, 5, 0.1 ).name( '3P Height' ).onChange( saveSettings );
+				cameraFolder.add( envSettings, 'thirdPersonAngle', -0.5, 0.5, 0.05 ).name( '3P Angle' ).onChange( saveSettings );
+
+				const waterFolder = gui.addFolder( 'Water' );
+				waterFolder.addColor( waterParams, 'color' ).name( 'Color' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'color' ].value.set( v ); } );
+				waterFolder.add( waterParams, 'scale', 1, 10, 0.5 ).name( 'Scale' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'config' ].value.w = v; } );
+				waterFolder.add( waterParams, 'flowX', -2, 2, 0.1 ).name( 'Flow X' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.x = v; } );
+				waterFolder.add( waterParams, 'flowY', -2, 2, 0.1 ).name( 'Flow Y' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.y = v; } );
+				waterParams.waterHeight = 0;
+				waterFolder.add( waterParams, 'waterHeight', -10, 10, 0.1 ).name( 'Height' ).onChange( ( v ) => { if ( water ) water.position.y = v; } );
+				waterFolder.close();
+
+				const postFolder = gui.addFolder( 'Post-Processing' );
+
+				const bloomFolder = postFolder.addFolder( 'Bloom' );
+				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; savePostProcessingSettings(); } );
+				bloomFolder.add( postProcessingSettings, 'bloomStrength', 0, 2, 0.01 ).name( 'Strength' ).onChange( ( v ) => { bloomPass.strength = v; savePostProcessingSettings(); } );
+				bloomFolder.add( postProcessingSettings, 'bloomRadius', 0, 1, 0.01 ).name( 'Radius' ).onChange( ( v ) => { bloomPass.radius = v; savePostProcessingSettings(); } );
+				bloomFolder.add( postProcessingSettings, 'bloomThreshold', 0, 1, 0.01 ).name( 'Threshold' ).onChange( ( v ) => { bloomPass.threshold = v; savePostProcessingSettings(); } );
+
+				const filmFolder = postFolder.addFolder( 'Film Grain' );
+				filmFolder.add( postProcessingSettings, 'filmEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainEnabled' ].value = v; savePostProcessingSettings(); } );
+				filmFolder.add( postProcessingSettings, 'filmNoiseIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainIntensity' ].value = v; savePostProcessingSettings(); } );
+
+				const vignetteFolder = postFolder.addFolder( 'Vignette' );
+				vignetteFolder.add( postProcessingSettings, 'vignetteEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteEnabled' ].value = v; savePostProcessingSettings(); } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteOffset', 0.5, 2.0, 0.05 ).name( 'Offset' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteOffset' ].value = v; savePostProcessingSettings(); } );
+				vignetteFolder.add( postProcessingSettings, 'vignetteDarkness', 0.5, 3.0, 0.1 ).name( 'Darkness' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteDarkness' ].value = v; savePostProcessingSettings(); } );
+
+				const tiltShiftFolder = postFolder.addFolder( 'Tilt-Shift' );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = v; savePostProcessingSettings(); } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusY', 0, 1, 0.01 ).name( 'Focus Y' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusY' ].value = v; savePostProcessingSettings(); } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusWidth', 0.1, 0.8, 0.01 ).name( 'Width' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusWidth' ].value = v; savePostProcessingSettings(); } );
+				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftBlurAmount', 0, 6, 0.1 ).name( 'Blur' ).onChange( ( v ) => { masterPostPass.uniforms[ 'blurAmount' ].value = v; savePostProcessingSettings(); } );
+
+				const lutFolder = postFolder.addFolder( 'LUT' );
+				lutFolder.add( postProcessingSettings, 'lutEnabled' ).name( 'Enabled' ).onChange( ( v ) => { if ( lutPass ) lutPass.enabled = v; savePostProcessingSettings(); } );
+				lutFolder.add( postProcessingSettings, 'lutIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { if ( lutPass ) lutPass.intensity = v; savePostProcessingSettings(); } );
+
+				postFolder.add( { resetPost: () => {
+					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
+					applyPostProcessingSettings();
+					gui.controllersRecursive().forEach( c => c.updateDisplay() );
+					savePostProcessingSettings();
+				} }, 'resetPost' ).name( 'Reset to Defaults' );
+
+				debugFolder.add( { reset: () => {
+					Object.assign( envSettings, defaultEnvSettings );
+					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
+					applySettings();
+					applyPostProcessingSettings();
+					if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
+					if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
+					cameraMode = envSettings.cameraMode;
+					gui.controllersRecursive().forEach( c => c.updateDisplay() );
+					saveSettings();
+					savePostProcessingSettings();
+				} }, 'reset' ).name( 'Reset Defaults' );
+
+				[ fogFolder, hemiFolder, sunFolder, ambientFolder, renderFolder, movementFolder, debugFolder, postFolder ].forEach( f => f.close() );
+			}
+
+			function getPlayerEyeHeight() {
+				return PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT;
+			}
+
+			function buildTheaterMap() {
+				const group = new THREE.Group();
+				group.name = 'TheaterInterior';
+				const wood = new THREE.MeshStandardMaterial( { color: 0x4a3728, roughness: 0.85 } );
+				const curtain = new THREE.MeshStandardMaterial( { color: 0x6b1024, roughness: 0.75 } );
+				const seatMat = new THREE.MeshStandardMaterial( { color: 0x1e3a5c, roughness: 0.8 } );
+
+				const floorMesh = new THREE.Mesh(
+					new THREE.PlaneGeometry( 44, 48 ),
+					new THREE.MeshStandardMaterial( { color: 0x3a2e25, roughness: 0.92 } )
+				);
+				floorMesh.rotation.x = -Math.PI / 2;
+				floorMesh.receiveShadow = !isMobile;
+				group.add( floorMesh );
+
+				const stageMesh = new THREE.Mesh( new THREE.BoxGeometry( 22, 1.4, 8 ), wood );
+				stageMesh.position.set( 0, 0.7, -11 );
+				stageMesh.castShadow = !isMobile;
+				stageMesh.receiveShadow = !isMobile;
+				group.add( stageMesh );
+
+				const curtainMesh = new THREE.Mesh( new THREE.PlaneGeometry( 22, 11 ), curtain );
+				curtainMesh.position.set( 0, 4.6, -15.25 );
+				group.add( curtainMesh );
+
+				for ( let row = 0; row < 5; row++ ) {
+					const z = 2 + row * 3.2;
+					for ( let i = -6; i <= 6; i++ ) {
+						const seat = new THREE.Mesh( new THREE.BoxGeometry( 0.85, 0.55, 0.75 ), seatMat );
+						seat.position.set( i * 1.05, 0.28, z );
+						seat.castShadow = !isMobile;
+						group.add( seat );
+					}
+				}
+
+				const aisleLight = new THREE.PointLight( 0xffe8cc, 2.5, 22 );
+				aisleLight.position.set( 0, 6, 4 );
+				group.add( aisleLight );
+				const stageLight = new THREE.SpotLight( 0xfff5e6, 18, 28, Math.PI / 5, 0.35, 1 );
+				stageLight.position.set( 0, 12, -4 );
+				stageLight.target.position.set( 0, 4.2, -13.95 );
+				group.add( stageLight );
+				group.add( stageLight.target );
+
+				/** 3D video screen (VideoTexture + black backing; toneMapped off for stable color through main composer) */
+				const theaterVideo = document.createElement( 'video' );
+				theaterVideo.src = './freecam/theater-screen.mp4';
+				theaterVideo.crossOrigin = 'anonymous';
+				theaterVideo.loop = true;
+				theaterVideo.muted = true;
+				theaterVideo.playsInline = true;
+				theaterVideo.setAttribute( 'playsinline', '' );
+				theaterVideo.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+				document.body.appendChild( theaterVideo );
+				theaterVideo.addEventListener( 'webkitendfullscreen', () => {
+					theaterVideo.controls = false;
+					theaterVideo.muted = true;
+					if ( theaterMapCache?.videoEl === theaterVideo ) restoreTheaterVideoDomPeek();
+				} );
+
+				const screenW = 20;
+				const screenH = 12.5;
+				const screenGroup = new THREE.Group();
+				screenGroup.position.set( 0, 4.2, -13.95 );
+
+				const screenBack = new THREE.Mesh(
+					new THREE.PlaneGeometry( screenW * 1.02, screenH * 1.02 ),
+					new THREE.MeshBasicMaterial( { color: 0x000000 } )
+				);
+				screenBack.position.z = -0.06;
+				screenGroup.add( screenBack );
+
+				const theaterVideoTexture = new THREE.VideoTexture( theaterVideo );
+				theaterVideoTexture.colorSpace = THREE.SRGBColorSpace;
+				theaterVideoTexture.minFilter = THREE.LinearFilter;
+				theaterVideoTexture.magFilter = THREE.LinearFilter;
+
+				const screenMat = new THREE.MeshBasicMaterial( {
+					map: theaterVideoTexture,
+					toneMapped: false
+				} );
+				const screenFront = new THREE.Mesh( new THREE.PlaneGeometry( screenW, screenH ), screenMat );
+				screenFront.position.z = 0.03;
+				screenGroup.add( screenFront );
+
+				group.add( screenGroup );
+
+				const bodies = [];
+				const floorShape = new CANNON.Box( new CANNON.Vec3( 22, 0.08, 24 ) );
+				const floorBody = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				floorBody.addShape( floorShape, new CANNON.Vec3( 0, -0.08, 0 ) );
+				bodies.push( floorBody );
+
+				const stageShape = new CANNON.Box( new CANNON.Vec3( 11, 0.7, 4 ) );
+				const stageBody = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				stageBody.addShape( stageShape, new CANNON.Vec3( 0, 0.7, -11 ) );
+				bodies.push( stageBody );
+
+				const wallH = 5;
+				const wallY = wallH / 2;
+				const north = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				north.addShape( new CANNON.Box( new CANNON.Vec3( 22, wallH / 2, 0.25 ) ), new CANNON.Vec3( 0, wallY, -19.5 ) );
+				bodies.push( north );
+				const south = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				south.addShape( new CANNON.Box( new CANNON.Vec3( 22, wallH / 2, 0.25 ) ), new CANNON.Vec3( 0, wallY, 19.5 ) );
+				bodies.push( south );
+				const east = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				east.addShape( new CANNON.Box( new CANNON.Vec3( 0.25, wallH / 2, 24 ) ), new CANNON.Vec3( 21.5, wallY, 0 ) );
+				bodies.push( east );
+				const west = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				west.addShape( new CANNON.Box( new CANNON.Vec3( 0.25, wallH / 2, 24 ) ), new CANNON.Vec3( -21.5, wallY, 0 ) );
+				bodies.push( west );
+
+				return {
+					group,
+					bodies,
+					videoTexture: theaterVideoTexture,
+					videoEl: theaterVideo,
+					godRayScreenMesh: screenFront,
+					screenFront,
+					screenHalfW: screenW * 0.5,
+					screenHalfH: screenH * 0.5
+				};
+			}
+
+			function theaterRaycastHitsScreen() {
+				if ( activeMap !== 'theater' || !theaterMapCache?.screenFront ) return false;
+				syncTheaterScreenRaycastMatrices();
+				theaterScreenRaycaster.setFromCamera( theaterScreenNdcCenter, camera );
+				return theaterScreenRaycaster.intersectObject( theaterMapCache.screenFront, false ).length > 0;
+			}
+
+			function restoreTheaterVideoDomPeek() {
+				const v = theaterMapCache?.videoEl;
+				if ( !v ) return;
+				v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+			}
+
+			function updateTheaterScreenHover() {
+				if ( !theaterHoverOverlay ) return;
+				if ( isTheaterVideoFullscreen() ) {
+					theaterHoverOverlay.style.display = 'none';
+					theaterHoverOverlay.style.background = '';
+					theaterHoverOverlay.style.backgroundImage = '';
+					theaterHoverOverlay.style.backgroundOrigin = '';
+					theaterHoverOverlay.style.backgroundClip = '';
+					theaterHoverOverlay.style.removeProperty( '-webkit-background-clip' );
+					theaterHoverOverlay.style.boxShadow = '';
+					theaterHoverOverlay.style.border = '';
+					return;
+				}
+				if ( activeMap !== 'theater' || !theaterMapCache?.screenFront ) {
+					theaterHoverOverlay.style.display = 'none';
+					theaterHoverOverlay.style.background = '';
+					theaterHoverOverlay.style.backgroundImage = '';
+					theaterHoverOverlay.style.backgroundOrigin = '';
+					theaterHoverOverlay.style.backgroundClip = '';
+					theaterHoverOverlay.style.removeProperty( '-webkit-background-clip' );
+					theaterHoverOverlay.style.boxShadow = '';
+					theaterHoverOverlay.style.border = '';
+					return;
+				}
+				syncTheaterScreenRaycastMatrices();
+				theaterScreenRaycaster.setFromCamera( theaterScreenNdcCenter, camera );
+				const hit = theaterScreenRaycaster.intersectObject( theaterMapCache.screenFront, false ).length > 0;
+				if ( !hit ) {
+					theaterHoverOverlay.style.display = 'none';
+					theaterHoverOverlay.style.background = '';
+					theaterHoverOverlay.style.backgroundImage = '';
+					theaterHoverOverlay.style.backgroundOrigin = '';
+					theaterHoverOverlay.style.backgroundClip = '';
+					theaterHoverOverlay.style.removeProperty( '-webkit-background-clip' );
+					theaterHoverOverlay.style.boxShadow = '';
+					theaterHoverOverlay.style.border = '';
+					return;
+				}
+				const sf = theaterMapCache.screenFront;
+				const hw = theaterMapCache.screenHalfW;
+				const hh = theaterMapCache.screenHalfH;
+				_theaterScrVerts[ 0 ].set( -hw, -hh, 0 ).applyMatrix4( sf.matrixWorld );
+				_theaterScrVerts[ 1 ].set( hw, -hh, 0 ).applyMatrix4( sf.matrixWorld );
+				_theaterScrVerts[ 2 ].set( hw, hh, 0 ).applyMatrix4( sf.matrixWorld );
+				_theaterScrVerts[ 3 ].set( -hw, hh, 0 ).applyMatrix4( sf.matrixWorld );
+				const cr = renderer.domElement.getBoundingClientRect();
+				let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+				let anyInFront = false;
+				for ( let i = 0; i < 4; i++ ) {
+					_theaterProj.copy( _theaterScrVerts[ i ] ).project( camera );
+					if ( Math.abs( _theaterProj.z ) > 1.01 ) continue;
+					anyInFront = true;
+					const px = ( _theaterProj.x * 0.5 + 0.5 ) * cr.width + cr.left;
+					const py = ( -_theaterProj.y * 0.5 + 0.5 ) * cr.height + cr.top;
+					minX = Math.min( minX, px );
+					minY = Math.min( minY, py );
+					maxX = Math.max( maxX, px );
+					maxY = Math.max( maxY, py );
+				}
+				if ( !anyInFront || minX >= maxX || minY >= maxY ) {
+					theaterHoverOverlay.style.display = 'none';
+					theaterHoverOverlay.style.background = '';
+					theaterHoverOverlay.style.backgroundImage = '';
+					theaterHoverOverlay.style.backgroundOrigin = '';
+					theaterHoverOverlay.style.backgroundClip = '';
+					theaterHoverOverlay.style.removeProperty( '-webkit-background-clip' );
+					theaterHoverOverlay.style.boxShadow = '';
+					theaterHoverOverlay.style.border = '';
+					return;
+				}
+				const t = masterPostPass.uniforms[ 'time' ].value;
+				const bw = 3.5 + 0.2 * Math.sin( t * 1.7 );
+				const hue = 198 + 10 * Math.sin( t * 0.85 );
+				const sat = 88 + 6 * Math.sin( t * 1.1 );
+				const lit = 72 + 5 * Math.sin( t * 0.95 );
+				const alpha = 0.78 + 0.14 * Math.sin( t * 1.35 );
+				theaterHoverOverlay.style.display = 'block';
+				theaterHoverOverlay.style.left = `${ minX }px`;
+				theaterHoverOverlay.style.top = `${ minY }px`;
+				theaterHoverOverlay.style.width = `${ Math.max( 8, maxX - minX ) }px`;
+				theaterHoverOverlay.style.height = `${ Math.max( 8, maxY - minY ) }px`;
+				theaterHoverOverlay.style.boxSizing = 'border-box';
+				theaterHoverOverlay.style.background = 'transparent';
+				theaterHoverOverlay.style.backgroundImage = 'none';
+				theaterHoverOverlay.style.backgroundOrigin = '';
+				theaterHoverOverlay.style.backgroundClip = '';
+				theaterHoverOverlay.style.removeProperty( '-webkit-background-clip' );
+				theaterHoverOverlay.style.borderRadius = '5px';
+				theaterHoverOverlay.style.outline = 'none';
+				theaterHoverOverlay.style.border = `${ bw.toFixed( 2 ) }px solid hsla(${ hue.toFixed( 1 ) }, ${ sat.toFixed( 0 ) }%, ${ lit.toFixed( 1 ) }%, ${ alpha.toFixed( 3 ) })`;
+				theaterHoverOverlay.style.boxShadow = `0 0 ${ Math.round( 16 + 5 * Math.sin( t * 1.15 ) ) }px 1px hsla(${ ( hue - 6 ).toFixed( 1 ) }, 85%, 58%, ${ ( 0.2 * alpha ).toFixed( 3 ) }), 0 0 ${ Math.round( 28 + 8 * Math.sin( t * 0.75 ) ) }px 2px hsla(${ ( hue + 8 ).toFixed( 1 ) }, 90%, 68%, ${ ( 0.1 * alpha ).toFixed( 3 ) })`;
+			}
+
+			function getTheaterMap() {
+				if ( !theaterMapCache ) theaterMapCache = buildTheaterMap();
+				return theaterMapCache;
+			}
+
+			function enterTheaterMap() {
+				if ( activeMap !== 'main' || !mainMapRoot ) return;
+				activeMap = 'theater';
+				const t = getTheaterMap();
+				scene.remove( mainMapRoot );
+				setMainMapTorchEffectsVisible( false );
+				for ( let i = 0; i < mainWorldStaticBodies.length; i++ ) {
+					world.removeBody( mainWorldStaticBodies[ i ] );
+				}
+				if ( collisionWireframe ) collisionWireframe.visible = false;
+				scene.add( t.group );
+				for ( let i = 0; i < t.bodies.length; i++ ) {
+					world.addBody( t.bodies[ i ] );
+				}
+				if ( water ) water.visible = false;
+
+				playerBody.position.set( THEATER_SPAWN.x, THEATER_SPAWN.y, THEATER_SPAWN.z );
+				playerBody.velocity.set( 0, 0, 0 );
+				const eyeH = getPlayerEyeHeight();
+				smoothedCameraPos.set( THEATER_SPAWN.x, THEATER_SPAWN.y + eyeH, THEATER_SPAWN.z );
+				camera.rotation.order = 'YXZ';
+				camera.rotation.x = 0;
+				camera.rotation.y = 0;
+
+				scene.background = new THREE.Color( 0x1a1520 );
+				scene.fog = new THREE.Fog( 0x1a1520, 6, 38 );
+				fillLight1.intensity = Math.max( 0.35, fillLight1.intensity * 0.25 );
+				directionalLight.intensity = Math.min( 1.2, directionalLight.intensity * 0.4 );
+
+				theaterSavedBloomEnabled = bloomPass.enabled;
+				bloomPass.enabled = false;
+
+				theaterGodRaysPass.uniforms.strength.value = 1.35;
+				if ( isMobile ) theaterGodRaysPass.uniforms.exposure.value = 0.36;
+
+				if ( t.videoEl ) {
+					t.videoEl.play().catch( () => {} );
+				}
+			}
+
+			function exitTheaterToMain() {
+				if ( activeMap !== 'theater' || !mainMapRoot ) return;
+				exitTheaterVideoFullscreenIfActive();
+				activeMap = 'main';
+				const t = getTheaterMap();
+				scene.remove( t.group );
+				for ( let i = 0; i < t.bodies.length; i++ ) {
+					world.removeBody( t.bodies[ i ] );
+				}
+				scene.add( mainMapRoot );
+				setMainMapTorchEffectsVisible( true );
+				for ( let i = 0; i < mainWorldStaticBodies.length; i++ ) {
+					world.addBody( mainWorldStaticBodies[ i ] );
+				}
+				if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
+				if ( water ) water.visible = true;
+
+				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
+				playerBody.velocity.set( 0, 0, 0 );
+				const eyeH = getPlayerEyeHeight();
+				smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
+				camera.rotation.order = 'YXZ';
+				camera.rotation.x = 0;
+				camera.rotation.y = 0;
+				if ( theaterSavedBloomEnabled !== null ) {
+					bloomPass.enabled = theaterSavedBloomEnabled;
+					theaterSavedBloomEnabled = null;
+				}
+				theaterGodRaysPass.uniforms.strength.value = 0;
+				theaterGodRaysPass.uniforms.exposure.value = 0.52;
+				applySettings();
+
+				if ( t.videoEl ) {
+					t.videoEl.muted = true;
+					t.videoEl.pause();
+				}
+				restoreTheaterVideoDomPeek();
+				if ( theaterHoverOverlay ) theaterHoverOverlay.style.display = 'none';
+			}
+
+			function checkTheaterPortals() {
+				if ( performance.now() < mapTeleportCooldownUntil ) return;
+				const rEnterSq = THEATER_PORTAL_ENTER_RADIUS * THEATER_PORTAL_ENTER_RADIUS;
+				const rExitSq = THEATER_PORTAL_EXIT_RADIUS * THEATER_PORTAL_EXIT_RADIUS;
+
+				if ( activeMap === 'main' && mainMapRoot ) {
+					const pos = flythroughActive ? camera.position : playerBody.position;
+					const dx = pos.x - THEATER_PORTAL_MAIN.x;
+					const dy = pos.y - THEATER_PORTAL_MAIN.y;
+					const dz = pos.z - THEATER_PORTAL_MAIN.z;
+					if ( dx * dx + dy * dy + dz * dz <= rEnterSq ) {
+						if ( flythroughActive ) exitFlythrough();
+						enterTheaterMap();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+					}
+				} else if ( activeMap === 'theater' && !isTheaterVideoFullscreen() ) {
+					const p = playerBody.position;
+					const ex = p.x - THEATER_EXIT_POS.x;
+					const ey = p.y - THEATER_EXIT_POS.y;
+					const ez = p.z - THEATER_EXIT_POS.z;
+					if ( ex * ex + ey * ey + ez * ez <= rExitSq ) {
+						exitTheaterToMain();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+					}
+				}
+			}
+
+			function updateTheaterGodRaySunPosition() {
+				if ( activeMap !== 'theater' || !theaterMapCache?.godRayScreenMesh ) return;
+				if ( isTheaterVideoFullscreen() ) {
+					theaterGodRaysPass.uniforms.strength.value = 0;
+					return;
+				}
+				theaterGodRaysPass.uniforms.strength.value = 1.35;
+				if ( isMobile ) theaterGodRaysPass.uniforms.exposure.value = 0.36;
+				else theaterGodRaysPass.uniforms.exposure.value = 0.52;
+				theaterMapCache.godRayScreenMesh.getWorldPosition( _theaterGodRayWorld );
+				_theaterGodRayWorld.project( camera );
+				const u = THREE.MathUtils.clamp( _theaterGodRayWorld.x * 0.5 + 0.5, -0.25, 1.25 );
+				const v = THREE.MathUtils.clamp( _theaterGodRayWorld.y * -0.5 + 0.5, -0.25, 1.25 );
+				theaterGodRaysPass.uniforms.sunPosition.value.set( u, v );
+			}
+
+			function teleportPlayerIfOob() {
+				if ( activeMap === 'main' && playerBody.position.y <= -25 ) {
+					playerBody.position.set( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					camera.rotation.set( 0, 0, 0 );
+				}
+				if ( activeMap === 'theater' && playerBody.position.y <= -10 ) {
+					playerBody.position.set( THEATER_SPAWN.x, THEATER_SPAWN.y, THEATER_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+				}
+			}
+
+			function animate() {
+				const deltaTime = Math.min( 0.05, clock.getDelta() );
+				const torchFireDelta = deltaTime * 0.75;
+				for ( let i = 0; i < torchFireMeshes.length; i ++ ) {
+					torchFireMeshes[ i ].material.update( torchFireDelta );
+				}
+				if ( flythroughActive ) {
+					updateFlythrough( deltaTime );
+					checkTheaterPortals();
+				} else {
+					updateMobileInput();
+					updatePhysics( deltaTime );
+					teleportPlayerIfOob();
+					checkTheaterPortals();
+				}
+				masterPostPass.uniforms[ 'time' ].value += deltaTime;
+				if ( activeMap === 'theater' && theaterMapCache && theaterMapCache.videoTexture ) {
+					theaterMapCache.videoTexture.needsUpdate = true;
+				}
+				if ( activeMap === 'theater' ) updateTheaterGodRaySunPosition();
+				composer.render( deltaTime );
+				if ( activeMap === 'theater' ) updateTheaterScreenHover();
+				stats.update();
+				coordsDisplay.innerHTML = `X: ${camera.position.x.toFixed(2)}<br>Y: ${camera.position.y.toFixed(2)}<br>Z: ${camera.position.z.toFixed(2)}`;
+			}
+
+
+
+		</script>
+</body>
+
+</html>

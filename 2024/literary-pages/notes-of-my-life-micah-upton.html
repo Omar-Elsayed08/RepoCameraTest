@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Link to CSS Files Start -->
+    <!-- CSS for all Pages--> <link rel="stylesheet" href="../general-styles.css">
+    <!-- Literature Page Specific CSS--> <link rel="stylesheet" href="../literature-styles.css">
+    <!-- Link to CSS Files End -->
+
+    <!-- Tab Icon Start -->
+    <link rel="shortcut icon" href="../assets/images/The Magnet Logos/full_color_magnet_logo.png">
+    <!-- Tab Icon End -->
+
+    <!-- Fonts Start -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font's End -->
+
+    <!-- Font Awesome (Used for Icons) Start -->
+    <script src="https://kit.fontawesome.com/b58d49b83c.js" crossorigin="anonymous"></script>
+    <!-- Font Awesome (Used for Icons) End -->
+
+    <!-- External Javascript File for Lazy Loading Images Start-->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script>
+    <!-- External Javascript File for Lazy Loading Images End-->
+
+    <!-- JQuery Start --> 
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- JQuery End-->
+
+    <!-- Bootstrap Start -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <!-- Bootstrap End -->
+
+    <title>Notes of my Life, by Micah Upton</title>
+</head>
+<body>
+
+    <!--Navbar code Start-->
+    <section class="navbar-section">
+        <div class="navigation-wrap  start-header start-style">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <nav class="navbar navbar-expand-lg ">
+                            <div class="container-fluid">
+                            <a class="navbar-brand" href="../index.html"><img class="nav-header-img" src="../assets/images/The Magnet Logos/black transparent_magnet_logo.png"></a>
+                            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse" id="navbarNav">
+                                <ul class="navbar-nav">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="../../index.html">Magnet Home</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" aria-current="page" href="../index.html">Home</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="../art.html">Art</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" href="../literature.html">Literature</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="../media.html">Media</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="../credits.html">Credits</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="../about.html">About Us</a>
+                                </li>
+                                <li class="themeButton tb-nav-inside">
+                                    <a href="#" class="nav-link link-text">
+                                        <svg
+                                        class="theme-icon"
+                                        id="lightIcon"
+                                        aria-hidden="true"
+                                        focusable="false"
+                                        data-prefix="fad"
+                                        data-icon="moon-stars"
+                                        role="img"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 512 512"
+                                        class="svg-inline--fa fa-moon-stars fa-w-16 fa-7x"
+                                        >
+                                        <g class="fa-group">
+                                            <path
+                                            fill="currentColor"
+                                            d="M320 32L304 0l-16 32-32 16 32 16 16 32 16-32 32-16zm138.7 149.3L432 128l-26.7 53.3L352 208l53.3 26.7L432 288l26.7-53.3L512 208z"
+                                            class="fa-secondary"
+                                            ></path>
+                                            <path
+                                            fill="currentColor"
+                                            d="M332.2 426.4c8.1-1.6 13.9 8 8.6 14.5a191.18 191.18 0 0 1-149 71.1C85.8 512 0 426 0 320c0-120 108.7-210.6 227-188.8 8.2 1.6 10.1 12.6 2.8 16.7a150.3 150.3 0 0 0-76.1 130.8c0 94 85.4 165.4 178.5 147.7z"
+                                            class="fa-primary"
+                                            ></path>
+                                        </g>
+                                        </svg>
+                                        <svg
+                                        class="theme-icon"
+                                        id="darkIcon"
+                                        aria-hidden="true"
+                                        focusable="false"
+                                        data-prefix="fad"
+                                        data-icon="sun"
+                                        role="img"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 512 512"
+                                        class="svg-inline--fa fa-sun fa-w-16 fa-7x"
+                                        >
+                                        <g class="fa-group">
+                                            <path
+                                            fill="currentColor"
+                                            d="M502.42 240.5l-94.7-47.3 33.5-100.4c4.5-13.6-8.4-26.5-21.9-21.9l-100.4 33.5-47.41-94.8a17.31 17.31 0 0 0-31 0l-47.3 94.7L92.7 70.8c-13.6-4.5-26.5 8.4-21.9 21.9l33.5 100.4-94.7 47.4a17.31 17.31 0 0 0 0 31l94.7 47.3-33.5 100.5c-4.5 13.6 8.4 26.5 21.9 21.9l100.41-33.5 47.3 94.7a17.31 17.31 0 0 0 31 0l47.31-94.7 100.4 33.5c13.6 4.5 26.5-8.4 21.9-21.9l-33.5-100.4 94.7-47.3a17.33 17.33 0 0 0 .2-31.1zm-155.9 106c-49.91 49.9-131.11 49.9-181 0a128.13 128.13 0 0 1 0-181c49.9-49.9 131.1-49.9 181 0a128.13 128.13 0 0 1 0 181z"
+                                            class="fa-secondary"
+                                            ></path>
+                                            <path
+                                            fill="currentColor"
+                                            d="M352 256a96 96 0 1 1-96-96 96.15 96.15 0 0 1 96 96z"
+                                            class="fa-primary"
+                                            ></path>
+                                        </g>
+                                        </svg>   
+                                    </a>
+                                  </li>    
+                                </ul>
+                            </div>
+                            <div class="themeButton tb-nav-outside">
+                                <a href="#" class="nav-link link-text">
+                                    <svg
+                                    class="theme-icon"
+                                    id="lightIcon"
+                                    aria-hidden="true"
+                                    focusable="false"
+                                    data-prefix="fad"
+                                    data-icon="moon-stars"
+                                    role="img"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 512 512"
+                                    class="svg-inline--fa fa-moon-stars fa-w-16 fa-7x"
+                                    >
+                                    <g class="fa-group">
+                                        <path
+                                        fill="currentColor"
+                                        d="M320 32L304 0l-16 32-32 16 32 16 16 32 16-32 32-16zm138.7 149.3L432 128l-26.7 53.3L352 208l53.3 26.7L432 288l26.7-53.3L512 208z"
+                                        class="fa-secondary"
+                                        ></path>
+                                        <path
+                                        fill="currentColor"
+                                        d="M332.2 426.4c8.1-1.6 13.9 8 8.6 14.5a191.18 191.18 0 0 1-149 71.1C85.8 512 0 426 0 320c0-120 108.7-210.6 227-188.8 8.2 1.6 10.1 12.6 2.8 16.7a150.3 150.3 0 0 0-76.1 130.8c0 94 85.4 165.4 178.5 147.7z"
+                                        class="fa-primary"
+                                        ></path>
+                                    </g>
+                                    </svg>
+                                    <svg
+                                    class="theme-icon"
+                                    id="darkIcon"
+                                    aria-hidden="true"
+                                    focusable="false"
+                                    data-prefix="fad"
+                                    data-icon="sun"
+                                    role="img"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 512 512"
+                                    class="svg-inline--fa fa-sun fa-w-16 fa-7x"
+                                    >
+                                    <g class="fa-group">
+                                        <path
+                                        fill="currentColor"
+                                        d="M502.42 240.5l-94.7-47.3 33.5-100.4c4.5-13.6-8.4-26.5-21.9-21.9l-100.4 33.5-47.41-94.8a17.31 17.31 0 0 0-31 0l-47.3 94.7L92.7 70.8c-13.6-4.5-26.5 8.4-21.9 21.9l33.5 100.4-94.7 47.4a17.31 17.31 0 0 0 0 31l94.7 47.3-33.5 100.5c-4.5 13.6 8.4 26.5 21.9 21.9l100.41-33.5 47.3 94.7a17.31 17.31 0 0 0 31 0l47.31-94.7 100.4 33.5c13.6 4.5 26.5-8.4 21.9-21.9l-33.5-100.4 94.7-47.3a17.33 17.33 0 0 0 .2-31.1zm-155.9 106c-49.91 49.9-131.11 49.9-181 0a128.13 128.13 0 0 1 0-181c49.9-49.9 131.1-49.9 181 0a128.13 128.13 0 0 1 0 181z"
+                                        class="fa-secondary"
+                                        ></path>
+                                        <path
+                                        fill="currentColor"
+                                        d="M352 256a96 96 0 1 1-96-96 96.15 96.15 0 0 1 96 96z"
+                                        class="fa-primary"
+                                        ></path>
+                                    </g>
+                                    </svg>   
+                                </a>
+                              </div>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!--Navbar code End-->
+
+    <!-- Body Content Start-->
+    <section class="body-content-section">
+        <div class="container-fluid work-content">
+            <div class="row">
+
+                <div class="col-md-3">
+
+                </div>
+
+                <div class="col-md-6">
+                    <div class="work-link">
+                            <p>
+                                <a href="../literature.html">Literature</a> > <span class="work-active-piece"><strong>Notes of my Life</strong></span>
+                            </p>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+
+                </div>
+
+
+            </div>
+
+
+            <div class="work-spacing-block-medium">
+
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-3">
+
+                </div>
+
+                <div class="col-md-6 work-content-body">
+                    <div class="work-long-title">
+                        <strong>Notes of my Life</strong>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+
+                </div>
+
+
+            </div>
+
+            <div class="work-spacing-block-medium">
+
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-3">
+
+                </div>
+
+                <div class="col-md-6 work-content-body">
+                    <div class="work-author">
+                        Micah Upton
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+
+                </div>
+
+
+            </div>
+
+            <div class="work-spacing-block-large">
+
+            </div>
+
+            <div class="row">
+
+                <div class="col-md-3">
+
+                </div>
+
+                <div class="col-md-6 work-content-body">
+                    <div class="work-text">
+
+                        <p>
+                            8-11-2017 
+                            <br>
+                            <br>
+                            I have a diary! I always thought it would be so cool to have a place to write anything and no one else could see it, and this morning when I woke up for school my mom gave me one for an early birthday present. I didn’t want to write in it until after school, though. Anyways, today was my first day of 5th grade. It felt weird because this is the last year before middle school. I guess I like most of my teachers okay, but I don’t really know them that well yet. My history teacher is definitely the best though. I did feel kind of sad because none of my friends are in any of my classes and I didn’t know where to sit at lunch, but my mom says that I will make new friends. Anyways, that’s pretty much it, I’ll write more about stuff tomorrow when I figure out more about school. 
+                            <br>
+                            <br>
+                            9-16-2021 
+                            <br>
+                            <br>
+                            This is my first entry in a couple months. I used to be really good about writing every day, but ever since the end of eighth grade, I’ve just kept forgetting. I’ll start by summarizing everything I did over the summer. At the beginning, I went on a trip to the beach with my grandparents in South Carolina. It was fun, but I’m not much of a beach person and would rather have gone to somewhere like the mountains. While we were there, I started talking to my parents about maybe wanting to learn guitar and take lessons. My dad mentioned that he had an old guitar that he never got rid of and said that I could use it. Right when I got home from the trip, I found his guitar in the attic. It was super out of tune, and one of the strings was broken, but I got him to get it fixed and I started playing it. I watched some YouTube guitar lessons and they helped, and I made a lot of progress over the entire summer. I pretty much just spent the rest of the summer practicing my guitar and playing video games with my friends. 
+                            <br>
+                            <br>
+                            This is my first year of high school, and most of my friends went to a different one. The first day was nerve-wracking, but it wasn’t as bad as I thought. I just had to look at my schedule and the rooms were easy to find. I haven’t made any close friends yet, but it’s only been a month so I’m sure I’ll find some. I can do fine on my own, I can probably get more work done that way anyways. 
+                            <br>
+                            <br>
+                            5-21-2025 
+                            <br>
+                            <br>
+                            It just hit me today how little time I have left. I graduate in a couple weeks, and I don’t feel ready at all for college. Both of my parents tell me that it’ll be fine and that they didn’t even know what they wanted to do in college when they went, but I know they just have to say that to comfort me. Not everything is bad, though. I found out today that I’m basically getting a scholarship for my guitar playing to the exact school that I want to go to, so that’s going to help a lot. 
+                            <br>
+                            <br>
+                            The main thing that I’m worried about with college is loneliness. My first year of high school, I had lots of trouble making friends, and even though I tried convincing myself that I didn’t need friends, it didn’t help with my loneliness. I really don’t want a repeat of that, so I’m going to make sure to go out of my comfort zone in college to try and talk to everyone and make new friends. Also, I’m super busy right now with school and work at the end of the year, so this might be my last full entry for a little while, but I’ll still try and write a little something each day. 
+                            <br>
+                            <br>
+                            11-4-2028 
+                            <br>
+                            <br>
+                            Not much happened today. I woke up, got dressed, and hopped on the computer to get some work done. I have a paper due Monday that I just started today, but I’m sure it’ll be fine. It’s only a few pages and I just have to do some research on historical classical composers. I have pretty good grades anyways, so even if I don’t finish the paper, it probably won’t affect me that much. I have a job interview tomorrow, but I’m not really nervous about it. I’ll be happy if I do get the job, but if I don’t, I’ll just find a different one. Also, one of the strings on my guitar broke, but I haven’t been playing it much anymore, so I don’t think I need to waste money on getting a new one. 
+                            <br>
+                            <br>
+                            6-26-2033 
+                            <br>
+                            <br>
+                            I’m moving to another state. It feels crazy just to write that, but I strongly believe that it’s the right decision. I am doing everything possible to prepare at the moment, but at a certain extent there just isn’t much I can do. I believe the most important thing is to not become anxious over it; I’ve done everything I can, so there’s nothing to worry about. Today, I was looking through my belongings to decide what I wanted to take with me and what I wanted to get rid of, and I found my old guitar. I used to be amazing at it, and it got me into the school I wanted to get into, so I figure the least I can do is start practicing again. It’ll be nice to have a goal to work towards. 
+                            <br>
+                            <br>
+                            As to the reason for moving, I occasionally get confused over it myself. However, considering that my job is not very high paying and nowhere close to where I want my career, and I don’t really have anyone or anything keeping me here (and the taxes are lower), I believe it’s a good choice. The more I live by myself, the more I realize how much I hate being alone, so my hope is that moving will give me a fresh start. 
+                            <br>
+                            <br>
+                            7-31-2057 
+                            <br>
+                            <br>
+                            It’s been a while. I was searching through my attic when I found this diary, and I guess it’s never too late to pick up right back where you left off. The last entry in this diary was the 26th of June 2033, 27 years ago. Given this fact, I feel it would only be right to summarize all the major changes in my life since then so you can get all caught up. Let’s start with my job. 
+                            <br>
+                            <br>
+                            After I first moved here, I went around to a few different jobs, at each one knowing I wouldn’t keep it. Truly, I didn’t know what I wanted as a career, but if there’s one thing that I’m glad about, it’s that I picked up my guitar again as the last entry says. As I started to meet new people and make new friends, I gradually found a group of people that happened to share my love for writing and playing music. We always knew we wanted to start a band together, but never knew where to begin. Luckily, we were able to get a few gigs at just the right places, and we’ve been playing around town ever since. We’ve had a few changes happen over the years, but the band is still mostly the same people as it was when it began, and I don’t see it ending soon. Another pretty major thing that I guess I should mention at this point is my wife who I have been married to for over 16 years. We have been through a lot together, and though we’ve had our ups and downs, we have a very strong relationship that will hopefully take us through the rest of our lives. 
+                            <br>
+                            <br>
+                            I guess these are most of the big changes in my life. I’ve really enjoyed looking back over everything that has happened over 27 years and seeing all the improvements that I’ve undergone through this period. I'll do my best to continue writing in this diary from now on; it’s really helped me to organize all my thoughts in one place. When I write everything out, it suddenly doesn’t look like much change has happened. However, I know there is much more to be said, and I couldn’t write everything with all the time in the world. What I can say is this: when I look back on my life, I am awestruck and can see without a shadow of a doubt a wonderful, unbounded growth.
+                        </p>
+                        <div class="work-spacing-block-small">
+
+                        </div>
+                        <hr>
+                        <div class="work-spacing-block-small">
+
+                        </div>
+                        <p>Micah Upton</p>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+
+                </div>
+
+
+            </div>
+
+        </div>
+    </section>
+    <!-- Body Content End-->
+
+    <!-- Footer Start-->
+    <section class="footer-section">
+        <div class="container">
+            <footer class="footer-bs">
+                <div class="row">
+                    <div class="col-md-4 footer-nav animated fadeInUp">
+                            <h4 class="footer-header"> — Menu — </h4>
+                            <ul class="pages">
+                                <li class="nav-item"><a href="../index.html" class="nav-link">Home</a></li>
+                                <li class="nav-item"><a href="../art.html" class="nav-link">Art</a></li>
+                                <li class="nav-item"><a href="../literature.html" class="nav-link">Literature</a></li>
+                                <li class="nav-item"><a href="../media.html" class="nav-link">Media</a></li>
+                                <li class="nav-item"><a href="../credits.html" class="nav-link">Credits</a></li>
+                                <li class="nav-item"><a href="../about.html" class="nav-link">About Us</a></li>
+                            </ul>
+                    </div>
+                    <div class="col-md-4 footer-brand animated fadeInLeft">
+                        <a href="../index.html"><img class="footer-img" src="../assets/images/The Magnet Logos/black transparent_magnet_logo.png"></a>
+                        <p>
+                            The Magnet represents a student-led literary arts magazine operating within Madison Academic Magnet High School. Their dedicated team undertakes the curation of literary works and visual art for publication. Additionally, they adeptly manage the development of a portfolio website and documentary, showcasing their collective creativity.                        </p>
+                    </div>
+                    <div class="col-md-4 footer-social animated fadeInDown">
+                        <h4 class="footer-header footer-social-header"> — Follow Us — </h4>
+                        <ul class="footer-social-list">
+                            <li class="nav-item"><a href="https://www.instagram.com/mahs.themagnet?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="nav-link"> Instagram <i class="fa-brands fa-instagram fa-lg" id="footer-font-awesome-icon"></i> </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </section>
+    <!-- Footer End-->
+
+
+    <!-- Back to Top Button Start-->
+    <div class="progress-wrap ">
+        <svg class="progress-circle svg-content" width="100%" height="100%" viewBox="-1 -1 102 102"><path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" /></svg>
+    </div>
+    <!-- Back to Top Button End-->
+
+    <!-- Custom page cursor Start -->
+    <!-- Codepen link: https://codepen.io/ig_design/pen/OrLBqO  -->
+    <div class="cursor cursor-shadow"></div>
+    <div class="cursor cursor-dot"></div>
+    <!-- Custom page cursor End -->    
+
+    
+    <!-- Link to main Javascript File (script.js) Start -->
+    <script src="../script.js"></script>
+    <!-- Link to main Javascript File (script.js) End -->
+
+    <!-- Link to literature specific Javascript File (literature-script.js) Start -->
+    <script src="../literature-script.js"></script>
+    <!-- Link to literature specific Javascript File (literature-script.js) End -->
+
+    <!-- Link to theme-switch Javascript File (script.js) Start -->
+    <script src="../theme-switch.js"></script>
+    <!-- Link to theme-switch Javascript File (script.js) End -->
+
+    <!-- Link to Back to Top Button's Javascript File (script.js) Start -->
+    <script src="../back-to-top.js"></script>
+    <!-- Link to the Back to Top Button's Javascript File (script.js) End -->
+
+</body>
+</html>

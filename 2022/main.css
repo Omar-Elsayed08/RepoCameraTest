@@ -1,0 +1,445 @@
+@font-face {
+    font-family: 'book';
+    src: url(fonts/book-antiqua.ttf);
+}
+
+
+@font-face {
+    font-family: 'ocra';
+    src: url(fonts/OCRAEXT.TTF);
+}
+
+#flashpagepic {
+    height: 32vh;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%;
+}
+
+.indexbody {
+    background-color: black;
+    width: auto;
+}
+
+article {
+    font-family: 'book';
+    padding: 3%;
+    color:white;
+    margin: 7% 5% 7% 5%;
+    border: 1px solid white;
+    position: relative;
+   
+}
+
+.article-content{
+    margin-top: 2rem;
+}
+
+.title {
+    font-family: 'ocra';
+    background-color: rgb(49, 100, 158);
+    color: black;
+}
+
+hr {
+    color: black;
+}
+
+body {
+    background-color: rgb(29, 29, 29);
+}
+
+.container {
+    padding-top: 3%;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+p {
+    color: rgb(230, 227, 227);
+}
+
+.sidecontent {
+    margin: 40% 5% 5% 5%;
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    top: 0;
+    padding-top: 40%;
+}
+
+.sidecover {
+    width: 85%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+ul {
+    list-style: none;
+    margin-bottom: 0%!important;
+    padding-left: 0%!important;
+}
+
+.sideboxes:hover {
+    background-color: rgb(48, 84, 124);
+}
+
+.navlist {
+    margin-bottom: 1%!important;
+}
+
+article img{
+    width: 100%;
+}
+
+article h3{ /* author names */
+    font-size: 1em;
+    font-style: italic;
+}
+
+/* nav bar */
+
+.nav a{ 
+    text-align: center;
+}
+
+.nav-link {
+    color: white;
+}
+
+.active {
+    background-color: rgb(49, 100, 158);
+    color: black;
+}
+
+.nav-link:hover {
+    color: rgb(47, 47, 47);
+}
+
+article img {
+    width: 100%;
+}
+
+.topbar {
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+}
+
+.sidebar {
+    padding: 0%;
+}
+
+.p-3 {
+    padding: 0%!important;
+}
+
+/* fade in */
+
+#container
+{
+    height:2000px;    
+}
+
+#container DIV
+{ 
+    margin:50px; 
+    padding:50px; 
+    background-color:pink; 
+}
+
+.hideme
+{
+    opacity:0;
+}
+
+/* footer */
+
+footer h3 {
+    color: white;
+    text-align: center;
+}
+
+
+#jackson {
+    background-color: rgba(255, 255, 255, 0.85);
+}
+#jackson p{
+    color: black;
+}
+
+#third .title {
+    background-color: rgb(67, 148, 52);
+}
+
+#third {
+    background-color: rgb(50, 110, 39);
+}
+
+#fourth {
+    background-color: rgb(31, 81, 139);
+}
+
+#fifth .title {
+    background-color: rgb(50, 110, 39);
+}
+
+#fifth {
+    background-color: rgb(67, 148, 52);
+}
+
+#sixth {
+    background-color: rgb(49, 85, 127);
+}
+
+#seventh {
+    background-color: rgb(61, 111, 168);
+}
+
+#nineth {
+    background-color: rgb(53, 86, 124);
+}
+
+#tenth .title {
+    background-color: rgb(64, 131, 52);
+}
+
+#tenth {
+    background-color: rgb(55, 107, 46);
+}
+
+#eleventh {
+    background-color: rgb(34, 65, 101);
+}
+
+#twelfth {
+    background-color: rgb(48, 84, 124);
+}
+
+#thirteenth .title {
+    background-color: rgb(67, 148, 52);
+}
+
+#thirteenth {
+    background-color: rgb(50, 110, 39);
+}
+
+#fourteenth {
+    background-color: rgb(61, 111, 168);
+}
+
+#fifteenth .title {
+    background-color: rgb(67, 148, 52);
+}
+
+#fifteenth {
+    background-color: rgb(55, 107, 46);
+}
+
+#sixteenth .title {
+    background-color: rgb(50, 107, 40);
+}
+
+#sixteenth {
+    background-color: rgb(72, 124, 62);
+}
+
+#seventeenth {
+    background-color: rgb(48, 95, 149);
+}
+
+#eighteenth {
+    background-color: rgb(61, 111, 168);
+}
+
+#nineteenth {
+    background-color: rgb(39, 82, 131);
+}
+
+#twentieth {
+    background-color: rgb(45, 85, 131);
+}
+
+/* */
+
+
+
+#half-earths img {
+    width: 50%;
+}
+
+#corner_earth {
+    width: 60%;
+}
+
+#in_the_dark_img {
+    width: 60%;
+}
+
+
+
+
+
+
+/* Image Modal */
+.visual-art {
+    cursor: pointer;
+}
+.visual-art:hover {opacity: 0.8;}
+
+/* The Modal (background) */
+#imageModal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 40px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.9); /* Black w/ opacity */
+}
+/* Modal Content (image) */
+#imageModal-content {
+    margin: auto;
+    display: block;
+ }
+
+/* Caption of Modal Image */
+#imageModal-caption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+    height: 150px;
+}
+
+/* Add Animation */
+.in {
+    -webkit-animation-name: zoom;
+    -webkit-animation-duration: 0.6s;
+    animation-name: zoom;
+    animation-duration: 0.6s;
+}
+
+.out {
+  animation-name: zoom-out;
+  animation-duration: 0.6s;
+}
+
+@-webkit-keyframes zoom {
+    from {-webkit-transform:scale(1)}
+    to {-webkit-transform:scale(2)}
+}
+
+@keyframes zoom {
+    from {transform:scale(0.4)}
+    to {transform:scale(1)}
+}
+
+
+@keyframes zoom-out {
+    from {transform:scale(1)}
+    to {transform:scale(0)}
+}
+
+/* The Close Button */
+.close {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.close:hover,
+.close:focus {
+    color: #bbb;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* 100% Image Width on Smaller Screens */
+@media only screen and (max-width: 700px){
+    #imageModal-content {
+        width: 100%;
+    }
+    .close {
+        top: 5px;
+        right: 12px;
+    }
+    #imageModal{
+        padding-top: 10px;
+    }
+}
+
+
+@media only screen and (min-width: 1200px){
+    #imageModal-content {
+        height: 96%;
+    }
+}
+
+@media only screen and (min-width: 700px) and (max-width: 1200px){
+    #imageModal-content {
+        width: 75%;
+    }
+}
+
+
+
+
+
+
+#vidsec {
+    background-color: black;
+}
+
+#vidshelb {
+    background-color: black;
+}
+
+.ytvid {
+    max-width: 100%;
+}
+
+@media only screen and (max-width: 900px) {
+    .col-2 {
+        display: none;
+    }
+    .col-10 {
+        width: auto;
+    }
+  }
+
+@media only screen and (max-width: 600px) {
+    .col-2 {
+        display: none;
+    }
+    .col-10 {
+        width: auto;
+        font-size: 3vw;
+    }
+    #flashpagepic {
+        height: 100vw;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 100%;
+    }
+    .indexbody {
+        background-color: black;
+        width: 100vw;
+        height: 100vh;
+        padding-top: 40%;
+    }
+  }
+
+

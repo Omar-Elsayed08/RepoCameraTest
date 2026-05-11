@@ -1,1166 +1,289 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="en" class="page-loading">
 <head>
-	<title>Free Cam test</title>
-	<meta charset=utf-8 />
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-	<link type="text/css" rel="stylesheet" href="main.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="The Magnet is Madison Academic High School's annual literary arts magazine—art, literature, and film from our student teams. Explore every edition since 2022." />
+  <meta name="theme-color" content="#001244" />
+  <title>The Magnet</title>
+  <link rel="stylesheet" href="magnet-navbar.css" />
+  <link rel="stylesheet" href="index.css" />
 </head>
+<body class="site-home">
+  <a href="#main" class="skip-link">Skip to main content</a>
+
+  <div id="page-loader" class="page-loader" aria-busy="true" aria-label="Loading">
+    <div class="page-loader-inner">
+      <svg width="100%" height="100%" viewBox="0 0 4267 4580" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" preserveAspectRatio="xMidYMid meet" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5">
+        <path style="fill:#ebebeb;fill-opacity:0;stroke:#000;stroke-width:62.5px" d="M245.84000000000015,2108.33A1889.58,1866.67 0,1,1 4025,2108.33A1889.58,1866.67 0,1,1 245.84000000000015,2108.33" class="xdcUuKEJ_0"></path>
+        <path style="fill:#ebebeb;fill-opacity:0;stroke:#000;stroke-width:62.5px" d="M83.32999999999993,2108.33A2041.67,2041.67 0,1,1 4166.67,2108.33A2041.67,2041.67 0,1,1 83.32999999999993,2108.33" class="xdcUuKEJ_1"></path>
+        <path d="M1179.17,1550l-495.83,-179.17c-118.8,201.28 -166.56,446.78 -141.67,737.5c186.08,953.95 693.27,1350.27 1325,1433.33c0.3,22.43 -18.05,48.36 -62.5,79.17c62.23,17.28 132.42,32.64 245.83,37.5c204.11,-96.19 313.89,-149.44 399.09,-212.5c172.47,-72.79 271.54,-91.13 175.91,95.83c34.1,16.3 152.79,-27.65 275.1,-155c58.15,-60.54 88.09,-191.53 164.18,-247.79c138.53,-102.42 374.08,-93.55 452.38,-225.8c-173.34,54.58 -224.89,-0.23 -171.3,-127.15c30.62,-72.51 120.05,-181.39 284.56,-323.61l136.74,-387.31c-174.18,96.04 -263.35,31.33 -290.94,-93.73c-12.34,-55.92 -23.53,-148.94 40.94,-229.27c31.93,-39.78 98.97,-53.2 145.83,-97.83l-662.5,-591.67c-274.08,-242.8 -588.13,-377.78 -920.83,-462.5l369.93,412.5l-61.59,87.5l-366.67,-208.33c133.62,190.08 178.37,428.58 59.91,658.33c-125.09,242.62 -270.48,486.96 -418.25,729.17l283.33,316.67c64.9,4.2 158.05,-133.92 266.67,-350c40.42,-58.72 153.85,-82.84 308.33,-87.5l245.83,-133.33c85.57,362.68 2.17,641.12 -245.83,837.5c-397.06,181.66 -789.68,25.67 -1106.45,-249.59c-249.56,-216.86 -357.83,-552.12 -235.22,-1062.91Z" style="fill:none;stroke:#000;stroke-width:62.5px" class="xdcUuKEJ_2"></path>
+        <path d="M1136.23,2075l-594.56,33.33" style="fill:none;stroke:#000;stroke-width:62.5px" class="xdcUuKEJ_3"></path>
+        <path d="M2520.83,2862.5c351.98,-78.06 599.62,-372.09 696.8,-754.17c74.38,-292.43 -4.47,-642.57 -217.63,-1045.83" style="fill:none;stroke:#000;stroke-width:62.5px" class="xdcUuKEJ_4"></path>
+        <text class="loader-title-stroke" x="2133.5" y="4410" text-anchor="middle" dominant-baseline="middle" font-family="'Times New Roman', Times, Georgia, serif" font-size="280" font-weight="700" font-style="italic" fill="none" stroke="#000" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" letter-spacing="24">The Magnet</text>
+      </svg>
+    </div>
+  </div>
+  <script src="index-init.js"></script>
+
+  <!-- NAV — links/logo are home-specific; motion/breakpoints come from magnet-navbar.css -->
+  <nav>
+    <a href="#home" class="nav-brand" aria-label="The Magnet home">
+      <img class="nav-brand-logo" src="./2026/assets/brand/full_color_magnet_logo.png" alt="" width="42" height="42" decoding="async" aria-hidden="true" />
+      <span class="nav-brand-name" aria-hidden="true">The Magnet</span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li class="nav-dropdown">
+        <button type="button" class="nav-dropdown-toggle" aria-haspopup="true" aria-expanded="false" id="editionsToggle">Editions <span class="nav-dropdown-caret" aria-hidden="true">▾</span></button>
+        <ul class="nav-dropdown-menu" aria-label="Edition links">
+          <li><a href="index.html#books">All Editions</a></li>
+          <li><a href="2026/">Volume V — Treasure (2026)</a></li>
+          <li><a href="2025/index.html">Volume IV — Wander (2025)</a></li>
+          <li><a href="2024/index.html">Volume III — Growth (2024)</a></li>
+          <li><a href="index.html#edition-ii">Volume II — Diversity</a></li>
+          <li><a href="2022/index.html">Volume I — Storybook (2022)</a></li>
+        </ul>
+      </li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <main id="main">
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-intro">
+      <p class="hero-kicker">Madison Academic's Literary Arts Magazine</p>
+      <h1 class="hero-display">The Magnet</h1>
+    </div>
+  </section>
+
+  <!-- OUR STORY -->
+  <section class="story-split" id="about">
+    <div class="story-split-visual">
+      <img
+        src="./2026/assets/covers/magnet scan clamped.png"
+        alt="Printed magazines and journals stacked on a shelf"
+        width="800"
+        height="1000"
+        decoding="async"
+      />
+    </div>
+    <div class="story-split-text reveal">
+      <h2>About The Magnet</h2>
+      <div class="section-rule"></div>
+      <p>
+        The Magnet is a literary arts magazine brought to you by students at Madison Academic High School's Humanities team.
+        Each year, our teams come together to bring you amazing pieces of art, literature, and film. 
+      </p>
+      
+      <p class="story-pull">
+        Every year we choose a theme to shape the magazine — then invite writers and artists from our very own school
+        to answer it in their own forms.
+      </p>
+    </div>
+  </section>
+
+  <!-- LATEST EDITION (mini feature) -->
+  <section class="latest-edition" aria-label="Latest edition">
+    <div class="latest-edition-inner">
+      <a class="latest-edition-cover reveal" href="2026/" aria-label="Volume V — Treasure">
+        <img src="./2026/assets/covers/Cover2026.png" alt="Volume V — Treasure cover" width="600" height="900" decoding="async" />
+      </a>
+      <div class="latest-edition-body reveal reveal-delay-1">
+        <span class="latest-edition-kicker"><span class="latest-edition-dot" aria-hidden="true"></span>Latest Edition</span>
+        <h2 class="latest-edition-title">Treasure</h2>
+        <p class="latest-edition-meta">Volume V · 2026</p>
+        <p class="latest-edition-desc">We all have something we treasure — a memory, a place, a person. Our newest edition gathers the pieces worth holding onto.</p>
+      </div>
+      <a class="latest-edition-cta reveal reveal-delay-2" href="2026/">
+        <span>Read this edition</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- QUOTE + COVERS -->
+  <section class="quote-covers" aria-label="Featured quote">
+    <div class="quote-covers-inner">
+      <blockquote class="quote-covers-quote reveal">
+        <p>The creative elements you'll find in The Magnet are nothing short of stunning. They speak with such sophistication, meet the eye and ear with mature and diverse discoveries.</p>
+        <footer class="quote-covers-attribution">
+          <span class="quote-covers-attribution-name">— Chris Clark</span>
+          <span class="quote-covers-attribution-role">Teacher at Madison Academic High School</span>
+        </footer>
+      </blockquote>
+      <div class="quote-covers-visual reveal reveal-delay-1">
+        <img src="./CoversFull.png" alt="The Magnet — recent edition covers" width="720" height="900" decoding="async" />
+      </div>
+    </div>
+  </section>
+
+  <!-- BOOKS -->
+  <section class="books" id="books">
+    <div class="books-header reveal">
+      <h2>Previous Editions</h2>
+      <div class="section-rule centered"></div>
+    </div>
+
+    <div class="books-list">
+
+      <article class="book-item book-item--director reveal" id="edition-v">
+        <div class="book-item-cover">
+          <img src="./2026/assets/covers/Cover2026.png" alt="Treasure edition cover" width="600" height="900" decoding="async" />
+        </div>
+        <div class="book-item-body">
+          <p class="book-item-year">Volume V · 2026</p>
+          <h3 class="book-item-title">Treasure</h3>
+          <div class="book-item-note">
+            <div class="book-item-note-clip" id="editionVNoteClip">
+              <p class="book-item-desc" id="editionVNote">Treasure is more than just a wooden box full of gold. We all have something we treasure, whether it be a physical object, an emotion, an idea, or a relationship. Our treasures give our lives meaning and shape our perspective of the world.</p>
+              <p class="book-item-desc">Treasure is everywhere, and it can take many forms. Treasure is the people you love. It’s the sun shining through a window. It’s a safe place to sleep. It’s a smile, stretching across your face. Treasure is a memory from your childhood, or a family heirloom, passed down through generations. It’s the objects you associate with your life, even if you have to leave them behind. It’s the breath that enters your lungs every time you breathe. It’s the everyday moments, the things we cling to in a fast-paced world. And sometimes, the treasure really is the things we learned along the way.</p>
+              <p class="book-item-desc">I hope that you enjoy reading this year’s edition of The Magnet.</p>
+              <p class="book-item-desc">Every piece you’ll find in these pages—whether literature, art, or photography—is rich with depth, intention, and meaning and is the product of months of careful labor. I am so incredibly proud of the wonderful team of artists and writers who have come together to make this year’s magazine. They are the true treasures of this magazine. So, dear reader, I urge you to take the time to enjoy each piece, because it’s my treasure, and the treasure of our whole staff, to share our work with you.</p>
+            </div>
+            <button type="button" class="book-read-more" aria-expanded="false" aria-controls="editionVNoteClip">Read more</button>
+          </div>
+          <p class="book-item-attribution">With hope this work reminds you to treasure each moment. — 2026 Literary Director, Lilly Chattin</p>
+          <div class="book-item-actions">
+            <a class="book-more" href="2026/"><span>Read this edition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+            <a class="book-more book-more--alt" href="2026/3dWorld.html"><span>View Interactive World</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="book-item book-item--director reveal" id="edition-iv">
+        <div class="book-item-cover">
+          <img src="./2025/assets/images/Cover2025.png" alt="Wander edition cover" width="600" height="900" decoding="async" />
+        </div>
+        <div class="book-item-body">
+          <p class="book-item-year">Volume IV · 2025</p>
+          <h3 class="book-item-title">Wander</h3>
+          <div class="book-item-note">
+            <div class="book-item-note-clip" id="editionIVNoteClip">
+              <p class="book-item-desc" id="editionIVNote">Wander is a calling—a tug at the soul to move, explore, and discover. It is the instinct that whispers that there is more, even when we don’t quite know what we’re searching for. To wander is to surrender to curiosity, to follow winding paths, and to let go of what we know to be changed by the journey to come.</p>
+              <p class="book-item-desc">Wander is the wind that tousles your hair and tells you to keep walking. It is the stars you chase on long drives with zero destinations. It is the feeling of standing still while the world spins around you, and the shocking realization that you are a part of something vast and unpredictable. It is a compass with no true north, and a map inked with places that only exist once you arrive. Wander is not aimless. It is brave; it is stepping into the unknown, into solitude, into wonder. It is the freedom to lose yourself and then trust that you will be found again. It is the quiet moments between destinations—coffee shops, a new city, the airport gate at 3 a.m. Wander is the ache of homesickness, and the thrill of independence wrapped into one.</p>
+              <p class="book-item-desc">In these pages, you’ll find voices that drift and soar, that seek and search. Art and stories that embody the restless magic and movement of wandering. These pieces are the footprints of those who dared to explore the world, both within and around them.</p>
+              <p class="book-item-desc">I am endlessly proud of the creators who poured their vulnerability into this edition. Their imagination, hearts, and resilience shine through every word, brushstroke, and pen mark. The Magnet is more than a magazine—it is a journey. It is learning to explore where your two feet stand, and the path beyond that.</p>
+              <p class="book-item-desc">May it stir in you the urge to wander.</p>
+            </div>
+            <button type="button" class="book-read-more" aria-expanded="false" aria-controls="editionIVNoteClip">Read more</button>
+          </div>
+          <p class="book-item-attribution">May it stir in you the urge to wander. — 2025 Logistics Director, Boran Aljafari</p>
+          <div class="book-item-actions">
+            <a class="book-more" href="2025/index.html"><span>Read this edition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="book-item book-item--director reveal" id="edition-iii">
+        <div class="book-item-cover">
+          <img src="./2024/assets/images/Cover2024.png" alt="Growth edition cover" width="600" height="900" decoding="async" />
+        </div>
+        <div class="book-item-body">
+          <p class="book-item-year">Volume III · 2024</p>
+          <h3 class="book-item-title">Growth</h3>
+          <div class="book-item-note">
+            <div class="book-item-note-clip" id="editionIIINoteClip">
+              <p class="book-item-desc" id="editionIIINote">Growth is an all-encompassing lifelong phenomenon. Each and every person reading this edition of The Magnet has experienced growth and will continue to experience growth for the rest of their lives. Without growth we do not learn, and we do not become the people we are meant to become.</p>
+              <p class="book-item-desc">Growth is a seed buried deep in the earth, "reaching for beams of warmth." It is a flower that blooms despite its surroundings. Growth is our awareness of the little things around us gently correcting us as we walk through life. Growth is "a symbol of strength." It swallows you whole, a heavy burden, a vine choking out life for its own sake. Growth is a journey, it is leaving your comfort zone, leaving your home and going into unknown territory with cardboard boxes at your side. Growth is like the changing of fall leaves, it may be disguised as death, but it is necessary for life. Growth is sometimes "confined in concrete boxes" and other times it is natural, it takes place whether we want it to or not. It is in the trees and the leaves and the flowers and the birds. Growth is the different seasons of life which we go through, a toddling child, an awkward adolescent, a bright blossoming young adult, and a wise sage who has gained wisdom through the life that they have lived, the experiences through which they have grown. Growth is looking back at the past and reminiscing on what once was. Growth is intimidating, it is scary, but it is healthy. Growth is within each of us, in our hearts, our brains, our self.</p>
+              <p class="book-item-desc">I hope that you have enjoyed reading this year's edition. Each piece of writing and art is filled with emotion and depth. I am beyond impressed by the excellence that this group of students has produced. I am also extremely proud of my writers and all the hard work that they have done as well as how supportive they have been of each other as they have collaborated and edited each other's pieces. This little book is a labor of love, and I am thrilled to share it with you!</p>
+            </div>
+            <button type="button" class="book-read-more" aria-expanded="false" aria-controls="editionIIINoteClip">Read more</button>
+          </div>
+          <p class="book-item-attribution">With hope this work creates in you appreciation of the growth all around. — 2024 Literary Director, Gracie Chattin</p>
+          <div class="book-item-actions">
+            <a class="book-more" href="2024/index.html"><span>Read this edition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="book-item book-item--director reveal" id="edition-ii">
+        <div class="book-item-cover">
+          <img src="./Cover2023.png" alt="Diversity edition cover" width="600" height="900" decoding="async" />
+        </div>
+        <div class="book-item-body">
+          <p class="book-item-year">Volume II · 2023</p>
+          <h3 class="book-item-title">Diversity</h3>
+          <div class="book-item-note">
+            <div class="book-item-note-clip" id="editionIINoteClip">
+              <p class="book-item-desc" id="editionIINote">Diversity exists in our experiences, our perceptions, our traumas, our religions, our passions, our perspectives, our relationships, our friendships, our families, our ethnicities, our opinions, and in our everyday interactions. Each creative piece displays a different type of diversity, and we hope that this edition of the magazine will help people see why diversity is valuable and necessary in every aspect of life. It helps us grow, learn, and understand the world around us in a new way. It also fosters compassion, love, and peaceful coexistence in a world where differences tend to divide us. The acceptance and encouragement of diversity will lead the world to a joyful, safe, and bright future.</p>
+              <p class="book-item-desc">Diversity is the ways in which we learn to love someone broken, the ways we grow from walking through fire, and the ways we run from our fears. Diversity is being a first-generation college student dealing with anxiety. Diversity is having a unique family with unique traditions. Diversity is the special thing that gives each person a passion and a purpose and a joy all their own. It is the spaces in which we find peace and contentment. Diversity is being diagnosed with a disease, being born with skin with patches of different colors. Diversity is every different story of immigration, of creating a new home and a new dream. Diversity is the stories we grow up with and the stories of the people who are different than us. Diversity is strength in the face of adversity. Diversity is learning to be inclusive and learning to find the soul-colors that form who you are. Diversity is how we experience trauma and how a group of friends love each other because of their differences. Diversity is openness and vulnerability and hope. Diversity is infinite, fluid, everywhere.</p>
+              <p class="book-item-desc">I hope you enjoy reading this edition and consider how the heart of each piece beats with a little life from every writer, every artist. Everyone has created sensitive pieces that sit close to their heart; I ask that you encourage them to continue to be vulnerable and open in their art: everyone needs to hear what they have to say.</p>
+            </div>
+            <button type="button" class="book-read-more" aria-expanded="false" aria-controls="editionIINoteClip">Read more</button>
+          </div>
+          <p class="book-item-attribution">With hope this work fosters a world full of love and acceptance. — 2023 Literary Director Lily K. Lewis </p>
+          <div class="book-item-actions">
+            <a class="book-more" href="https://the-magnet.webflow.io/" title="No standalone site for this volume is in this repository yet"><span>Read this edition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          </div>
+        </div>
+      </article>
+      <article class="book-item book-item--director reveal" id="edition-i">
+        <div class="book-item-cover">
+          <img src="./2022/assets/images/2022/Storybook_titlepage.jpg" alt="Home — Storybook edition cover" width="600" height="900" decoding="async" />
+        </div>
+        <div class="book-item-body">
+          <p class="book-item-year">Volume I · 2022</p>
+          <h3 class="book-item-title">Home</h3>
+          <div class="book-item-note">
+            <div class="book-item-note-clip" id="editionINoteClip">
+              <p class="book-item-desc" id="editionINote">Working with this diverse team of seniors and juniors has been the greatest joy-ride. When we first started this journey, we weren't sure where to begin.</p>
+              <p class="book-item-desc">We had so many questions like, “How do we make a magazine? Who do we talk to? Do you think the Times will answer us?” One of the few things we did know was our theme, Home.</p>
+              <p class="book-item-desc">We recently moved into our new campus, which was the high-light of our semester. While we loved the feeling of the new campus combined with the fresh air and drinkable water, there were many aspects we missed from the old building.</p>
+              <p class="book-item-desc">With this big move from our original home to our new home, we dug deeper into what home actually means to each of us.</p>
+              <p class="book-item-desc">On the cover, you notice the planet Earth takes the form of a human heart, which symbolizes the prominent phrase “Home is where the heart is.” The world, the continent, the country, the state, the city, all correspond to our meaning of home; however, within each contains a different story that composes who we are as individuals.</p>
+              <p class="book-item-desc">To me, home is where the aroma of freshly rolled flour tortillas and bean tacos in a brown paper bag fill the air. It's where I can hide away from anything and everything, and where the background noises are constantly filled with my siblings playing some kind of made-up game or my mom playing Tejano classics.</p>
+              <p class="book-item-desc">While this is my version of home, The Storybook is a representation of our members through viewpoints in art and literature. We hope you enjoy this inaugural edition!</p>
+            </div>
+            <button type="button" class="book-read-more" aria-expanded="false" aria-controls="editionINoteClip">Read more</button>
+          </div>
+          <p class="book-item-attribution">From our first home on the page to yours — The Magnet, Volume I</p>
+          <div class="book-item-actions">
+            <a class="book-more" href="2022/index.html"><span>Read this edition</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+  </main>
+
+  
+  <!-- FOOTER -->
+  <footer id="contact">
+    <div class="footer-title">The Magnet</div>
+    <p class="footer-desc">A Literary Arts Magazine brought to you by Madison Academic High School's Humanities team. Published annually since 2022.</p>
+    <div class="footer-links">
+      <a class="footer-link" href="https://www.instagram.com/mahs.themagnet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Instagram
+      </a>
+      <a class="footer-link" href="mailto:editors@themagnet.org">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email Us
+      </a>
+    </div>
+    <div class="footer-divider"></div>
+  </footer>
+
+  <button type="button" class="back-to-top" id="backToTop" aria-label="Back to top" aria-hidden="true" tabindex="-1">
+    <svg class="back-to-top-ring" viewBox="0 0 56 56" aria-hidden="true">
+      <circle class="back-to-top-track" cx="28" cy="28" r="22" />
+      <circle class="back-to-top-progress" cx="28" cy="28" r="22" pathLength="100" />
+    </svg>
+    <span class="back-to-top-inner">
+      <svg class="back-to-top-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+    </span>
+  </button>
+
+  <script src="index.js"></script>
 
-<body>
-	<div id="info">
-		<br />
-		<span class="desktop-controls"></span>
-		<span class="mobile-controls" style="display: none;"></span>
-	</div>
-	<div id="container"></div>
-	<div id="scroll-container"><div id="scroll-spacer"></div></div>
-	<div id="mode-toggle">
-		<button id="btn-freecam" class="mode-btn active">Free Cam</button>
-		<button id="btn-flythrough" class="mode-btn">Flythrough</button>
-	</div>
-
-
-	<script type="importmap">
-		{
-				"imports": {
-					"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-					"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-					"cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
-				}
-			}
-		</script>
-
-	<script type="module">
-
-		import * as THREE from 'three';
-		import * as CANNON from 'cannon-es';
-
-			import Stats from 'three/addons/libs/stats.module.js';
-
-			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-
-			import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-			import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-			import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-			import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-			import { LUTPass } from 'three/addons/postprocessing/LUTPass.js';
-			import { LUTCubeLoader } from 'three/addons/loaders/LUTCubeLoader.js';
-			import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-			import { Water } from 'three/addons/objects/Water2.js';
-
-			/** Consolidated post-processing shader (vignette, tilt-shift, film grain) */
-			const MasterPostShader = {
-				uniforms: {
-					'tDiffuse': { value: null },
-					'time': { value: 0.0 },
-					'resolution': { value: new THREE.Vector2( window.innerWidth, window.innerHeight ) },
-					'vignetteEnabled': { value: true },
-					'vignetteOffset': { value: 1.0 },
-					'vignetteDarkness': { value: 1.2 },
-					'grainEnabled': { value: true },
-					'grainIntensity': { value: 0.03 },
-					'tiltShiftEnabled': { value: false },
-					'focusY': { value: 0.5 },
-					'focusWidth': { value: 0.35 },
-					'blurAmount': { value: 2.0 }
-				},
-				vertexShader: `
-					varying vec2 vUv;
-					void main() {
-						vUv = uv;
-						gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-					}
-				`,
-				fragmentShader: `
-					uniform sampler2D tDiffuse;
-					uniform float time;
-					uniform vec2 resolution;
-					uniform bool vignetteEnabled;
-					uniform float vignetteOffset;
-					uniform float vignetteDarkness;
-					uniform bool grainEnabled;
-					uniform float grainIntensity;
-					uniform bool tiltShiftEnabled;
-					uniform float focusY;
-					uniform float focusWidth;
-					uniform float blurAmount;
-					varying vec2 vUv;
-					
-					float rand( vec2 co ) {
-						return fract( sin( dot( co.xy, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 );
-					}
-					
-					void main() {
-						vec2 texelSize = 1.0 / resolution;
-						vec4 color;
-						
-						if ( tiltShiftEnabled && blurAmount > 0.0 ) {
-							float dist = abs( vUv.y - focusY );
-							float blur = smoothstep( 0.0, focusWidth, dist ) * blurAmount;
-							vec4 sum = vec4( 0.0 );
-							float total = 0.0;
-							for ( float i = -2.0; i <= 2.0; i++ ) {
-								float weight = 1.0 - abs( i ) / 2.0;
-								vec2 offset = vec2( 0.0, i * blur * texelSize.y );
-								sum += texture2D( tDiffuse, vUv + offset ) * weight;
-								total += weight;
-							}
-							for ( float i = -2.0; i <= 2.0; i++ ) {
-								float weight = 1.0 - abs( i ) / 2.0;
-								vec2 offset = vec2( i * blur * texelSize.x * 0.5, 0.0 );
-								sum += texture2D( tDiffuse, vUv + offset ) * weight;
-								total += weight;
-							}
-							color = sum / total;
-						} else {
-							color = texture2D( tDiffuse, vUv );
-						}
-						
-						if ( grainEnabled && grainIntensity > 0.0 ) {
-							float grain = rand( vUv + fract( time ) ) * 2.0 - 1.0;
-							color.rgb += grain * grainIntensity;
-						}
-						
-						if ( vignetteEnabled ) {
-							vec2 uv = ( vUv - vec2( 0.5 ) ) * vec2( vignetteOffset );
-							float vignette = 1.0 - dot( uv, uv );
-							vignette = clamp( pow( vignette, vignetteDarkness ), 0.0, 1.0 );
-							color.rgb *= vignette;
-						}
-						
-						gl_FragColor = color;
-					}
-				`
-			};
-
-			const clock = new THREE.Clock();
-			const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test( navigator.userAgent );
-
-			const scene = new THREE.Scene();
-			scene.background = new THREE.Color( 0x88ccee );
-			scene.fog = new THREE.Fog( 0x88ccee, 0, isMobileDevice ? 30 : 50 );
-
-			const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 200 );
-			camera.rotation.order = 'YXZ';
-
-			const fillLight1 = new THREE.HemisphereLight( 0x8dc1de, 0x00668d, 1.5 );
-			fillLight1.position.set( 2, 1, 1 );
-			scene.add( fillLight1 );
-
-			const light = new THREE.PointLight( 0xff0000, 100, 0 );
-			light.position.set( -7, 6, 60 );
-			light.castShadow = true;
-			scene.add( light );
-
-			const sun = new THREE.PointLight( 0xff0000, 1000, 0 );
-			sun.position.set( 50, 1, 200 );
-			sun.castShadow = true;
-			scene.add( light );
-
-			const directionalLight = new THREE.DirectionalLight( 0xffffff, 2.5 );
-			directionalLight.position.set( -5, 25, -1 );
-			directionalLight.castShadow = true;
-			directionalLight.shadow.camera.near = 0.1;
-			directionalLight.shadow.camera.far = 100;
-			directionalLight.shadow.camera.right = 20;
-			directionalLight.shadow.camera.left = -20;
-			directionalLight.shadow.camera.top = 20;
-			directionalLight.shadow.camera.bottom = -20;
-			const shadowRes = isMobileDevice ? 256 : 512;
-			directionalLight.shadow.mapSize.width = shadowRes;
-			directionalLight.shadow.mapSize.height = shadowRes;
-			directionalLight.shadow.radius = 2;
-			directionalLight.shadow.bias = -0.0001;
-			directionalLight.shadow.autoUpdate = false;
-			directionalLight.shadow.needsUpdate = true;
-			scene.add( directionalLight );
-
-			const ambientLight = new THREE.AmbientLight( 0x404040, 0.5 );
-			scene.add( ambientLight );
-
-			/** Water plane */
-			let water = null;
-			const textureLoader = new THREE.TextureLoader();
-			const waterParams = { color: 0x0088aa, scale: 4, flowX: 1, flowY: 1 };
-			const waterTextureBase = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/water/';
-			
-			const container = document.getElementById( 'container' );
-			const isMobile = isMobileDevice;
-			
-			/** Water - full shader on all platforms, optimizations only affect other systems */
-			Promise.all( [
-				new Promise( ( resolve ) => {
-					textureLoader.load( waterTextureBase + 'Water_1_M_Normal.jpg', ( tex ) => {
-						tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-						resolve( tex );
-					}, undefined, () => resolve( null ) );
-				} ),
-				new Promise( ( resolve ) => {
-					textureLoader.load( waterTextureBase + 'Water_2_M_Normal.jpg', ( tex ) => {
-						tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-						resolve( tex );
-					}, undefined, () => resolve( null ) );
-				} )
-			] ).then( ( [ normalMap0, normalMap1 ] ) => {
-				if ( normalMap0 && normalMap1 ) {
-					const waterGeometry = new THREE.PlaneGeometry( 500, 500 );
-					water = new Water( waterGeometry, {
-						color: waterParams.color,
-						scale: waterParams.scale,
-						flowDirection: new THREE.Vector2( waterParams.flowX, waterParams.flowY ),
-						normalMap0: normalMap0,
-						normalMap1: normalMap1
-					} );
-					water.position.set( 0, -0.1, 0 );
-					water.rotation.x = Math.PI * -0.5;
-					scene.add( water );
-				}
-			} );
-
-			const renderer = new THREE.WebGLRenderer( { 
-				antialias: !isMobile,
-				powerPreference: isMobile ? 'low-power' : 'high-performance',
-				precision: isMobile ? 'mediump' : 'highp'
-			} );
-			renderer.setPixelRatio( isMobile ? 1.0 : Math.min( window.devicePixelRatio, 1.5 ) );
-			renderer.setSize( window.innerWidth, window.innerHeight );
-			renderer.setAnimationLoop( animate );
-			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
-			renderer.toneMapping = THREE.ACESFilmicToneMapping;
-			renderer.toneMappingExposure = 1.0;
-			container.appendChild( renderer.domElement );
-
-			/** Stats and coordinates display - enabled for both mobile and desktop */
-			let stats = new Stats();
-			stats.domElement.style.position = 'absolute';
-			stats.domElement.style.top = '0px';
-			container.appendChild( stats.domElement );
-
-			let coordsDisplay = document.createElement( 'div' );
-			coordsDisplay.style.cssText = 'position:absolute;top:50px;left:0;background:rgba(0,0,0,0.7);color:#fff;padding:8px 12px;font:12px monospace;z-index:100;border-radius:0 4px 4px 0;';
-			coordsDisplay.innerHTML = 'X: 0.00<br>Y: 0.00<br>Z: 0.00';
-			container.appendChild( coordsDisplay );
-
-			const defaultPostProcessingSettings = {
-				bloomEnabled: true,
-				bloomStrength: 0.2,
-				bloomRadius: 1,
-				bloomThreshold: 1,
-				filmEnabled: true,
-				filmNoiseIntensity: 0.03,
-				vignetteEnabled: true,
-				vignetteOffset: 1.0,
-				vignetteDarkness: 1.2,
-				tiltShiftEnabled: false,
-				tiltShiftFocusY: 0.5,
-				tiltShiftFocusWidth: 0.35,
-				tiltShiftBlurAmount: 2.0,
-				lutEnabled: true,
-				lutIntensity: 1
-			};
-
-			function loadPostProcessingSettings() {
-				try {
-					const saved = localStorage.getItem( 'postProcessingSettings' );
-					if ( saved ) return { ...defaultPostProcessingSettings, ...JSON.parse( saved ) };
-				} catch ( e ) { console.warn( 'Failed to load post-processing settings:', e ); }
-				return { ...defaultPostProcessingSettings };
-			}
-
-			const postProcessingSettings = loadPostProcessingSettings();
-
-			function savePostProcessingSettings() {
-				try { localStorage.setItem( 'postProcessingSettings', JSON.stringify( postProcessingSettings ) ); }
-				catch ( e ) { console.warn( 'Failed to save post-processing settings:', e ); }
-			}
-
-			/** Post-processing pipeline */
-			const composer = new EffectComposer( renderer );
-
-			const renderPass = new RenderPass( scene, camera );
-			composer.addPass( renderPass );
-
-			const bloomPass = new UnrealBloomPass(
-				new THREE.Vector2( window.innerWidth, window.innerHeight ),
-				postProcessingSettings.bloomStrength,
-				postProcessingSettings.bloomRadius,
-				postProcessingSettings.bloomThreshold
-			);
-			composer.addPass( bloomPass );
-
-			const masterPostPass = new ShaderPass( MasterPostShader );
-			masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
-			composer.addPass( masterPostPass );
-
-			let lutPass = null;
-
-			function applyPostProcessingSettings() {
-				bloomPass.enabled = postProcessingSettings.bloomEnabled;
-				bloomPass.strength = postProcessingSettings.bloomStrength;
-				bloomPass.radius = postProcessingSettings.bloomRadius;
-				bloomPass.threshold = postProcessingSettings.bloomThreshold;
-				masterPostPass.uniforms[ 'grainEnabled' ].value = postProcessingSettings.filmEnabled;
-				masterPostPass.uniforms[ 'grainIntensity' ].value = postProcessingSettings.filmNoiseIntensity;
-				masterPostPass.uniforms[ 'vignetteEnabled' ].value = postProcessingSettings.vignetteEnabled;
-				masterPostPass.uniforms[ 'vignetteOffset' ].value = postProcessingSettings.vignetteOffset;
-				masterPostPass.uniforms[ 'vignetteDarkness' ].value = postProcessingSettings.vignetteDarkness;
-				masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = postProcessingSettings.tiltShiftEnabled;
-				masterPostPass.uniforms[ 'focusY' ].value = postProcessingSettings.tiltShiftFocusY;
-				masterPostPass.uniforms[ 'focusWidth' ].value = postProcessingSettings.tiltShiftFocusWidth;
-				masterPostPass.uniforms[ 'blurAmount' ].value = postProcessingSettings.tiltShiftBlurAmount;
-				if ( lutPass ) {
-					lutPass.enabled = postProcessingSettings.lutEnabled;
-					lutPass.intensity = postProcessingSettings.lutIntensity;
-				}
-			}
-
-			applyPostProcessingSettings();
-
-			const lutLoader = new LUTCubeLoader();
-
-			lutLoader.load( './HardBoost.cube', ( result ) => {
-				lutPass = new LUTPass( { lut: result.texture3D, intensity: postProcessingSettings.lutIntensity } );
-				lutPass.enabled = postProcessingSettings.lutEnabled;
-				composer.insertPass( lutPass, composer.passes.length - 1 );
-			} );
-
-			const outputPass = new OutputPass();
-			composer.addPass( outputPass );
-
-			/** Theatre.js Flythrough System — scroll-driven with smooth interpolation */
-			let flythroughState = null;
-			let flythroughActive = false;
-			let flythroughTime = 0;
-			let flythroughTargetTime = 0;
-			const _flythroughEuler = new THREE.Euler( 0, 0, 0, 'XYZ' );
-			const scrollContainer = document.getElementById( 'scroll-container' );
-			const scrollSpacer = document.getElementById( 'scroll-spacer' );
-			const btnFreecam = document.getElementById( 'btn-freecam' );
-			const btnFlythrough = document.getElementById( 'btn-flythrough' );
-
-			function cubicBez( t, p0, p1, p2, p3 ) {
-				const mt = 1 - t;
-				return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3;
-			}
-
-			function solveBezT( x, cx1, cx2 ) {
-				let lo = 0, hi = 1;
-				for ( let i = 0; i < 32; i++ ) {
-					const mid = ( lo + hi ) / 2;
-					if ( cubicBez( mid, 0, cx1, cx2, 1 ) < x ) lo = mid; else hi = mid;
-				}
-				return ( lo + hi ) / 2;
-			}
-
-			function evaluateTrack( keyframes, t ) {
-				if ( !keyframes || keyframes.length === 0 ) return 0;
-				if ( t <= keyframes[ 0 ].position ) return keyframes[ 0 ].value;
-				if ( t >= keyframes[ keyframes.length - 1 ].position ) return keyframes[ keyframes.length - 1 ].value;
-				let i = 0;
-				for ( ; i < keyframes.length - 1; i++ ) {
-					if ( t <= keyframes[ i + 1 ].position ) break;
-				}
-				const kfA = keyframes[ i ], kfB = keyframes[ i + 1 ];
-				const dt = kfB.position - kfA.position;
-				if ( dt < 0.0001 ) return kfA.value;
-				const tNorm = ( t - kfA.position ) / dt;
-				const u = solveBezT( tNorm, kfA.handles[ 2 ], kfB.handles[ 0 ] );
-				const vNorm = cubicBez( u, 0, kfA.handles[ 3 ], kfB.handles[ 1 ], 1 );
-				return kfA.value + vNorm * ( kfB.value - kfA.value );
-			}
-
-			function parseTheatreState( stateJson ) {
-				const sheet = stateJson.sheetsById?.[ 'Intro' ];
-				if ( !sheet?.sequence ) return null;
-				const seq = sheet.sequence;
-				const camData = seq.tracksByObject?.[ 'Camera' ];
-				if ( !camData ) return null;
-				const tracks = {};
-				for ( const [ propPath, trackId ] of Object.entries( camData.trackIdByPropPath || {} ) ) {
-					const td = camData.trackData[ trackId ];
-					if ( td?.keyframes ) tracks[ propPath ] = td.keyframes;
-				}
-				return { duration: seq.length, tracks };
-			}
-
-			function updateFlythrough( deltaTime ) {
-				if ( !flythroughState || !flythroughActive ) return;
-				const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-				if ( maxScroll > 0 ) {
-					flythroughTargetTime = ( scrollContainer.scrollTop / maxScroll ) * flythroughState.duration;
-				}
-				const smoothing = 1 - Math.exp( -6 * deltaTime );
-				flythroughTime += ( flythroughTargetTime - flythroughTime ) * smoothing;
-				const tr = flythroughState.tracks;
-				camera.position.set(
-					evaluateTrack( tr[ '["position","x"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["position","y"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["position","z"]' ], flythroughTime )
-				);
-				_flythroughEuler.set(
-					evaluateTrack( tr[ '["rotation","x"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["rotation","y"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["rotation","z"]' ], flythroughTime ),
-					'XYZ'
-				);
-				camera.quaternion.setFromEuler( _flythroughEuler );
-			}
-
-			function enterFlythrough() {
-				if ( !flythroughState ) return;
-				flythroughActive = true;
-				flythroughTime = 0;
-				flythroughTargetTime = 0;
-				scrollContainer.style.display = 'block';
-				scrollContainer.scrollTop = 0;
-				if ( document.pointerLockElement ) document.exitPointerLock();
-				btnFlythrough.classList.add( 'active' );
-				btnFreecam.classList.remove( 'active' );
-			}
-
-			function exitFlythrough() {
-				flythroughActive = false;
-				scrollContainer.style.display = 'none';
-				if ( playerBody ) {
-					playerBody.position.set( camera.position.x, camera.position.y, camera.position.z );
-					playerBody.velocity.set( 0, 0, 0 );
-					smoothedCameraPos.copy( camera.position );
-				}
-				camera.rotation.order = 'YXZ';
-				btnFreecam.classList.add( 'active' );
-				btnFlythrough.classList.remove( 'active' );
-			}
-
-			btnFreecam.addEventListener( 'click', () => { if ( flythroughActive ) exitFlythrough(); } );
-			btnFlythrough.addEventListener( 'click', () => { if ( !flythroughActive && flythroughState ) enterFlythrough(); } );
-
-			fetch( './flythrough-state.json' )
-				.then( r => r.json() )
-				.then( state => {
-					flythroughState = parseTheatreState( state );
-					if ( flythroughState ) {
-						const scrollPages = Math.max( 5, Math.ceil( flythroughState.duration ) );
-						scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
-						console.log( 'Flythrough loaded: ' + flythroughState.duration.toFixed( 1 ) + 's, ' + scrollPages + ' scroll pages' );
-					}
-				} )
-				.catch( e => console.warn( 'Flythrough state not loaded:', e ) );
-
-			const PHYSICS_TIMESTEP = 1/60;
-			const SPAWN_POSITION = { x: 1.74, y: 1.95, z: 93.46 };
-			const PLAYER_HEIGHT = 1.8;
-			const PLAYER_RADIUS = 0.4;
-			const PLAYER_EYE_HEIGHT = 1.6;
-			let cameraMode = 'firstPerson';
-
-			/** Default environment settings */
-			const defaultEnvSettings = {
-				backgroundColor: '#88ccee',
-				fogEnabled: false,
-				fogColor: '#88ccee',
-				fogNear: 0,
-				fogFar: 50,
-				hemiSkyColor: '#ffffff',
-				hemiGroundColor: '#00668d',
-				hemiIntensity: 0,
-				sunColor: '#ffffff',
-				sunIntensity: 0,
-				sunPosX: -5,
-				sunPosY: 25,
-				sunPosZ: -1,
-				ambientColor: '#ffffff',
-				ambientIntensity: 0.5,
-				toneMapping: 'ACESFilmic',
-				exposure: 1.0,
-				showCollisionWireframe: false,
-				showColliderVisualization: false,
-				cameraMode: 'firstPerson',
-				thirdPersonDistance: 5,
-				thirdPersonHeight: 2,
-				thirdPersonAngle: 0.3,
-				moveSpeed: 9,
-				acceleration: 50,
-				deceleration: 30,
-				gravity: 25,
-				jumpVelocity: 6,
-				friction: 0,
-				airControl: 0.3,
-				playerMass: 10,
-				cameraSmoothing: 30
-			};
-
-			function loadSettings() {
-				try {
-					const saved = localStorage.getItem( 'envSettings' );
-					if ( saved ) return { ...defaultEnvSettings, ...JSON.parse( saved ) };
-				} catch ( e ) { console.warn( 'Failed to load settings:', e ); }
-				return { ...defaultEnvSettings };
-			}
-
-			function saveSettings() {
-				try { localStorage.setItem( 'envSettings', JSON.stringify( envSettings ) ); }
-				catch ( e ) { console.warn( 'Failed to save settings:', e ); }
-			}
-/**
- * Creates a debounced function that delays invoking func until after 
- * wait milliseconds have elapsed since the last time the debounced function 
- * was invoked.
- *
- * @param {Function} func The function to debounce.
- * @param {number} wait The number of milliseconds to wait (cooldown period).
- * @returns {Function} A new, debounced function.
- */
- function debounce(func, wait = 500) {
-    let timeoutId;
-
-    return function(...args) {
-        // 'this' context is preserved using apply or call
-        const context = this; 
-
-        // Clear the previous timeout if the function is called again
-        clearTimeout(timeoutId); 
-
-        // Set a new timeout to execute the function after the wait period
-        timeoutId = setTimeout(() => {
-            func.apply(context, args);
-        }, wait);
-    };
-}
-			const envSettings = loadSettings();
-
-			/** Physics world */
-			const world = new CANNON.World();
-			world.gravity.set( 0, -envSettings.gravity, 0 );
-			world.broadphase = new CANNON.SAPBroadphase( world );
-			world.allowSleep = false;
-			world.solver.iterations = 10;
-
-			const groundMaterial = new CANNON.Material( 'ground' );
-			const playerMaterial = new CANNON.Material( 'player' );
-			const playerGroundContact = new CANNON.ContactMaterial( playerMaterial, groundMaterial, {
-				friction: envSettings.friction,
-				restitution: 0.0
-			} );
-			world.addContactMaterial( playerGroundContact );
-
-			const playerBody = new CANNON.Body( {
-				mass: envSettings.playerMass,
-				material: playerMaterial,
-				linearDamping: 0.01,
-				angularDamping: 1.0,
-				fixedRotation: true,
-				position: new CANNON.Vec3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z )
-			} );
-
-			const cylinderHeight = PLAYER_HEIGHT - PLAYER_RADIUS * 2;
-			const cylinderShape = new CANNON.Cylinder( PLAYER_RADIUS, PLAYER_RADIUS, cylinderHeight, 8 );
-			const topSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
-			const bottomSphereShape = new CANNON.Sphere( PLAYER_RADIUS );
-
-			const cylinderQuaternion = new CANNON.Quaternion();
-			cylinderQuaternion.setFromAxisAngle( new CANNON.Vec3( 1, 0, 0 ), Math.PI / 2 );
-			playerBody.addShape( cylinderShape, new CANNON.Vec3( 0, 0, 0 ), cylinderQuaternion );
-			playerBody.addShape( topSphereShape, new CANNON.Vec3( 0, cylinderHeight / 2, 0 ) );
-			playerBody.addShape( bottomSphereShape, new CANNON.Vec3( 0, -cylinderHeight / 2, 0 ) );
-			world.addBody( playerBody );
-
-			let playerOnFloor = false;
-			let groundContactNormal = new CANNON.Vec3();
-			const upAxis = new CANNON.Vec3( 0, 1, 0 );
-
-			playerBody.addEventListener( 'collide', ( event ) => {
-				const contact = event.contact;
-				let contactNormal;
-				if ( contact.bi.id === playerBody.id ) {
-					contactNormal = contact.ni.negate( new CANNON.Vec3() );
-				} else {
-					contactNormal = contact.ni;
-				}
-				if ( contactNormal.dot( upAxis ) > 0.5 ) {
-					playerOnFloor = true;
-					groundContactNormal.copy( contactNormal );
-				}
-			} );
-
-			const playerDirection = new THREE.Vector3();
-			const keyStates = {};
-
-			function applySettings() {
-				scene.background = new THREE.Color( envSettings.backgroundColor );
-				scene.fog = envSettings.fogEnabled ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null;
-				fillLight1.color.set( envSettings.hemiSkyColor );
-				fillLight1.groundColor.set( envSettings.hemiGroundColor );
-				fillLight1.intensity = envSettings.hemiIntensity;
-				directionalLight.color.set( envSettings.sunColor );
-				directionalLight.intensity = envSettings.sunIntensity;
-				directionalLight.position.set( envSettings.sunPosX, envSettings.sunPosY, envSettings.sunPosZ );
-				ambientLight.color.set( envSettings.ambientColor );
-				ambientLight.intensity = envSettings.ambientIntensity;
-				renderer.toneMapping = toneMappingOptions[ envSettings.toneMapping ];
-				renderer.toneMappingExposure = envSettings.exposure;
-				if ( world ) world.gravity.set( 0, -envSettings.gravity, 0 );
-				if ( playerGroundContact ) playerGroundContact.friction = envSettings.friction;
-				if ( playerBody ) { playerBody.mass = envSettings.playerMass; playerBody.updateMassProperties(); }
-			}
-
-			const toneMappingOptions = {
-				'None': THREE.NoToneMapping,
-				'Linear': THREE.LinearToneMapping,
-				'Reinhard': THREE.ReinhardToneMapping,
-				'Cineon': THREE.CineonToneMapping,
-				'ACESFilmic': THREE.ACESFilmicToneMapping
-			};
-
-			document.addEventListener( 'keydown', ( event ) => {
-
-				keyStates[ event.code ] = true;
-
-			} );
-
-			document.addEventListener( 'keyup', ( event ) => {
-
-				keyStates[ event.code ] = false;
-
-			} );
-
-			container.addEventListener( 'mousedown', () => {
-
-				if ( !flythroughActive ) document.body.requestPointerLock();
-
-			} );
-
-			document.body.addEventListener( 'mousemove', ( event ) => {
-
-				if ( !flythroughActive && document.pointerLockElement === document.body ) {
-
-					camera.rotation.y -= event.movementX / 500;
-					camera.rotation.x -= event.movementY / 500;
-
-				}
-
-			} );
-
-			/** Mobile touch controls */
-			const touchState = {
-				active: false, startX: 0, startY: 0, currentX: 0, currentY: 0,
-				lastX: 0, lastY: 0, isHolding: false, holdThreshold: 15,
-				touchStartTime: 0, holdDelay: 100
-			};
-			let mobileMovingForward = false;
-			const touchSensitivity = 0.003;
-			const isTouchDevice = isMobile || ( 'ontouchstart' in window ) || ( navigator.maxTouchPoints > 0 );
-			
-			container.addEventListener( 'touchstart', ( e ) => {
-				e.preventDefault();
-				if ( e.touches.length === 1 ) {
-					const t = e.touches[ 0 ];
-					touchState.active = true;
-					touchState.startX = touchState.currentX = touchState.lastX = t.clientX;
-					touchState.startY = touchState.currentY = touchState.lastY = t.clientY;
-					touchState.isHolding = true;
-					touchState.touchStartTime = performance.now();
-					mobileMovingForward = false;
-				}
-			}, { passive: false } );
-			
-			container.addEventListener( 'touchmove', ( e ) => {
-				e.preventDefault();
-				if ( !touchState.active || e.touches.length !== 1 ) return;
-				const t = e.touches[ 0 ];
-				touchState.currentX = t.clientX;
-				touchState.currentY = t.clientY;
-				const deltaX = touchState.currentX - touchState.lastX;
-				const deltaY = touchState.currentY - touchState.lastY;
-				const totalMovement = Math.hypot( touchState.currentX - touchState.startX, touchState.currentY - touchState.startY );
-				
-				if ( totalMovement > touchState.holdThreshold ) {
-					touchState.isHolding = false;
-					mobileMovingForward = false;
-					camera.rotation.y -= deltaX * touchSensitivity;
-					camera.rotation.x -= deltaY * touchSensitivity;
-					camera.rotation.x = Math.max( -Math.PI / 2, Math.min( Math.PI / 2, camera.rotation.x ) );
-				} else if ( performance.now() - touchState.touchStartTime > touchState.holdDelay && touchState.isHolding ) {
-					mobileMovingForward = true;
-				}
-				touchState.lastX = touchState.currentX;
-				touchState.lastY = touchState.currentY;
-			}, { passive: false } );
-			
-			container.addEventListener( 'touchend', ( e ) => {
-				e.preventDefault();
-				touchState.active = touchState.isHolding = mobileMovingForward = false;
-			}, { passive: false } );
-			
-			container.addEventListener( 'touchcancel', () => {
-				touchState.active = touchState.isHolding = mobileMovingForward = false;
-			} );
-			
-			function updateMobileInput() {
-				if ( touchState.active && touchState.isHolding && performance.now() - touchState.touchStartTime > touchState.holdDelay ) {
-					mobileMovingForward = true;
-				}
-			}
-			
-			if ( isTouchDevice ) {
-				document.querySelector( '.desktop-controls' ).style.display = 'none';
-				document.querySelector( '.mobile-controls' ).style.display = 'inline';
-			}
-
-			window.addEventListener( 'resize', onWindowResize );
-
-			function onWindowResize() {
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				composer.setSize( window.innerWidth, window.innerHeight );
-				bloomPass.setSize( window.innerWidth, window.innerHeight );
-				masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, window.innerHeight );
-			}
-
-			function createColliderVisualization() {
-				if ( colliderVisualization ) scene.remove( colliderVisualization );
-				const group = new THREE.Group();
-				const radius = PLAYER_RADIUS;
-				const cylHeight = PLAYER_HEIGHT - ( PLAYER_RADIUS * 2 );
-				const lineMat = new THREE.LineBasicMaterial( { color: 0xff0000, transparent: true, opacity: 0.9 } );
-				
-				const cylGeo = new THREE.CylinderGeometry( radius, radius, cylHeight, 16, 1 );
-				group.add( new THREE.LineSegments( new THREE.EdgesGeometry( cylGeo ), lineMat ) );
-				
-				const topGeo = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2 );
-				const topLines = new THREE.LineSegments( new THREE.EdgesGeometry( topGeo ), lineMat );
-				topLines.position.y = cylHeight / 2;
-				group.add( topLines );
-				
-				const botGeo = new THREE.SphereGeometry( radius, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2 );
-				const botLines = new THREE.LineSegments( new THREE.EdgesGeometry( botGeo ), lineMat );
-				botLines.position.y = -cylHeight / 2;
-				group.add( botLines );
-				
-				const topMarker = new THREE.Mesh( new THREE.CircleGeometry( radius * 0.25, 16 ), new THREE.MeshBasicMaterial( { color: 0x00ff00, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } ) );
-				topMarker.rotation.x = -Math.PI / 2;
-				topMarker.position.y = PLAYER_HEIGHT / 2;
-				group.add( topMarker );
-				
-				const botMarker = new THREE.Mesh( new THREE.CircleGeometry( radius * 0.25, 16 ), new THREE.MeshBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 } ) );
-				botMarker.rotation.x = -Math.PI / 2;
-				botMarker.position.y = -PLAYER_HEIGHT / 2;
-				group.add( botMarker );
-				
-				colliderVisualization = group;
-				colliderVisualization.name = 'PlayerColliderVisualization';
-				scene.add( colliderVisualization );
-			}
-
-			function updateColliderVisualization() {
-				if ( !playerBody || !colliderVisualization ) return;
-				colliderVisualization.position.set( playerBody.position.x, playerBody.position.y, playerBody.position.z );
-			}
-
-			const targetVelocity = new THREE.Vector3( 0, 0, 0 );
-			const JUMP_DEBOUNCE_SEC = 0.6;
-			let jumpCooldownRemaining = 0;
-			
-			const _rayFrom = new CANNON.Vec3();
-			const _rayTo = new CANNON.Vec3();
-			const _rayResult = new CANNON.RaycastResult();
-			
-			function checkGroundContact() {
-				if ( !playerBody ) return;
-				_rayFrom.set( playerBody.position.x, playerBody.position.y, playerBody.position.z );
-				_rayTo.set( playerBody.position.x, playerBody.position.y - PLAYER_HEIGHT / 2 - 0.2, playerBody.position.z );
-				world.raycastClosest( _rayFrom, _rayTo, {}, _rayResult );
-				playerOnFloor = _rayResult.hasHit && _rayResult.distance < PLAYER_HEIGHT / 2 + 0.15;
-			}
-
-			const _inputDirection = new THREE.Vector3();
-			const _currentHorizontalVel = new THREE.Vector3();
-			const _velocityDiff = new THREE.Vector3();
-			
-			function applyPlayerMovement( deltaTime ) {
-				if ( !playerBody ) return;
-				jumpCooldownRemaining = Math.max( 0, jumpCooldownRemaining - deltaTime );
-				_inputDirection.set( 0, 0, 0 );
-				
-				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
-				if ( keyStates[ 'KeyS' ] ) { const f = getForwardVector(); _inputDirection.x -= f.x; _inputDirection.z -= f.z; }
-				if ( keyStates[ 'KeyA' ] ) { const s = getSideVector(); _inputDirection.x -= s.x; _inputDirection.z -= s.z; }
-				if ( keyStates[ 'KeyD' ] ) { const s = getSideVector(); _inputDirection.x += s.x; _inputDirection.z += s.z; }
-				if ( mobileMovingForward ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
-				
-				const hasInput = _inputDirection.lengthSq() > 0.001;
-				if ( hasInput ) _inputDirection.normalize();
-				
-				_currentHorizontalVel.set( playerBody.velocity.x, 0, playerBody.velocity.z );
-				hasInput ? targetVelocity.copy( _inputDirection ).multiplyScalar( envSettings.moveSpeed ) : targetVelocity.set( 0, 0, 0 );
-				
-				const accelRate = playerOnFloor ? envSettings.acceleration : envSettings.acceleration * envSettings.airControl;
-				const decelRate = playerOnFloor ? envSettings.deceleration : envSettings.deceleration * envSettings.airControl * 0.5;
-				_velocityDiff.subVectors( targetVelocity, _currentHorizontalVel );
-				const velocityDiffLength = _velocityDiff.length();
-				
-				if ( velocityDiffLength > 0.01 ) {
-					const rate = hasInput ? accelRate : decelRate;
-					const maxChange = rate * deltaTime;
-					if ( velocityDiffLength <= maxChange || accelRate > 150 ) {
-						playerBody.velocity.x = targetVelocity.x;
-						playerBody.velocity.z = targetVelocity.z;
-					} else {
-						_velocityDiff.normalize().multiplyScalar( maxChange );
-						playerBody.velocity.x += _velocityDiff.x;
-						playerBody.velocity.z += _velocityDiff.z;
-					}
-				}
-				
-				const horizontalSpeed = Math.hypot( playerBody.velocity.x, playerBody.velocity.z );
-				if ( horizontalSpeed > envSettings.moveSpeed ) {
-					const scale = envSettings.moveSpeed / horizontalSpeed;
-					playerBody.velocity.x *= scale;
-					playerBody.velocity.z *= scale;
-				}
-				
-				if ( keyStates[ 'Space' ] && playerOnFloor && jumpCooldownRemaining <= 0 ) {
-					playerBody.velocity.y = envSettings.jumpVelocity;
-					keyStates[ 'Space' ] = false;
-					jumpCooldownRemaining = JUMP_DEBOUNCE_SEC;
-				}
-			}
-
-			const smoothedCameraPos = new THREE.Vector3( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
-			const _targetCameraPos = new THREE.Vector3();
-			const _playerCenter = new THREE.Vector3();
-			const _forward = new THREE.Vector3();
-			const _offset = new THREE.Vector3();
-			const _lookAtTarget = new THREE.Vector3();
-			
-			/** Physics sub-steps: limit to prevent "spiral of death" when frames drop */
-			const PHYSICS_MAX_SUBSTEPS = 2;
-			
-			function updatePhysics( deltaTime ) {
-				if ( !playerBody ) return;
-				checkGroundContact();
-				applyPlayerMovement( deltaTime );
-				world.step( PHYSICS_TIMESTEP, deltaTime, PHYSICS_MAX_SUBSTEPS );
-				updateColliderVisualization();
-				
-				const playerPos = playerBody.position;
-				const eyeHeight = PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT;
-				_targetCameraPos.set( playerPos.x, playerPos.y + eyeHeight, playerPos.z );
-				smoothedCameraPos.lerp( _targetCameraPos, Math.min( 1, deltaTime * envSettings.cameraSmoothing ) );
-				
-				if ( cameraMode === 'firstPerson' ) {
-					camera.position.copy( smoothedCameraPos );
-				} else {
-					_playerCenter.copy( smoothedCameraPos );
-					camera.getWorldDirection( _forward );
-					_forward.y = 0;
-					_forward.normalize();
-					_offset.copy( _forward ).multiplyScalar( -envSettings.thirdPersonDistance );
-					_offset.y = envSettings.thirdPersonHeight;
-					camera.position.copy( _playerCenter ).add( _offset );
-					_lookAtTarget.copy( _playerCenter );
-					_lookAtTarget.y += envSettings.thirdPersonAngle * 2;
-					camera.lookAt( _lookAtTarget );
-				}
-			}
-
-			function createTrimeshFromGeometry( geometry, scale = new THREE.Vector3( 1, 1, 1 ) ) {
-				const position = geometry.attributes.position;
-				const vertices = [], indices = [];
-				for ( let i = 0; i < position.count; i++ ) {
-					vertices.push( position.getX( i ) * scale.x, position.getY( i ) * scale.y, position.getZ( i ) * scale.z );
-				}
-				if ( geometry.index ) {
-					for ( let i = 0; i < geometry.index.count; i++ ) indices.push( geometry.index.getX( i ) );
-				} else {
-					for ( let i = 0; i < position.count; i++ ) indices.push( i );
-				}
-				return new CANNON.Trimesh( vertices, indices );
-			}
-
-			function addCollisionMeshToWorld( mesh ) {
-				mesh.traverse( ( child ) => {
-					if ( child.isMesh && child.geometry ) {
-						child.updateMatrixWorld( true );
-						const worldPos = new THREE.Vector3();
-						const worldQuat = new THREE.Quaternion();
-						const worldScale = new THREE.Vector3();
-						child.matrixWorld.decompose( worldPos, worldQuat, worldScale );
-						
-						/** 
-						 * Optimization: Reference geometry directly instead of cloning.
-						 * Pass scale to createTrimeshFromGeometry to apply during vertex extraction.
-						 * This avoids doubling RAM usage on high-poly collision meshes.
-						 */
-						const trimesh = createTrimeshFromGeometry( child.geometry, worldScale );
-						const body = new CANNON.Body( {
-							mass: 0,
-							material: groundMaterial,
-							position: new CANNON.Vec3( worldPos.x, worldPos.y, worldPos.z ),
-							quaternion: new CANNON.Quaternion( worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w )
-						} );
-						body.addShape( trimesh );
-						world.addBody( body );
-					}
-				} );
-			}
-
-			function getForwardVector() {
-				camera.getWorldDirection( playerDirection );
-				playerDirection.y = 0;
-				playerDirection.normalize();
-				return playerDirection;
-			}
-
-			function getSideVector() {
-				camera.getWorldDirection( playerDirection );
-				playerDirection.y = 0;
-				playerDirection.normalize();
-				playerDirection.cross( camera.up );
-				return playerDirection;
-			}
-
-			let collisionWireframe = null;
-			let colliderVisualization = null;
-
-			const loader = new GLTFLoader();
-			const loadingInfo = document.getElementById( 'info' );
-			const originalInfoText = loadingInfo.innerHTML;
-			loadingInfo.innerHTML = 'Loading model...';
-
-			loader.load( 'maptest2-compressed.glb',
-				( gltf ) => {
-					loadingInfo.innerHTML = originalInfoText;
-					scene.add( gltf.scene );
-
-					let collisionMesh = null;
-					const collisionNameSet = new Set( [ 'collisionmesh', 'collision', 'collision1' ] );
-
-				gltf.scene.traverse( ( child ) => {
-					if ( child.isMesh ) {
-						child.castShadow = !isMobile; // Disable shadow casting on mobile
-						child.receiveShadow = !isMobile; // Disable shadow receiving on mobile
-						if ( child.material?.map ) child.material.map.anisotropy = isMobile ? 1 : 4;
-						child.frustumCulled = true;
-					}
-					/** Hide flame objects */
-					if ( child.name && child.name.toLowerCase().includes( 'flame' ) ) {
-						child.visible = false;
-					}
-					if ( !collisionMesh && child.name ) {
-						const nameLower = child.name.toLowerCase();
-						if ( collisionNameSet.has( nameLower ) || nameLower.includes( 'collision' ) ) collisionMesh = child;
-					}
-				} );
-
-					if ( collisionMesh ) {
-						let totalTriangles = 0, hasValidGeometry = false;
-						collisionMesh.traverse( ( child ) => {
-							if ( child.isMesh && child.geometry ) {
-								hasValidGeometry = true;
-								const vertexCount = child.geometry.attributes?.position?.count || 0;
-								totalTriangles += vertexCount >= 3 ? Math.floor( vertexCount / 3 ) : 0;
-							}
-						} );
-						
-						if ( !hasValidGeometry || totalTriangles === 0 ) {
-							addCollisionMeshToWorld( gltf.scene );
-						} else {
-							addCollisionMeshToWorld( collisionMesh );
-							collisionMesh.visible = false;
-							
-							if ( !isMobile && envSettings.showCollisionWireframe ) {
-								requestAnimationFrame( () => {
-									collisionWireframe = new THREE.Group();
-									collisionWireframe.name = 'CollisionWireframe';
-									collisionMesh.traverse( ( child ) => {
-										if ( child.isMesh && child.geometry ) {
-											const wireMat = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, transparent: true, opacity: 0.5, depthTest: true, depthWrite: false } );
-											const wireMesh = new THREE.Mesh( child.geometry.clone(), wireMat );
-											wireMesh.position.copy( child.position );
-											wireMesh.rotation.copy( child.rotation );
-											wireMesh.scale.copy( child.scale );
-											collisionWireframe.add( wireMesh );
-										}
-									} );
-									scene.add( collisionWireframe );
-									collisionWireframe.visible = envSettings.showCollisionWireframe;
-								} );
-							}
-						}
-					} else {
-						addCollisionMeshToWorld( gltf.scene );
-					}
-
-					const spawnPoint = gltf.scene.getObjectByName( 'SpawnPoint' );
-					
-
-					applySettings();
-
-					requestAnimationFrame( () => {
-						createColliderVisualization();
-						if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
-					} );
-
-					cameraMode = envSettings.cameraMode;
-					createGUI(); // Create GUI for both mobile and desktop
-				},
-				( progress ) => {
-					if ( progress.lengthComputable ) loadingInfo.innerHTML = `Loading model... ${ Math.round( progress.loaded / progress.total * 100 ) }%`;
-				},
-				( error ) => {
-					console.error( 'Error loading model:', error );
-					loadingInfo.innerHTML = 'Error loading model. Check console.';
-				}
-			);
-
-
-
-
-			function createGUI() {
-				const gui = new GUI( { width: isMobile ? 260 : 280, title: 'Environment Settings' } );
-				// Keep GUI open on mobile as requested
-
-				const skyFolder = gui.addFolder( 'Sky & Background' );
-				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background' ).onChange( ( v ) => { scene.background = new THREE.Color( v ); saveSettings(); } );
-
-				const fogFolder = gui.addFolder( 'Fog' );
-				fogFolder.add( envSettings, 'fogEnabled' ).name( 'Enabled' ).onChange( ( v ) => { scene.fog = v ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null; saveSettings(); } );
-				fogFolder.addColor( envSettings, 'fogColor' ).name( 'Color' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.color.set( v ); saveSettings(); } );
-				fogFolder.add( envSettings, 'fogNear', 0, 100, 1 ).name( 'Near' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.near = v; saveSettings(); } );
-				fogFolder.add( envSettings, 'fogFar', 10, 500, 1 ).name( 'Far' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.far = v; saveSettings(); } );
-
-				const hemiFolder = gui.addFolder( 'Hemisphere Light' );
-				hemiFolder.addColor( envSettings, 'hemiSkyColor' ).name( 'Sky' ).onChange( ( v ) => { fillLight1.color.set( v ); saveSettings(); } );
-				hemiFolder.addColor( envSettings, 'hemiGroundColor' ).name( 'Ground' ).onChange( ( v ) => { fillLight1.groundColor.set( v ); saveSettings(); } );
-				hemiFolder.add( envSettings, 'hemiIntensity', 0, 5, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { fillLight1.intensity = v; saveSettings(); } );
-
-				const sunFolder = gui.addFolder( 'Sun Light' );
-				sunFolder.addColor( envSettings, 'sunColor' ).name( 'Color' ).onChange( ( v ) => { directionalLight.color.set( v ); saveSettings(); } );
-				sunFolder.add( envSettings, 'sunIntensity', 0, 10, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { directionalLight.intensity = v; saveSettings(); } );
-				sunFolder.add( envSettings, 'sunPosX', -50, 50, 1 ).name( 'X' ).onChange( ( v ) => { directionalLight.position.x = v; saveSettings(); } );
-				sunFolder.add( envSettings, 'sunPosY', 0, 100, 1 ).name( 'Y' ).onChange( ( v ) => { directionalLight.position.y = v; saveSettings(); } );
-				sunFolder.add( envSettings, 'sunPosZ', -50, 50, 1 ).name( 'Z' ).onChange( ( v ) => { directionalLight.position.z = v; saveSettings(); } );
-
-				const ambientFolder = gui.addFolder( 'Ambient Light' );
-				ambientFolder.addColor( envSettings, 'ambientColor' ).name( 'Color' ).onChange( ( v ) => { ambientLight.color.set( v ); saveSettings(); } );
-				ambientFolder.add( envSettings, 'ambientIntensity', 0, 3, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { ambientLight.intensity = v; saveSettings(); } );
-
-				const renderFolder = gui.addFolder( 'Renderer' );
-				renderFolder.add( envSettings, 'toneMapping', Object.keys( toneMappingOptions ) ).name( 'Tone Mapping' ).onChange( ( v ) => { renderer.toneMapping = toneMappingOptions[ v ]; saveSettings(); } );
-				renderFolder.add( envSettings, 'exposure', 0, 3, 0.05 ).name( 'Exposure' ).onChange( ( v ) => { renderer.toneMappingExposure = v; saveSettings(); } );
-
-				const movementFolder = gui.addFolder( 'Movement & Physics' );
-				movementFolder.add( envSettings, 'moveSpeed', 1, 100, 1 ).name( 'Speed' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'acceleration', 10, 500, 10 ).name( 'Acceleration' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'deceleration', 1, 100, 1 ).name( 'Deceleration' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'gravity', 5, 50, 1 ).name( 'Gravity' ).onChange( ( v ) => { world.gravity.set( 0, -v, 0 ); saveSettings(); } );
-				movementFolder.add( envSettings, 'jumpVelocity', 1, 15, 0.5 ).name( 'Jump' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'friction', 0, 1, 0.01 ).name( 'Friction' ).onChange( ( v ) => { playerGroundContact.friction = v; saveSettings(); } );
-				movementFolder.add( envSettings, 'airControl', 0, 1, 0.05 ).name( 'Air Control' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'playerMass', 1, 100, 1 ).name( 'Mass' ).onChange( ( v ) => { playerBody.mass = v; playerBody.updateMassProperties(); saveSettings(); } );
-				movementFolder.add( envSettings, 'cameraSmoothing', 1, 30, 1 ).name( 'Cam Smoothing' ).onChange( saveSettings );
-
-				const debugFolder = gui.addFolder( 'Debug' );
-				debugFolder.add( envSettings, 'showCollisionWireframe' ).name( 'Collision Wireframe' ).onChange( ( v ) => { if ( collisionWireframe ) collisionWireframe.visible = v; saveSettings(); } );
-				debugFolder.add( envSettings, 'showColliderVisualization' ).name( 'Player Collider' ).onChange( ( v ) => { if ( colliderVisualization ) colliderVisualization.visible = v; saveSettings(); } );
-
-				const cameraFolder = gui.addFolder( 'Camera' );
-				cameraFolder.add( envSettings, 'cameraMode', [ 'firstPerson', 'thirdPerson' ] ).name( 'Mode' ).onChange( ( v ) => { cameraMode = v; saveSettings(); } );
-				cameraFolder.add( envSettings, 'thirdPersonDistance', 2, 15, 0.5 ).name( '3P Distance' ).onChange( saveSettings );
-				cameraFolder.add( envSettings, 'thirdPersonHeight', 0, 5, 0.1 ).name( '3P Height' ).onChange( saveSettings );
-				cameraFolder.add( envSettings, 'thirdPersonAngle', -0.5, 0.5, 0.05 ).name( '3P Angle' ).onChange( saveSettings );
-
-				const waterFolder = gui.addFolder( 'Water' );
-				waterFolder.addColor( waterParams, 'color' ).name( 'Color' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'color' ].value.set( v ); } );
-				waterFolder.add( waterParams, 'scale', 1, 10, 0.5 ).name( 'Scale' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'config' ].value.w = v; } );
-				waterFolder.add( waterParams, 'flowX', -2, 2, 0.1 ).name( 'Flow X' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.x = v; } );
-				waterFolder.add( waterParams, 'flowY', -2, 2, 0.1 ).name( 'Flow Y' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.y = v; } );
-				waterParams.waterHeight = 0;
-				waterFolder.add( waterParams, 'waterHeight', -10, 10, 0.1 ).name( 'Height' ).onChange( ( v ) => { if ( water ) water.position.y = v; } );
-				waterFolder.close();
-
-				const postFolder = gui.addFolder( 'Post-Processing' );
-
-				const bloomFolder = postFolder.addFolder( 'Bloom' );
-				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; savePostProcessingSettings(); } );
-				bloomFolder.add( postProcessingSettings, 'bloomStrength', 0, 2, 0.01 ).name( 'Strength' ).onChange( ( v ) => { bloomPass.strength = v; savePostProcessingSettings(); } );
-				bloomFolder.add( postProcessingSettings, 'bloomRadius', 0, 1, 0.01 ).name( 'Radius' ).onChange( ( v ) => { bloomPass.radius = v; savePostProcessingSettings(); } );
-				bloomFolder.add( postProcessingSettings, 'bloomThreshold', 0, 1, 0.01 ).name( 'Threshold' ).onChange( ( v ) => { bloomPass.threshold = v; savePostProcessingSettings(); } );
-
-				const filmFolder = postFolder.addFolder( 'Film Grain' );
-				filmFolder.add( postProcessingSettings, 'filmEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainEnabled' ].value = v; savePostProcessingSettings(); } );
-				filmFolder.add( postProcessingSettings, 'filmNoiseIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainIntensity' ].value = v; savePostProcessingSettings(); } );
-
-				const vignetteFolder = postFolder.addFolder( 'Vignette' );
-				vignetteFolder.add( postProcessingSettings, 'vignetteEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteEnabled' ].value = v; savePostProcessingSettings(); } );
-				vignetteFolder.add( postProcessingSettings, 'vignetteOffset', 0.5, 2.0, 0.05 ).name( 'Offset' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteOffset' ].value = v; savePostProcessingSettings(); } );
-				vignetteFolder.add( postProcessingSettings, 'vignetteDarkness', 0.5, 3.0, 0.1 ).name( 'Darkness' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteDarkness' ].value = v; savePostProcessingSettings(); } );
-
-				const tiltShiftFolder = postFolder.addFolder( 'Tilt-Shift' );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = v; savePostProcessingSettings(); } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusY', 0, 1, 0.01 ).name( 'Focus Y' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusY' ].value = v; savePostProcessingSettings(); } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusWidth', 0.1, 0.8, 0.01 ).name( 'Width' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusWidth' ].value = v; savePostProcessingSettings(); } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftBlurAmount', 0, 6, 0.1 ).name( 'Blur' ).onChange( ( v ) => { masterPostPass.uniforms[ 'blurAmount' ].value = v; savePostProcessingSettings(); } );
-
-				const lutFolder = postFolder.addFolder( 'LUT' );
-				lutFolder.add( postProcessingSettings, 'lutEnabled' ).name( 'Enabled' ).onChange( ( v ) => { if ( lutPass ) lutPass.enabled = v; savePostProcessingSettings(); } );
-				lutFolder.add( postProcessingSettings, 'lutIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { if ( lutPass ) lutPass.intensity = v; savePostProcessingSettings(); } );
-
-				postFolder.add( { resetPost: () => {
-					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
-					applyPostProcessingSettings();
-					gui.controllersRecursive().forEach( c => c.updateDisplay() );
-					savePostProcessingSettings();
-				} }, 'resetPost' ).name( 'Reset to Defaults' );
-
-				debugFolder.add( { reset: () => {
-					Object.assign( envSettings, defaultEnvSettings );
-					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
-					applySettings();
-					applyPostProcessingSettings();
-					if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
-					if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
-					cameraMode = envSettings.cameraMode;
-					gui.controllersRecursive().forEach( c => c.updateDisplay() );
-					saveSettings();
-					savePostProcessingSettings();
-				} }, 'reset' ).name( 'Reset Defaults' );
-
-				[ fogFolder, hemiFolder, sunFolder, ambientFolder, renderFolder, movementFolder, debugFolder, postFolder ].forEach( f => f.close() );
-			}
-
-			function teleportPlayerIfOob() {
-				if ( playerBody.position.y <= -25 ) {
-					playerBody.position.set( SPAWN_POSITION.x, SPAWN_POSITION.y, SPAWN_POSITION.z );
-					playerBody.velocity.set( 0, 0, 0 );
-					camera.rotation.set( 0, 0, 0 );
-				}
-			}
-
-			function animate() {
-				const deltaTime = Math.min( 0.05, clock.getDelta() );
-				if ( flythroughActive ) {
-					updateFlythrough( deltaTime );
-				} else {
-					updateMobileInput();
-					updatePhysics( deltaTime );
-					teleportPlayerIfOob();
-				}
-				masterPostPass.uniforms[ 'time' ].value += deltaTime;
-				composer.render( deltaTime );
-				stats.update();
-				coordsDisplay.innerHTML = `X: ${camera.position.x.toFixed(2)}<br>Y: ${camera.position.y.toFixed(2)}<br>Z: ${camera.position.z.toFixed(2)}`;
-			}
-
-
-
-		</script>
 </body>
-
 </html>
