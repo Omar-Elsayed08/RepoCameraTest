@@ -72,18 +72,6 @@
       fill: var(--forest);
     }
 
-    #viewer-container {
-      visibility: hidden;
-      width: 100%;
-      aspect-ratio: 1/1;
-      margin-top: 1rem;
-      transform: scale(1);
-    }
-
-    #menu.open #viewer-container {
-      visibility: visible;
-    }
-
     
 
     
@@ -134,13 +122,47 @@
       position: relative;
       visibility: hidden;
       width: 80%;
+      max-width: min(280px, 72vw);
       aspect-ratio: 1/1;
       margin-top: 1rem;
+      margin-left: auto;
+      margin-right: auto;
       transform: scale(1);
+      overflow: hidden;
+    }
+
+    #viewer-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100%;
     }
 
     #menu.open #viewer-container {
       visibility: visible;
+    }
+
+    /* Keep compass compact on small screens (avoid full-viewport WebGL canvas) */
+    @media (max-width: 640px) {
+      #menu {
+        width: min(16rem, 88vw);
+        left: 12px;
+      }
+
+      #menu-toggle {
+        top: 12px;
+        left: 12px;
+      }
+
+      #viewer-container {
+        width: min(220px, 70vw);
+        max-width: min(220px, 70vw);
+        margin-top: 0.5rem;
+      }
+
+      :root {
+        --viewer-btn-size: 46px;
+      }
     }
 
     
@@ -435,19 +457,30 @@ svg{
     
         camera.position.z = 6;
         camera.position.y = 0;
-    
+
+        function resizeViewer() {
+          const w = viewerContainer.clientWidth;
+          const h = viewerContainer.clientHeight;
+          if (w < 2 || h < 2) return;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h, true);
+        }
+
+        window.resizeViewer = resizeViewer;
+        resizeViewer();
+
         function animate() {
           requestAnimationFrame(animate);
           rotateGroup.rotation.z += 0.03;
           renderer.render(scene, camera);
         }
         animate();
-    
-        window.addEventListener('resize', () => {
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-        });
+
+        window.addEventListener('resize', resizeViewer);
+        if (typeof ResizeObserver !== 'undefined') {
+          new ResizeObserver(resizeViewer).observe(viewerContainer);
+        }
       </script>
     <script>
       // intercept same‑page hash‑links and do a JS smooth scroll
@@ -545,6 +578,11 @@ svg{
       
         menuToggle.addEventListener('click', () => {
           menu.classList.toggle('open');
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              if (typeof window.resizeViewer === 'function') window.resizeViewer();
+            });
+          });
         });
       </script>
       
