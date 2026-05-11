@@ -364,7 +364,7 @@ From the cold`
         format: 'poem', size: 'sm',
         title: 'The Journey',
         author: 'Samuel Latham', 
-        doodle: 'assets/doodles/Trail.png',
+        doodle: 'assets/doodles/journey-trail.png',
 
         excerpt: 'Departing comfort, questing for what he has not—chasing through a desolate place until joy, peace, and pleasure stretch beyond measure: "Comfort, in Treasure," the last line says, folding the search into a single quiet arrival.',
         body: `Departing comfort

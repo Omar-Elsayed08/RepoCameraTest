@@ -9,8 +9,29 @@ const SIZE_TO_CLASS = {
  * resolves them against the *document* URL. That breaks when the page is served
  * as …/2026 with no trailing slash: assets/… incorrectly becomes …/assets/…
  * instead of …/2026/assets/… (common on GitHub Pages / static hosts).
- * Anchoring to this script (always …/2026/js/2026-common.js) fixes that.
+ * Anchoring to …/2026/js/2026-common.js fixes that (with a fallback if
+ * document.currentScript is unavailable).
  */
+function getEditionScriptDir() {
+  const fromSrc = (src) => {
+    if (!src) return null;
+    try {
+      return new URL('.', src);
+    } catch (_) {
+      return null;
+    }
+  };
+  const cur = document.currentScript && document.currentScript.src;
+  const fromCurrent = fromSrc(cur);
+  if (fromCurrent) return fromCurrent;
+  const scripts = document.getElementsByTagName('script');
+  for (let i = scripts.length - 1; i >= 0; i--) {
+    const src = scripts[i].src;
+    if (src && /\/js\/2026-common\.js(\?|#|$)/.test(src)) return fromSrc(src);
+  }
+  return null;
+}
+
 function resolveEditionAsset(rel) {
   if (rel == null || typeof rel !== 'string') return rel;
   const t = rel.trim();
@@ -18,10 +39,9 @@ function resolveEditionAsset(rel) {
   if (/^(https?:|data:|blob:|\/\/)/i.test(t)) return rel;
   if (t.charAt(0) === '/') return rel;
   const normalized = t.replace(/^\.\//, '');
-  const cur = document.currentScript && document.currentScript.src;
-  if (!cur) return rel;
+  const jsDir = getEditionScriptDir();
+  if (!jsDir) return rel;
   try {
-    const jsDir = new URL('.', cur);
     return new URL('../' + normalized, jsDir).href;
   } catch (_) {
     return rel;
