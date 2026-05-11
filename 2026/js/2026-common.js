@@ -3,6 +3,31 @@ const SIZE_TO_CLASS = {
   tall: 'art-tile--tall', wide: 'art-tile--wide'
 };
 
+/**
+ * Paths in data files (e.g. assets/doodles/Trail.png) are stored relative to the
+ * 2026/ edition folder. If we drop them straight into <img src>, the browser
+ * resolves them against the *document* URL. That breaks when the page is served
+ * as …/2026 with no trailing slash: assets/… incorrectly becomes …/assets/…
+ * instead of …/2026/assets/… (common on GitHub Pages / static hosts).
+ * Anchoring to this script (always …/2026/js/2026-common.js) fixes that.
+ */
+function resolveEditionAsset(rel) {
+  if (rel == null || typeof rel !== 'string') return rel;
+  const t = rel.trim();
+  if (!t) return rel;
+  if (/^(https?:|data:|blob:|\/\/)/i.test(t)) return rel;
+  if (t.charAt(0) === '/') return rel;
+  const normalized = t.replace(/^\.\//, '');
+  const cur = document.currentScript && document.currentScript.src;
+  if (!cur) return rel;
+  try {
+    const jsDir = new URL('.', cur);
+    return new URL('../' + normalized, jsDir).href;
+  } catch (_) {
+    return rel;
+  }
+}
+
 // ───────────────────────────────────────────────────────
 //  RENDER — LITERATURE
 // ───────────────────────────────────────────────────────
@@ -25,7 +50,7 @@ const SIZE_TO_CLASS = {
     const role = p.author_role ? `<span class="lit-author-dot" aria-hidden="true"></span><span>${escapeHTML(p.author_role)}</span>` : '';
     let doodleHTML;
     if (p.doodle) {
-      doodleHTML = `<div class="lit-doodle"><img src="${escapeAttr(p.doodle)}" alt="" loading="lazy" /></div>`;
+      doodleHTML = `<div class="lit-doodle"><img src="${escapeAttr(resolveEditionAsset(p.doodle))}" alt="" loading="lazy" /></div>`;
     } else {
       doodleHTML = `<div class="lit-doodle lit-doodle--empty">${fallbackDoodles[i % fallbackDoodles.length]}</div>`;
     }
@@ -88,7 +113,7 @@ const SIZE_TO_CLASS = {
   if (typeof ART_PIECES === 'undefined' || !Array.isArray(ART_PIECES)) return;
     grid.innerHTML = ART_PIECES.map((a, i) => `
     <a href="#art" class="art-tile ${SIZE_TO_CLASS[a.size] || 'art-tile--md'} reveal" role="button" tabindex="0" data-type="art" data-index="${i}" data-tone="${a.tone}" aria-label="View ${escapeAttr(a.title)} by ${escapeAttr(a.artist)}">
-      ${a.src ? `<img class="art-tile-img" src="${escapeAttr(a.src)}" alt="${escapeAttr(a.title)} by ${escapeAttr(a.artist)}" loading="lazy" decoding="async">` : ''}
+      ${a.src ? `<img class="art-tile-img" src="${escapeAttr(resolveEditionAsset(a.src))}" alt="${escapeAttr(a.title)} by ${escapeAttr(a.artist)}" loading="lazy" decoding="async">` : ''}
       <div class="art-tile-caption">
         <div class="art-tile-medium">${escapeHTML(a.medium)}</div>
         <div class="art-tile-title">${escapeHTML(a.title)}</div>
@@ -310,7 +335,7 @@ function escapeAttr(str) { return escapeHTML(str); }
     const altText = `Illustration for ${p.title}`;
     const doodleHtml = p.doodle
       ? `<div class="lb-lit-head-doodle" aria-hidden="true">
-           <img src="${escapeAttr(p.doodle)}" alt="${escapeAttr(altText)}" loading="lazy" />
+           <img src="${escapeAttr(resolveEditionAsset(p.doodle))}" alt="${escapeAttr(altText)}" loading="lazy" />
          </div>`
       : '';
 
@@ -372,7 +397,7 @@ function escapeAttr(str) { return escapeHTML(str); }
     return `
       <div class="lb-art">
         <div class="lb-art-visual" data-tone="${escapeAttr(a.tone)}">
-          ${a.src ? `<img class="lb-art-img" src="${escapeAttr(a.src)}" alt="${escapeAttr(a.title)} by ${escapeAttr(a.artist)}">` : ''}
+          ${a.src ? `<img class="lb-art-img" src="${escapeAttr(resolveEditionAsset(a.src))}" alt="${escapeAttr(a.title)} by ${escapeAttr(a.artist)}">` : ''}
           <div class="lb-art-visual-badge">${escapeHTML(a.year || '2026')}</div>
         </div>
         <div class="lb-art-body">
