@@ -1401,3 +1401,4 @@ would mean the cage has won.
       },
       
     ];
+    globalThis.LIT_PIECES = LIT_PIECES;

@@ -97,6 +97,10 @@ a, button, input, select {
 	z-index: 1;
 	display: none;
 	scrollbar-width: none;
+	touch-action: pan-y;
+	overscroll-behavior-y: contain;
+	-webkit-overflow-scrolling: touch;
+	scroll-behavior: auto;
 }
 
 #scroll-container::-webkit-scrollbar {

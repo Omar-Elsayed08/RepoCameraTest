@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="page-loading">
 
 <head>
 	<title>Free Cam test</title>
@@ -7,10 +7,202 @@
 	<link rel="apple-touch-icon" href="./assets/brand/full_color_magnet_logo.png" />
 	<meta charset=utf-8 />
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link rel="stylesheet" href="css/2026-shared.css" />
 	<link type="text/css" rel="stylesheet" href="css/main.css">
+	<style id="ship-lit-modal-styles">
+		#ship-entry-loader {
+			position: fixed; inset: 0; z-index: 10075;
+			display: flex; align-items: center; justify-content: center;
+			background: #2e1c0a;
+			opacity: 0; visibility: hidden; pointer-events: none;
+			transition: opacity 0.4s ease, visibility 0.4s ease;
+		}
+		#ship-entry-loader.ship-entry-loader--visible {
+			opacity: 1; visibility: visible; pointer-events: auto;
+		}
+		#ship-entry-loader .page-loader-inner {
+			width: min(72vmin, 420px);
+			height: min(72vmin, 420px);
+		}
+		#ship-entry-loader .page-loader-inner svg {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+		#ship-lit-modal {
+			display: none; position: fixed; inset: 0; z-index: 10061; align-items: center; justify-content: center;
+			padding: clamp(10px, 2.2vmin, 22px); box-sizing: border-box; pointer-events: none;
+		}
+		#ship-lit-modal.ship-lit-modal--open { display: flex; pointer-events: auto; }
+		#ship-lit-modal .ship-lit-backdrop {
+			position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 40%, rgba(45, 28, 14, 0.55) 0%, rgba(10, 5, 3, 0.92) 70%);
+			backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.45s ease;
+		}
+		#ship-lit-modal.ship-lit-modal--open .ship-lit-backdrop { opacity: 1; }
+		#ship-lit-modal .ship-lit-card {
+			position: relative; z-index: 1; width: min(100%, 1720px); height: min(100%, 100vh - clamp(20px, 4vmin, 44px));
+			max-height: calc(100vh - clamp(20px, 4vmin, 44px));
+			display: flex; flex-direction: column;
+			background:
+				radial-gradient(ellipse 120% 80% at 20% 0%, rgba(120, 70, 28, 0.22) 0%, transparent 55%),
+				radial-gradient(ellipse 90% 60% at 100% 100%, rgba(60, 35, 18, 0.35) 0%, transparent 50%),
+				repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px),
+				linear-gradient(175deg, rgba(52, 36, 22, 0.98) 0%, rgba(22, 14, 8, 0.99) 45%, rgba(12, 8, 5, 0.995) 100%);
+			color: #f2e6d4; font-family: Georgia, 'Times New Roman', serif;
+			border: 2px solid rgba(180, 130, 55, 0.45);
+			box-shadow:
+				0 0 0 1px rgba(0,0,0,0.55), 0 28px 90px rgba(0,0,0,0.6),
+				inset 0 1px 0 rgba(255, 220, 170, 0.12), inset 0 -18px 48px rgba(0,0,0,0.35);
+			border-radius: 6px;
+			overflow: hidden;
+			opacity: 0; transform: scale(0.78) translateY(18px); filter: blur(12px);
+			transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), filter 0.45s ease;
+		}
+		#ship-lit-modal.ship-lit-modal--open .ship-lit-card {
+			opacity: 1; transform: scale(1) translateY(0); filter: blur(0);
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#ship-lit-modal .ship-lit-card { transition: opacity 0.2s ease; transform: none; filter: none; }
+			#ship-lit-modal .ship-lit-backdrop { transition: opacity 0.2s ease; }
+		}
+		#ship-lit-modal .ship-lit-close {
+			position: absolute; top: clamp(14px, 2.5vmin, 28px); left: clamp(14px, 2.5vmin, 28px); z-index: 5;
+			display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px;
+			font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #f5e8cc;
+			background: linear-gradient(180deg, rgba(55, 38, 22, 0.95), rgba(28, 18, 10, 0.98));
+			border: 1px solid rgba(200, 150, 70, 0.45); border-radius: 4px; cursor: pointer;
+			box-shadow: 0 4px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255, 210, 150, 0.15);
+		}
+		#ship-lit-modal .ship-lit-close:hover { border-color: rgba(255, 210, 120, 0.65); color: #fffaf0; }
+		#ship-lit-modal .ship-lit-close-x { font-size: 18px; line-height: 1; opacity: 0.88; }
+		#ship-lit-modal .ship-lit-layout {
+			flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(220px, 26%) 1fr; gap: clamp(18px, 3.2vw, 44px);
+			padding: clamp(52px, 7.5vmin, 84px) clamp(18px, 2.8vw, 44px) clamp(18px, 2.8vw, 36px);
+		}
+		@media (max-width: 900px) {
+			#ship-lit-modal .ship-lit-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+		}
+		#ship-lit-modal .ship-lit-aside { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+		#ship-lit-modal .ship-lit-field {
+			display: grid; grid-template-columns: 1fr; gap: 6px; padding: 14px 0;
+			border-bottom: 1px solid rgba(120, 80, 40, 0.35);
+		}
+		#ship-lit-modal .ship-lit-field:last-of-type { border-bottom: none; }
+		#ship-lit-modal .ship-lit-label {
+			font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(210, 180, 130, 0.55);
+		}
+		#ship-lit-modal .ship-lit-value { font-size: clamp(15px, 1.35vw, 19px); line-height: 1.38; color: #fff6e8; font-weight: 500; word-break: break-word; }
+		#ship-lit-modal .ship-lit-main { display: flex; flex-direction: column; gap: clamp(12px, 1.8vmin, 20px); min-width: 0; min-height: 0; }
+		#ship-lit-modal .ship-lit-img-frame {
+			flex: 1; min-height: min(52vh, 520px); display: flex; align-items: center; justify-content: center;
+			background: radial-gradient(ellipse at 50% 30%, rgba(60, 40, 22, 0.5) 0%, rgba(12, 8, 5, 0.85) 70%);
+			border: 1px solid rgba(110, 75, 40, 0.55); border-radius: 4px;
+			box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35), inset 0 12px 40px rgba(0,0,0,0.35);
+			padding: clamp(12px, 1.8vmin, 22px);
+		}
+		#ship-lit-modal .ship-lit-img {
+			max-width: 100%; max-height: min(82vh, 980px); width: auto; height: auto; object-fit: contain;
+			border-radius: 3px;
+			box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(80, 55, 30, 0.4);
+		}
+		#ship-lit-modal .ship-lit-statement {
+			margin: 0; font-size: clamp(13px, 1.1vw, 16px); line-height: 1.65; color: rgba(232, 214, 188, 0.9);
+			max-height: min(18vh, 180px); overflow: auto; padding-right: 6px;
+		}
+		#ship-lit-modal .ship-lit-statement:empty { display: none; }
+		#ship-lit-modal .ship-lit-hint {
+			position: absolute; bottom: clamp(12px, 2vmin, 22px); left: 50%; transform: translateX(-50%); z-index: 5;
+			font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(200, 170, 120, 0.5); pointer-events: none;
+		}
+	</style>
+	<style id="3dworld-treasure-loader-theme">
+		#page-loader svg path[class^="dCcBMlpE_"],
+		#ship-entry-loader svg path[class^="dCcBMlpE_"] {
+			stroke: var(--gold) !important;
+			fill: none !important;
+			animation-iteration-count: infinite !important;
+			animation-direction: alternate !important;
+			animation-fill-mode: both !important;
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#page-loader svg path[class^="dCcBMlpE_"],
+			#ship-entry-loader svg path[class^="dCcBMlpE_"] {
+				animation: none !important;
+				stroke-dashoffset: 0 !important;
+			}
+		}
+	</style>
 </head>
 
 <body>
+	<div id="page-loader" class="page-loader" aria-busy="true" aria-label="Loading">
+		<div class="page-loader-inner" id="page-loader-inner-slot"></div>
+	</div>
+	<div id="ship-entry-loader" class="ship-entry-loader" aria-hidden="true" aria-busy="false">
+		<div class="page-loader-inner" id="ship-entry-loader-inner-slot"></div>
+	</div>
+	<script>window.__magnetLoaderT0 = performance.now();</script>
+	<script>
+		( function () {
+			const slots = [
+				document.getElementById( 'page-loader-inner-slot' ),
+				document.getElementById( 'ship-entry-loader-inner-slot' )
+			].filter( Boolean );
+			if ( !slots.length ) return;
+			fetch( './TreasureSVG_animated.svg' )
+				.then( ( r ) => {
+					if ( !r.ok ) throw new Error( 'SVG ' + r.status );
+					return r.text();
+				} )
+				.then( ( text ) => {
+					const doc = new DOMParser().parseFromString( text, 'image/svg+xml' );
+					const svg = doc.querySelector( 'svg' );
+					if ( !svg ) return;
+					for ( let si = 0; si < slots.length; si++ ) {
+						const slot = slots[ si ];
+						if ( slot.querySelector( 'svg' ) ) continue;
+						const node = document.importNode( svg, true );
+						node.setAttribute( 'preserveAspectRatio', 'xMidYMid meet' );
+						node.setAttribute( 'width', '100%' );
+						node.setAttribute( 'height', '100%' );
+						slot.appendChild( node );
+					}
+				} )
+				.catch( () => {
+					const fallback = '<p style="margin:0;color:var(--gold);font-family:Georgia,\'Times New Roman\',serif;font-size:clamp(14px,3vmin,20px);text-align:center;line-height:1.5;">Loading world…</p>';
+					for ( let si = 0; si < slots.length; si++ ) {
+						const slot = slots[ si ];
+						if ( !slot.querySelector( 'svg' ) ) slot.innerHTML = fallback;
+					}
+				} );
+		} )();
+	</script>
+	<script>
+		( function () {
+			const html = document.documentElement;
+			const loader = document.getElementById( 'page-loader' );
+			if ( !loader ) return;
+			const MIN_MS = 2600;
+			function finishLoader() {
+				if ( html.classList.contains( 'page-loaded' ) ) return;
+				html.classList.remove( 'page-loading' );
+				html.classList.add( 'page-loaded' );
+				loader.setAttribute( 'aria-busy', 'false' );
+			}
+			window.__magnetSchedule3dWorldLoaderDone = function () {
+				if ( window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) {
+					finishLoader();
+					return;
+				}
+				const t0 = window.__magnetLoaderT0 ?? performance.now();
+				const elapsed = performance.now() - t0;
+				window.setTimeout( finishLoader, Math.max( 0, MIN_MS - elapsed ) );
+			};
+			window.setTimeout( function () {
+				if ( html.classList.contains( 'page-loading' ) ) finishLoader();
+			}, 12000 );
+		} )();
+	</script>
 	<a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:10002;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#2e1c0a;text-decoration:none;background:rgba(250,243,224,0.92);padding:8px 14px;border-radius:4px;border:1px solid rgba(46,28,10,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.08);">← The Magnet home</a>
 	<div id="info">
 		<br />
@@ -36,6 +228,8 @@
 			}
 		</script>
 
+	<script src="./js/2026-art.js"></script>
+
 	<script type="module">
 
 		import * as THREE from 'three';
@@ -56,8 +250,18 @@
 			import { LUTCubeLoader } from 'three/addons/loaders/LUTCubeLoader.js';
 			import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 			import { Water } from 'three/addons/objects/Water2.js';
+			import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+			import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 			particleFire.install( { THREE: THREE } );
+
+			const shipLitRaycaster = new THREE.Raycaster();
+			const shipLitNdcCenter = new THREE.Vector2( 0, 0 );
+			let shipLitHoverIndex = -1;
+			let shipLitRaycastFrame = 0;
+			let shipLitHoverIndexCached = -1;
+			let shipLitModalOpen = false;
+			let shipLitModalOpenedAt = 0;
 
 			/** Consolidated post-processing shader (vignette, tilt-shift, film grain) */
 			const MasterPostShader = {
@@ -203,7 +407,15 @@
 			scene.background = new THREE.Color( 0x88ccee );
 			scene.fog = new THREE.Fog( 0x88ccee, 0, isMobileDevice ? 30 : 50 );
 
-			const camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 200 );
+			/** Vertical FOV (deg). Slightly wider on phones so more of the scene fits the tall viewport. */
+			const CAMERA_FOV_DESKTOP = 70;
+			const CAMERA_FOV_MOBILE = 100;
+			const camera = new THREE.PerspectiveCamera(
+				isMobileDevice ? CAMERA_FOV_MOBILE : CAMERA_FOV_DESKTOP,
+				window.innerWidth / window.innerHeight,
+				0.1,
+				200
+			);
 			camera.rotation.order = 'YXZ';
 
 			const fillLight1 = new THREE.HemisphereLight( 0x8dc1de, 0x00668d, 1.5 );
@@ -289,10 +501,130 @@
 			renderer.toneMappingExposure = 1.0;
 			container.appendChild( renderer.domElement );
 
+			const shipArtPreloadedTextureByUrl = new Map();
+			let shipArtPreloadPromise = null;
+			function resolveShipArtUrl( src ) {
+				if ( src == null ) return '';
+				let url = String( src ).trim();
+				if ( !url ) return '';
+				if ( !/^https?:/i.test( url ) ) url = './' + url.replace( /^\.\//, '' );
+				return url;
+			}
+			function ensureShipArtTexturesPreloaded() {
+				if ( shipArtPreloadPromise != null ) return shipArtPreloadPromise;
+				const pieces = globalThis.ART_PIECES;
+				if ( !Array.isArray( pieces ) || pieces.length === 0 ) {
+					shipArtPreloadPromise = Promise.resolve();
+					return shipArtPreloadPromise;
+				}
+				const texLoader = new THREE.TextureLoader();
+				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const entries = [];
+				for ( let pi = 0; pi < pieces.length; pi++ ) {
+					const u = resolveShipArtUrl( pieces[ pi ]?.src );
+					if ( u ) entries.push( u );
+				}
+				const total = entries.length;
+				if ( total === 0 ) {
+					shipArtPreloadPromise = Promise.resolve();
+					return shipArtPreloadPromise;
+				}
+				const urlOnce = new Map();
+				function loadUrlOnce( url ) {
+					if ( urlOnce.has( url ) ) return urlOnce.get( url );
+					const p = new Promise( ( resolve ) => {
+						texLoader.load( url, ( tex ) => {
+							tex.colorSpace = THREE.SRGBColorSpace;
+							tex.anisotropy = maxAniso;
+							tex.needsUpdate = true;
+							shipArtPreloadedTextureByUrl.set( url, tex );
+							resolve( tex );
+						}, undefined, () => { resolve( null ); } );
+					} );
+					urlOnce.set( url, p );
+					return p;
+				}
+				shipArtPreloadPromise = Promise.all( entries.map( ( url ) => loadUrlOnce( url ) ) ).then( () => undefined );
+				return shipArtPreloadPromise;
+			}
+			ensureShipArtTexturesPreloaded();
+
 			const theaterHoverOverlay = document.createElement( 'div' );
 			theaterHoverOverlay.setAttribute( 'aria-hidden', 'true' );
 			theaterHoverOverlay.style.cssText = 'display:none;position:fixed;pointer-events:none;z-index:10060;box-sizing:border-box;background:transparent;border-radius:4px;';
 			document.body.appendChild( theaterHoverOverlay );
+
+			const flythroughChoiceHoverOverlay = document.createElement( 'div' );
+			flythroughChoiceHoverOverlay.setAttribute( 'aria-hidden', 'true' );
+			flythroughChoiceHoverOverlay.style.cssText = 'display:none;position:fixed;pointer-events:none;z-index:10059;box-sizing:border-box;background:transparent;border-radius:5px;';
+			document.body.appendChild( flythroughChoiceHoverOverlay );
+
+			const shipLitModalEl = document.createElement( 'div' );
+			shipLitModalEl.id = 'ship-lit-modal';
+			shipLitModalEl.setAttribute( 'role', 'dialog' );
+			shipLitModalEl.setAttribute( 'aria-modal', 'true' );
+			shipLitModalEl.setAttribute( 'aria-hidden', 'true' );
+			shipLitModalEl.innerHTML = ''
+				+ '<div class="ship-lit-backdrop" aria-hidden="true"></div>'
+				+ '<div class="ship-lit-card" role="document">'
+				+ '<button type="button" class="ship-lit-close" aria-label="Close artwork panel"><span class="ship-lit-close-t">Close</span><span class="ship-lit-close-x" aria-hidden="true">×</span></button>'
+				+ '<div class="ship-lit-layout">'
+				+ '<aside class="ship-lit-aside">'
+				+ '<div class="ship-lit-field"><span class="ship-lit-label">Title</span><span class="ship-lit-value ship-lit-val-title"></span></div>'
+				+ '<div class="ship-lit-field"><span class="ship-lit-label">Artist</span><span class="ship-lit-value ship-lit-val-artist"></span></div>'
+				+ '<div class="ship-lit-field"><span class="ship-lit-label">Medium</span><span class="ship-lit-value ship-lit-val-medium"></span></div>'
+				+ '</aside>'
+				+ '<div class="ship-lit-main">'
+				+ '<div class="ship-lit-img-frame"><img class="ship-lit-img" alt="" /></div>'
+				+ '<p class="ship-lit-statement ship-lit-excerpt"></p>'
+				+ '</div></div>'
+				+ '<p class="ship-lit-hint">Click again to close</p>'
+				+ '</div>';
+			document.body.appendChild( shipLitModalEl );
+			const shipLitModalImg = shipLitModalEl.querySelector( '.ship-lit-img' );
+			const shipLitModalTitle = shipLitModalEl.querySelector( '.ship-lit-val-title' );
+			const shipLitModalAuthor = shipLitModalEl.querySelector( '.ship-lit-val-artist' );
+			const shipLitModalMedium = shipLitModalEl.querySelector( '.ship-lit-val-medium' );
+			const shipLitModalExcerpt = shipLitModalEl.querySelector( '.ship-lit-excerpt' );
+			const shipLitModalCloseBtn = shipLitModalEl.querySelector( '.ship-lit-close' );
+			function closeShipLitModal() {
+				if ( !shipLitModalOpen ) return;
+				shipLitModalOpen = false;
+				shipLitModalEl.classList.remove( 'ship-lit-modal--open' );
+				shipLitModalEl.setAttribute( 'aria-hidden', 'true' );
+			}
+			function openShipLitModal( index ) {
+				const pieces = globalThis.ART_PIECES;
+				if ( !Array.isArray( pieces ) || index < 0 || index >= pieces.length ) return;
+				const p = pieces[ index ];
+				if ( p?.interaction === 'exitToCave' ) return;
+				shipLitModalOpen = true;
+				shipLitModalOpenedAt = performance.now();
+				shipLitModalEl.setAttribute( 'aria-hidden', 'false' );
+				let imgUrl = p.src ? String( p.src ).trim() : '';
+				if ( imgUrl && !/^https?:/i.test( imgUrl ) ) imgUrl = './' + imgUrl.replace( /^\.\//, '' );
+				shipLitModalImg.src = imgUrl || '';
+				shipLitModalImg.alt = p.title ? String( p.title ) : 'Artwork';
+				shipLitModalTitle.textContent = p.title != null ? String( p.title ) : '';
+				shipLitModalAuthor.textContent = p.artist != null ? String( p.artist ) : '';
+				const med = [ p.medium, p.year ].filter( ( x ) => x != null && String( x ).trim() !== '' ).map( ( x ) => String( x ) ).join( ' · ' );
+				shipLitModalMedium.textContent = med;
+				const stmt = p.statement != null ? String( p.statement ).trim() : '';
+				shipLitModalExcerpt.textContent = stmt;
+				shipLitModalExcerpt.style.display = stmt ? '' : 'none';
+				shipLitModalEl.classList.remove( 'ship-lit-modal--open' );
+				void shipLitModalEl.offsetHeight;
+				requestAnimationFrame( () => {
+					shipLitModalEl.classList.add( 'ship-lit-modal--open' );
+				} );
+			}
+			shipLitModalCloseBtn.addEventListener( 'click', ( e ) => { e.stopPropagation(); closeShipLitModal(); } );
+			document.addEventListener( 'keydown', ( e ) => {
+				if ( e.code === 'Escape' && shipLitModalOpen ) {
+					closeShipLitModal();
+					e.preventDefault();
+				}
+			} );
 
 			/** Stats and coordinates display - enabled for both mobile and desktop */
 			let stats = new Stats();
@@ -396,14 +728,559 @@
 
 			/** Theatre.js Flythrough System — scroll-driven with smooth interpolation */
 			let flythroughState = null;
+			let mainFlythroughState = null;
+			const branchFlythroughStates = { theater: null, bookstore: null, ship: null };
+			/** main | choice | bridge | reverseBridge | theater | bookstore | ship */
+			let flythroughSegment = 'main';
 			let flythroughActive = false;
 			let flythroughTime = 0;
 			let flythroughTargetTime = 0;
 			const _flythroughEuler = new THREE.Euler( 0, 0, 0, 'XYZ' );
+			const BRIDGE_DURATION_SEC = 1.35;
+			/** Last portion of main scroll: ease camera time toward path end (smoothstep), no hard cut. */
+			const MAIN_PATH_END_BLEND_SCROLL = 0.70;
+			/** Allow picking fork labels when main path time is past this fraction of duration. */
+			const MAIN_PATH_FORK_PICK_TIME_FRAC = 0.68;
+			/** Enter `choice` only when camera time has nearly reached the end pose (matches eased scroll). */
+			const MAIN_PATH_CHOICE_SNAP_TIME_EPS = 0.1;
+			/** Branch flythrough: enter interior when scroll is at end and time has caught up. */
+			const BRANCH_END_SNAP_TIME_EPS = 0.12;
+			let bridgePendingState = null;
+			let bridgePendingKey = '';
+			let bridgeElapsed = 0;
+			let reverseBridgeFromState = null;
+			let reverseBridgeElapsed = 0;
+			let reverseBridgeMainEndT = 0;
+			const _bridgeP0 = new THREE.Vector3();
+			const _bridgeP1 = new THREE.Vector3();
+			const _bridgeQ0 = new THREE.Quaternion();
+			const _bridgeQ1 = new THREE.Quaternion();
 			const scrollContainer = document.getElementById( 'scroll-container' );
 			const scrollSpacer = document.getElementById( 'scroll-spacer' );
 			const btnFreecam = document.getElementById( 'btn-freecam' );
 			const btnFlythrough = document.getElementById( 'btn-flythrough' );
+
+			const flythroughChoiceMenuGroup = new THREE.Group();
+			flythroughChoiceMenuGroup.name = 'FlythroughChoiceMenu';
+			flythroughChoiceMenuGroup.visible = true;
+			scene.add( flythroughChoiceMenuGroup );
+
+			const flythroughChoicePickables = [];
+			const flythroughChoiceEntries = [];
+			/** Non-interactive copies of the same style; billboards with branch labels (see FLYTHROUGH_EXTRA_LABELS). */
+			const flythroughExtraLabelRows = [];
+			let flythroughChoiceFontRef = null;
+			const flythroughChoiceRaycaster = new THREE.Raycaster();
+			const _choiceNdc = new THREE.Vector2();
+			let flythroughChoiceHoverClientX = -1e9, flythroughChoiceHoverClientY = -1e9;
+			const _flyChoiceHitCorners = [
+				new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
+			];
+			const _flyChoiceProj = new THREE.Vector3();
+			const FLYTHROUGH_CHOICE_FONT_URL = './freecam/helvetiker_regular.typeface.json';
+
+			/** World-space flythrough branch labels (menu group stays at origin; each row is billboarded to camera in animate). */
+			const FLYTHROUGH_CHOICE_POSITIONS = {
+				theater: new THREE.Vector3( -13, 2, -4 ),
+				bookstore: new THREE.Vector3( -7, 2, -8 ),
+				ship: new THREE.Vector3( -2, 2, -10 )
+			};
+
+			/**
+			 * Extra static labels — same materials as the branch buttons (billboarded). Not clickable.
+			 * Optional on each entry:
+			 * - targetTitleWidth — max world width for the title block (all lines share one scale).
+			 * - wrapTitle — word-wrap into multiple centered lines (greedy by measured width).
+			 * - titleGlowScale — glow vs title scale (default 1.07; ~1.02–1.04 for less halo).
+			 * - titleLineGap — vertical gap between wrapped lines.
+			 */
+			const FLYTHROUGH_EXTRA_LABELS = [
+				// Example (uncomment and edit):
+				// { title: 'WELCOME', subtitle: '(explore)', position: [ -5, 2.5, 4 ] },
+				// { title: 'QUIET ZONE', subtitle: '', position: [ 0, 2, -5 ] },
+				{ title: 'WELCOME', position: [ -3, 2.5, 66 ] },
+				{ title: 'The Magnet 2026', position: [ 6, 2.5, 64 ] },
+				{ title: 'Treasure', position: [ 0, 2, 48 ] },
+				{ title: 'An Immersive Experience', position: [5, 2, 36 ] },
+				{
+					title: 'Explore this year\'s works by entering the theater, bookstore, and ship.',
+					position: [ 0, 2, 15 ],
+					targetTitleWidth: 8.2,
+					wrapTitle: true,
+					titleGlowScale: 1.03,
+					titleLineGap: 0.05
+				},
+
+
+			];
+
+			function buildFlythroughChoiceMenu3D( font ) {
+				while ( flythroughChoiceMenuGroup.children.length > 0 ) {
+					const c = flythroughChoiceMenuGroup.children[ 0 ];
+					flythroughChoiceMenuGroup.remove( c );
+					const disposedGeos = new Set();
+					c.traverse( ( o ) => {
+						if ( o.geometry && !disposedGeos.has( o.geometry ) ) {
+							disposedGeos.add( o.geometry );
+							o.geometry.dispose();
+						}
+						if ( o.material ) {
+							if ( Array.isArray( o.material ) ) o.material.forEach( m => m.dispose() );
+							else o.material.dispose();
+						}
+					} );
+				}
+				flythroughChoicePickables.length = 0;
+				flythroughChoiceEntries.length = 0;
+				flythroughExtraLabelRows.length = 0;
+
+				flythroughChoiceMenuGroup.position.set( 0, 0, 0 );
+				flythroughChoiceMenuGroup.quaternion.identity();
+
+				const textParams = {
+					font: font,
+					size: isMobileDevice ? 0.75 : 0.95,
+					height: 0.12,
+					curveSegments: 12,
+					bevelEnabled: false
+				};
+				const TARGET_LABEL_WIDTH = 3.85;
+
+				/**
+				 * @param {string} titleStr
+				 * @param {string} [subtitleStr] second line; omit, null, or "" for title-only block
+				 * @param {THREE.Vector3} worldPos
+				 * @param {string|null} branchKey if set, label is clickable (single-line titles only)
+				 * @param {number} [targetTitleWidth] world units for title block width (default TARGET_LABEL_WIDTH)
+				 * @param {{ wrapTitle?: boolean, titleGlowScale?: number, titleLineGap?: number }} [labelOpts]
+				 */
+				function addStyledLabelRow( titleStr, subtitleStr, worldPos, branchKey, targetTitleWidth, labelOpts ) {
+					labelOpts = labelOpts || {};
+					const row = new THREE.Group();
+					row.position.copy( worldPos );
+					const hasSub = subtitleStr != null && String( subtitleStr ).trim().length > 0;
+					const titleTargetW = ( targetTitleWidth != null && targetTitleWidth > 0 ) ? targetTitleWidth : TARGET_LABEL_WIDTH;
+					const wrapTitle = !!labelOpts.wrapTitle && !branchKey;
+					const titleGlowScale = typeof labelOpts.titleGlowScale === 'number' ? labelOpts.titleGlowScale : 1.07;
+					const titleLineGap = typeof labelOpts.titleLineGap === 'number' ? labelOpts.titleLineGap : 0.06;
+
+					function measureTitleWidth( str ) {
+						const g = new TextGeometry( str, textParams );
+						g.computeBoundingBox();
+						const w = g.boundingBox.max.x - g.boundingBox.min.x;
+						g.dispose();
+						return w;
+					}
+					function measureTitleHeight( str ) {
+						const g = new TextGeometry( str, textParams );
+						g.computeBoundingBox();
+						const h = g.boundingBox.max.y - g.boundingBox.min.y;
+						g.dispose();
+						return h;
+					}
+					function wrapTitleLines( str, maxGeomW ) {
+						const words = str.split( /\s+/ ).filter( Boolean );
+						if ( words.length === 0 ) return [ '' ];
+						const out = [];
+						let cur = '';
+						for ( let wi = 0; wi < words.length; wi++ ) {
+							const w = words[ wi ];
+							const trial = cur ? cur + ' ' + w : w;
+							if ( measureTitleWidth( trial ) <= maxGeomW || !cur ) cur = trial;
+							else {
+								out.push( cur );
+								cur = w;
+							}
+						}
+						if ( cur ) out.push( cur );
+						return out;
+					}
+
+					const fullWOneLine = measureTitleWidth( titleStr );
+					let titleLines;
+					if ( wrapTitle ) {
+						let maxLG = Math.max( textParams.size * 2.5, fullWOneLine * 0.38 );
+						titleLines = wrapTitleLines( titleStr, maxLG );
+						let guard = 0;
+						while ( titleLines.length < 2 && maxLG > textParams.size * 2 && guard++ < 20 ) {
+							maxLG *= 0.86;
+							titleLines = wrapTitleLines( titleStr, maxLG );
+						}
+					} else {
+						titleLines = [ titleStr ];
+					}
+
+					let maxLnW = 0;
+					for ( let ti = 0; ti < titleLines.length; ti++ ) {
+						maxLnW = Math.max( maxLnW, measureTitleWidth( titleLines[ ti ] ) );
+					}
+					const fitScale = maxLnW > 1e-6 ? titleTargetW / maxLnW : 1;
+					const lineDispHs = titleLines.map( ( ln ) => measureTitleHeight( ln ) * fitScale );
+					let totalTitleH = 0;
+					for ( let li = 0; li < lineDispHs.length; li++ ) {
+						totalTitleH += lineDispHs[ li ];
+						if ( li < lineDispHs.length - 1 ) totalTitleH += titleLineGap;
+					}
+					const maxTitleDispW = Math.max( ...titleLines.map( ( ln ) => measureTitleWidth( ln ) * fitScale ), 0.001 );
+					const dispW = maxTitleDispW;
+
+					const padX = 0.35, padY = 0.14;
+					const gapYTitleSub = 0.08;
+					let alignY = 0;
+					let subY = 0;
+					let subDispW = 0;
+					let subDispH = 0;
+					let subFit = 1;
+					/** @type {THREE.BufferGeometry|null} */
+					let subGeo = null;
+					if ( hasSub ) {
+						const subParams = {
+							font: font,
+							size: textParams.size * 0.28,
+							height: textParams.height * 0.35,
+							curveSegments: 10,
+							bevelEnabled: false
+						};
+						const maxSubW = dispW * 0.36;
+						subGeo = new TextGeometry( String( subtitleStr ), subParams );
+						subGeo.computeBoundingBox();
+						const sbb = subGeo.boundingBox;
+						const stw = sbb.max.x - sbb.min.x;
+						const sth = sbb.max.y - sbb.min.y;
+						subGeo.center();
+						subFit = stw > 1e-6 ? maxSubW / stw : 1;
+						subDispW = stw * subFit;
+						subDispH = sth * subFit;
+						alignY = gapYTitleSub * 0.5 + subDispH * 0.5 + totalTitleH * 0.5;
+						subY = alignY - totalTitleH * 0.5 - gapYTitleSub - subDispH * 0.5;
+					}
+
+					const titleCentY = hasSub ? alignY : 0;
+					let yCursor = titleCentY + totalTitleH * 0.5;
+
+					const backMat = new THREE.MeshBasicMaterial( {
+						color: 0x1a1008,
+						transparent: true,
+						opacity: 0.75,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: false
+					} );
+					const blockW = hasSub ? Math.max( dispW, subDispW ) + padX * 2 : dispW + padX * 2;
+					const blockH = ( hasSub ? totalTitleH + gapYTitleSub + subDispH : totalTitleH ) + padY * 2;
+					const backGeo = new THREE.PlaneGeometry( blockW, blockH );
+					const backMesh = new THREE.Mesh( backGeo, backMat );
+					backMesh.position.set( 0, 0, -0.14 );
+					backMesh.renderOrder = 0;
+					row.add( backMesh );
+
+					const glowMat = new THREE.MeshBasicMaterial( {
+						color: 0xffb24a,
+						transparent: true,
+						opacity: 0.42,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: false,
+						blending: THREE.AdditiveBlending
+					} );
+					const textMat = new THREE.MeshBasicMaterial( {
+						color: 0xfffef5,
+						transparent: true,
+						opacity: 1,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: true
+					} );
+
+					const titleLineTextMeshes = [];
+					const titleLineGlowMeshes = [];
+					for ( let li = 0; li < titleLines.length; li++ ) {
+						const lineStr = titleLines[ li ];
+						const textGeo = new TextGeometry( lineStr, textParams );
+						textGeo.computeBoundingBox();
+						textGeo.center();
+						const ly = yCursor - lineDispHs[ li ] * 0.5;
+						yCursor -= lineDispHs[ li ] + titleLineGap;
+
+						const glowMesh = new THREE.Mesh( textGeo, glowMat );
+						glowMesh.scale.setScalar( fitScale * titleGlowScale );
+						glowMesh.position.set( 0, ly, -0.04 );
+						glowMesh.castShadow = false;
+						glowMesh.receiveShadow = false;
+						glowMesh.renderOrder = 1;
+						row.add( glowMesh );
+						titleLineGlowMeshes.push( glowMesh );
+
+						const textMesh = new THREE.Mesh( textGeo, textMat );
+						textMesh.scale.setScalar( fitScale );
+						textMesh.position.set( 0, ly, 0 );
+						textMesh.castShadow = false;
+						textMesh.receiveShadow = false;
+						if ( branchKey ) textMesh.userData.branchKey = branchKey;
+						textMesh.renderOrder = 2;
+						row.add( textMesh );
+						titleLineTextMeshes.push( textMesh );
+					}
+
+					const textMesh = titleLineTextMeshes[ 0 ];
+					const glowMesh = titleLineGlowMeshes[ 0 ];
+
+					/** @type {THREE.Mesh|null} */
+					let subGlowMesh = null;
+					/** @type {THREE.Mesh|null} */
+					let subTextMesh = null;
+					if ( hasSub && subGeo ) {
+						const subGlowMat = new THREE.MeshBasicMaterial( {
+							color: 0xe6a030,
+							transparent: true,
+							opacity: 0.28,
+							side: THREE.DoubleSide,
+							toneMapped: false,
+							depthTest: true,
+							depthWrite: false,
+							blending: THREE.AdditiveBlending
+						} );
+						subGlowMesh = new THREE.Mesh( subGeo, subGlowMat );
+						subGlowMesh.scale.setScalar( subFit * 1.06 );
+						subGlowMesh.position.set( 0, subY, -0.03 );
+						subGlowMesh.renderOrder = 1;
+						row.add( subGlowMesh );
+
+						const subMat = new THREE.MeshBasicMaterial( {
+							color: 0xf0e6d2,
+							transparent: true,
+							opacity: 0.92,
+							side: THREE.DoubleSide,
+							toneMapped: false,
+							depthTest: true,
+							depthWrite: true
+						} );
+						subTextMesh = new THREE.Mesh( subGeo, subMat );
+						subTextMesh.scale.setScalar( subFit );
+						subTextMesh.position.set( 0, subY, 0 );
+						subTextMesh.renderOrder = 2;
+						row.add( subTextMesh );
+					}
+
+					/** @type {THREE.Mesh|null} */
+					let hitMesh = null;
+					if ( branchKey ) {
+						const hitGeo = new THREE.PlaneGeometry( blockW * 1.04, blockH * 1.04 );
+						const hitMat = new THREE.MeshBasicMaterial( {
+							transparent: true,
+							opacity: 0,
+							depthWrite: false,
+							side: THREE.DoubleSide,
+							toneMapped: false
+						} );
+						hitMesh = new THREE.Mesh( hitGeo, hitMat );
+						hitMesh.position.set( 0, 0, 0.08 );
+						hitMesh.userData.branchKey = branchKey;
+						hitMesh.renderOrder = 3;
+						row.add( hitMesh );
+						flythroughChoicePickables.push( hitMesh );
+						flythroughChoiceEntries.push( {
+							row,
+							textMesh,
+							glowMesh,
+							titleLineTextMeshes,
+							titleLineGlowMeshes,
+							subTextMesh,
+							subGlowMesh,
+							hitMesh,
+							backMesh,
+							branchKey
+						} );
+					} else {
+						flythroughExtraLabelRows.push( { row } );
+					}
+
+					flythroughChoiceMenuGroup.add( row );
+				}
+
+				addStyledLabelRow( 'THEATER', '(film)', FLYTHROUGH_CHOICE_POSITIONS.theater, 'theater' );
+				addStyledLabelRow( 'BOOK STORE', '(literature)', FLYTHROUGH_CHOICE_POSITIONS.bookstore, 'bookstore' );
+				addStyledLabelRow( 'SHIP', '(art)', FLYTHROUGH_CHOICE_POSITIONS.ship, 'ship' );
+
+				for ( let i = 0; i < FLYTHROUGH_EXTRA_LABELS.length; i++ ) {
+					const L = FLYTHROUGH_EXTRA_LABELS[ i ];
+					if ( !L || !L.title ) continue;
+					const p = L.position;
+					const pos = Array.isArray( p )
+						? new THREE.Vector3( Number( p[ 0 ] ) || 0, Number( p[ 1 ] ) || 0, Number( p[ 2 ] ) || 0 )
+						: ( p && p.isVector3 ? p.clone() : new THREE.Vector3() );
+					addStyledLabelRow( L.title, L.subtitle != null ? L.subtitle : '', pos, null, L.targetTitleWidth, {
+						wrapTitle: L.wrapTitle,
+						titleGlowScale: L.titleGlowScale,
+						titleLineGap: L.titleLineGap
+					} );
+				}
+			}
+
+			function ensureFlythroughChoiceMenuBuilt() {
+				if ( flythroughChoiceFontRef && flythroughChoiceEntries.length === 0 ) {
+					buildFlythroughChoiceMenu3D( flythroughChoiceFontRef );
+				}
+			}
+
+			function updateFlythroughChoiceButtonStates() {
+				for ( let i = 0; i < flythroughChoiceEntries.length; i++ ) {
+					const e = flythroughChoiceEntries[ i ];
+					const ok = !!branchFlythroughStates[ e.branchKey ];
+					e.hitMesh.visible = ok;
+					e.backMesh.visible = ok;
+					const tMeshes = e.titleLineTextMeshes && e.titleLineTextMeshes.length ? e.titleLineTextMeshes : ( e.textMesh ? [ e.textMesh ] : [] );
+					const gMeshes = e.titleLineGlowMeshes && e.titleLineGlowMeshes.length ? e.titleLineGlowMeshes : ( e.glowMesh ? [ e.glowMesh ] : [] );
+					for ( let ti = 0; ti < tMeshes.length; ti++ ) {
+						const tm = tMeshes[ ti ];
+						if ( !tm ) continue;
+						tm.visible = ok;
+						tm.material.opacity = ok ? 1 : 0.35;
+					}
+					for ( let gi = 0; gi < gMeshes.length; gi++ ) {
+						const gm = gMeshes[ gi ];
+						if ( !gm ) continue;
+						gm.visible = ok;
+						gm.material.opacity = ok ? 0.42 : 0.1;
+					}
+					if ( e.subTextMesh ) {
+						e.subTextMesh.visible = ok;
+						e.subTextMesh.material.opacity = ok ? 0.92 : 0.22;
+					}
+					if ( e.subGlowMesh ) {
+						e.subGlowMesh.visible = ok;
+						e.subGlowMesh.material.opacity = ok ? 0.28 : 0.06;
+					}
+					e.backMesh.material.opacity = ok ? 0.75 : 0.12;
+				}
+			}
+
+			function canPickFlythroughChoices() {
+				if ( isInteriorMap() ) return false;
+				if ( !flythroughActive || !mainFlythroughState ) return false;
+				if ( flythroughSegment === 'bridge' || flythroughSegment === 'reverseBridge' ) return false;
+				if ( flythroughSegment === 'choice' ) return true;
+				if ( flythroughSegment === 'main' && flythroughState === mainFlythroughState ) {
+					const D = mainFlythroughState.duration;
+					return Math.max( flythroughTime, flythroughTargetTime ) >= D * MAIN_PATH_FORK_PICK_TIME_FRAC;
+				}
+				return false;
+			}
+
+			window.addEventListener( 'mousemove', ( e ) => {
+				flythroughChoiceHoverClientX = e.clientX;
+				flythroughChoiceHoverClientY = e.clientY;
+			} );
+			window.addEventListener( 'touchmove', ( e ) => {
+				if ( e.touches.length === 1 ) {
+					flythroughChoiceHoverClientX = e.touches[ 0 ].clientX;
+					flythroughChoiceHoverClientY = e.touches[ 0 ].clientY;
+				}
+			}, { passive: true } );
+
+			function tryPickFlythroughChoice( clientX, clientY ) {
+				if ( flythroughChoicePickables.length === 0 ) return false;
+				const canvas = renderer.domElement;
+				const r = canvas.getBoundingClientRect();
+				_choiceNdc.x = ( ( clientX - r.left ) / r.width ) * 2 - 1;
+				_choiceNdc.y = -( ( clientY - r.top ) / r.height ) * 2 + 1;
+				flythroughChoiceRaycaster.setFromCamera( _choiceNdc, camera );
+				const hits = flythroughChoiceRaycaster.intersectObjects( flythroughChoicePickables, false );
+				if ( hits.length === 0 ) return false;
+				const key = hits[ 0 ].object.userData.branchKey;
+				if ( !key || !branchFlythroughStates[ key ] ) return false;
+				startBranchFlythrough( key );
+				return true;
+			}
+
+			const flythroughFontLoadPromise = ( async function loadFlythroughChoiceFont() {
+				try {
+					const loader = new FontLoader();
+					const font = await loader.loadAsync( FLYTHROUGH_CHOICE_FONT_URL );
+					flythroughChoiceFontRef = font;
+					buildFlythroughChoiceMenu3D( font );
+					updateFlythroughChoiceButtonStates();
+				} catch ( err ) {
+					console.warn( 'Flythrough 3D menu font not loaded (place helvetiker_regular.typeface.json in freecam/):', err );
+				}
+			} )();
+
+			function hideFlythroughChoiceMenu() {
+				/* Labels stay in the world; visibility is not toggled. */
+			}
+
+			function showFlythroughChoiceMenu() {
+				if ( !mainFlythroughState ) return;
+				flythroughChoiceMenuGroup.position.set( 0, 0, 0 );
+				flythroughChoiceMenuGroup.quaternion.identity();
+				ensureFlythroughChoiceMenuBuilt();
+				updateFlythroughChoiceButtonStates();
+			}
+
+			function startBranchFlythrough( branchKey ) {
+				const next = branchFlythroughStates[ branchKey ];
+				if ( !next ) {
+					console.warn( 'Branch flythrough not available:', branchKey );
+					return;
+				}
+				hideFlythroughChoiceMenu();
+				bridgePendingState = next;
+				bridgePendingKey = branchKey;
+				bridgeElapsed = 0;
+				flythroughSegment = 'bridge';
+			}
+
+			function sampleFlythroughPose( state, t, outPos, outQuat ) {
+				if ( !state?.tracks ) return;
+				const tr = state.tracks;
+				outPos.set(
+					evaluateTrack( tr[ '["position","x"]' ], t ),
+					evaluateTrack( tr[ '["position","y"]' ], t ),
+					evaluateTrack( tr[ '["position","z"]' ], t )
+				);
+				_flythroughEuler.set(
+					evaluateTrack( tr[ '["rotation","x"]' ], t ),
+					evaluateTrack( tr[ '["rotation","y"]' ], t ),
+					evaluateTrack( tr[ '["rotation","z"]' ], t ),
+					'XYZ'
+				);
+				outQuat.setFromEuler( _flythroughEuler );
+			}
+
+			function finishBridgeToBranch() {
+				if ( !bridgePendingState || !bridgePendingKey ) return;
+				flythroughState = bridgePendingState;
+				flythroughSegment = bridgePendingKey;
+				bridgePendingState = null;
+				bridgePendingKey = '';
+				bridgeElapsed = 0;
+				flythroughTime = 0;
+				flythroughTargetTime = 0;
+				scrollContainer.scrollTop = 0;
+				const scrollPages = Math.max( 5, Math.ceil( flythroughState.duration ) );
+				scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
+				applyFlythroughCamera( flythroughState, 0 );
+			}
+
+			function applyFlythroughCamera( state, t ) {
+				if ( !state?.tracks ) return;
+				const tr = state.tracks;
+				camera.position.set(
+					evaluateTrack( tr[ '["position","x"]' ], t ),
+					evaluateTrack( tr[ '["position","y"]' ], t ),
+					evaluateTrack( tr[ '["position","z"]' ], t )
+				);
+				_flythroughEuler.set(
+					evaluateTrack( tr[ '["rotation","x"]' ], t ),
+					evaluateTrack( tr[ '["rotation","y"]' ], t ),
+					evaluateTrack( tr[ '["rotation","z"]' ], t ),
+					'XYZ'
+				);
+				camera.quaternion.setFromEuler( _flythroughEuler );
+			}
 
 			function cubicBez( t, p0, p1, p2, p3 ) {
 				const mt = 1 - t;
@@ -451,35 +1328,155 @@
 			}
 
 			function updateFlythrough( deltaTime ) {
-				if ( !flythroughState || !flythroughActive ) return;
+				if ( !flythroughActive || !mainFlythroughState ) return;
+
 				const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-				if ( maxScroll > 0 ) {
-					flythroughTargetTime = ( scrollContainer.scrollTop / maxScroll ) * flythroughState.duration;
+				const scrollFrac = maxScroll > 0 ? THREE.MathUtils.clamp( scrollContainer.scrollTop / maxScroll, 0, 1 ) : 1;
+				const scrollBottom = maxScroll > 0 && scrollContainer.scrollTop >= maxScroll - 2;
+
+				if ( flythroughSegment === 'bridge' && bridgePendingState ) {
+					bridgeElapsed += deltaTime;
+					const u = Math.min( 1, bridgeElapsed / BRIDGE_DURATION_SEC );
+					const sm = u * u * ( 3 - 2 * u );
+					sampleFlythroughPose( mainFlythroughState, mainFlythroughState.duration, _bridgeP0, _bridgeQ0 );
+					sampleFlythroughPose( bridgePendingState, 0, _bridgeP1, _bridgeQ1 );
+					camera.position.lerpVectors( _bridgeP0, _bridgeP1, sm );
+					camera.quaternion.copy( _bridgeQ0 ).slerp( _bridgeQ1, sm );
+					if ( u >= 1 ) finishBridgeToBranch();
+					return;
 				}
-				const smoothing = 1 - Math.exp( -6 * deltaTime );
+
+				if ( flythroughSegment === 'reverseBridge' && reverseBridgeFromState ) {
+					reverseBridgeElapsed += deltaTime;
+					const u = Math.min( 1, reverseBridgeElapsed / BRIDGE_DURATION_SEC );
+					const sm = u * u * ( 3 - 2 * u );
+					sampleFlythroughPose( reverseBridgeFromState, 0, _bridgeP0, _bridgeQ0 );
+					sampleFlythroughPose( mainFlythroughState, reverseBridgeMainEndT, _bridgeP1, _bridgeQ1 );
+					camera.position.lerpVectors( _bridgeP0, _bridgeP1, sm );
+					camera.quaternion.copy( _bridgeQ0 ).slerp( _bridgeQ1, sm );
+					if ( u >= 1 ) finishReverseBridgeToMain();
+					return;
+				}
+
+				if ( flythroughSegment === 'choice' ) {
+					const T = mainFlythroughState.duration;
+					flythroughTime = flythroughTargetTime = T;
+					applyFlythroughCamera( mainFlythroughState, T );
+					if ( maxScroll > 0 && scrollFrac < 0.985 ) {
+						hideFlythroughChoiceMenu();
+						flythroughSegment = 'main';
+						flythroughState = mainFlythroughState;
+						flythroughTargetTime = scrollFrac * mainFlythroughState.duration;
+						flythroughTime = flythroughTargetTime;
+					}
+					return;
+				}
+
+				if ( !flythroughState ) return;
+				const pathDur = flythroughState.duration;
+				if ( maxScroll > 0 ) {
+					let tScroll = scrollFrac * pathDur;
+					if ( flythroughSegment === 'main' && flythroughState === mainFlythroughState && scrollFrac >= MAIN_PATH_END_BLEND_SCROLL ) {
+						const u = THREE.MathUtils.clamp( ( scrollFrac - MAIN_PATH_END_BLEND_SCROLL ) / ( 1 - MAIN_PATH_END_BLEND_SCROLL ), 0, 1 );
+						const sm = u * u * ( 3 - 2 * u );
+						tScroll = THREE.MathUtils.lerp( scrollFrac * pathDur, pathDur, sm );
+					}
+					flythroughTargetTime = tScroll;
+				}
+				let smoothK = isMobileDevice ? 4.2 : 3.6;
+				if ( flythroughSegment === 'main' && flythroughState === mainFlythroughState && scrollFrac >= MAIN_PATH_END_BLEND_SCROLL ) {
+					smoothK = isMobileDevice ? 5.8 : 5.1;
+				}
+				const smoothing = 1 - Math.exp( -smoothK * deltaTime );
 				flythroughTime += ( flythroughTargetTime - flythroughTime ) * smoothing;
-				const tr = flythroughState.tracks;
-				camera.position.set(
-					evaluateTrack( tr[ '["position","x"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["position","y"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["position","z"]' ], flythroughTime )
-				);
-				_flythroughEuler.set(
-					evaluateTrack( tr[ '["rotation","x"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["rotation","y"]' ], flythroughTime ),
-					evaluateTrack( tr[ '["rotation","z"]' ], flythroughTime ),
-					'XYZ'
-				);
-				camera.quaternion.setFromEuler( _flythroughEuler );
+				applyFlythroughCamera( flythroughState, flythroughTime );
+
+				if ( isFlythroughBranchSegment() && flythroughState && maxScroll > 0 ) {
+					const D = flythroughState.duration;
+					if ( scrollBottom && flythroughTime >= D - BRANCH_END_SNAP_TIME_EPS && flythroughTargetTime >= D - 1e-3 ) {
+						finishBranchFlythroughAndEnterMap();
+						return;
+					}
+				}
+
+				if ( flythroughSegment === 'main' && flythroughState === mainFlythroughState ) {
+					const D = mainFlythroughState.duration;
+					if ( scrollBottom && flythroughTime >= D - MAIN_PATH_CHOICE_SNAP_TIME_EPS && flythroughTargetTime >= D - 1e-3 ) {
+						flythroughSegment = 'choice';
+						flythroughTime = flythroughTargetTime = D;
+						applyFlythroughCamera( mainFlythroughState, D );
+						showFlythroughChoiceMenu();
+					}
+				}
+			}
+
+			function finishReverseBridgeToMain() {
+				const endT = reverseBridgeMainEndT;
+				const hadFrom = reverseBridgeFromState;
+				reverseBridgeFromState = null;
+				reverseBridgeMainEndT = 0;
+				reverseBridgeElapsed = 0;
+				if ( !mainFlythroughState || !hadFrom ) return;
+				flythroughState = mainFlythroughState;
+				flythroughSegment = 'main';
+				const D = mainFlythroughState.duration;
+				void scrollContainer.offsetHeight;
+				const maxS = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+				if ( maxS > 0 ) {
+					scrollContainer.scrollTop = THREE.MathUtils.clamp( ( endT / D ) * maxS, 0, maxS );
+				}
+				flythroughTime = flythroughTargetTime = endT;
+				applyFlythroughCamera( mainFlythroughState, endT );
+			}
+
+			function isFlythroughBranchSegment() {
+				return flythroughSegment === 'theater' || flythroughSegment === 'bookstore' || flythroughSegment === 'ship';
+			}
+
+			function finishBranchFlythroughAndEnterMap() {
+				const seg = flythroughSegment;
+				if ( seg !== 'theater' && seg !== 'bookstore' && seg !== 'ship' ) return;
+				exitFlythrough();
+				mapTeleportCooldownUntil = performance.now() + 1600;
+				if ( seg === 'theater' ) enterTheaterMap();
+				else if ( seg === 'bookstore' ) enterBookstoreMap();
+				else enterShipMap();
+			}
+
+			function startReverseBridgeFromBranch() {
+				if ( !flythroughActive || !mainFlythroughState || !isFlythroughBranchSegment() || !flythroughState ) return;
+				hideFlythroughChoiceMenu();
+				reverseBridgeFromState = flythroughState;
+				const D = mainFlythroughState.duration;
+				reverseBridgeMainEndT = Math.min( D * 0.96, Math.max( 0, D - 0.2 ) );
+				reverseBridgeElapsed = 0;
+				const scrollPages = Math.max( 5, Math.ceil( D ) );
+				scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
+				flythroughSegment = 'reverseBridge';
 			}
 
 			function enterFlythrough() {
-				if ( !flythroughState ) return;
+				if ( !mainFlythroughState ) return;
+				hideFlythroughChoiceMenu();
+				bridgePendingState = null;
+				bridgePendingKey = '';
+				bridgeElapsed = 0;
+				reverseBridgeFromState = null;
+				reverseBridgeMainEndT = 0;
+				reverseBridgeElapsed = 0;
+				flythroughState = mainFlythroughState;
+				flythroughSegment = 'main';
 				flythroughActive = true;
 				flythroughTime = 0;
 				flythroughTargetTime = 0;
 				scrollContainer.style.display = 'block';
 				scrollContainer.scrollTop = 0;
+				if ( isMobileDevice ) {
+					scrollContainer.style.touchAction = 'pan-y';
+					scrollContainer.style.overscrollBehavior = 'contain';
+				}
+				const scrollPages = Math.max( 5, Math.ceil( mainFlythroughState.duration ) );
+				scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
 				if ( document.pointerLockElement ) document.exitPointerLock();
 				btnFlythrough.classList.add( 'active' );
 				btnFreecam.classList.remove( 'active' );
@@ -487,7 +1484,18 @@
 
 			function exitFlythrough() {
 				flythroughActive = false;
+				hideFlythroughChoiceMenu();
+				bridgePendingState = null;
+				bridgePendingKey = '';
+				bridgeElapsed = 0;
+				reverseBridgeFromState = null;
+				reverseBridgeMainEndT = 0;
+				reverseBridgeElapsed = 0;
+				flythroughSegment = 'main';
+				if ( mainFlythroughState ) flythroughState = mainFlythroughState;
 				scrollContainer.style.display = 'none';
+				scrollContainer.style.touchAction = '';
+				scrollContainer.style.overscrollBehavior = '';
 				if ( playerBody ) {
 					playerBody.position.set( camera.position.x, camera.position.y, camera.position.z );
 					playerBody.velocity.set( 0, 0, 0 );
@@ -499,35 +1507,77 @@
 			}
 
 			btnFreecam.addEventListener( 'click', () => { if ( flythroughActive ) exitFlythrough(); } );
-			btnFlythrough.addEventListener( 'click', () => { if ( !flythroughActive && flythroughState ) enterFlythrough(); } );
+			btnFlythrough.addEventListener( 'click', () => { if ( !flythroughActive && mainFlythroughState ) enterFlythrough(); } );
 
 			let _flyTouchY = null;
+			let _flyMobileLastTouchY = null;
 			scrollContainer.addEventListener( 'touchstart', ( e ) => {
 				if ( !flythroughActive || e.touches.length !== 1 ) return;
-				_flyTouchY = e.touches[ 0 ].clientY;
+				const y = e.touches[ 0 ].clientY;
+				if ( isMobileDevice ) _flyMobileLastTouchY = y;
+				else _flyTouchY = y;
 			}, { passive: true } );
 			scrollContainer.addEventListener( 'touchmove', ( e ) => {
-				if ( !flythroughActive || _flyTouchY === null || e.touches.length !== 1 ) return;
-				e.preventDefault();
+				if ( !flythroughActive || e.touches.length !== 1 ) return;
 				const currentY = e.touches[ 0 ].clientY;
+				if ( isMobileDevice ) {
+					if ( _flyMobileLastTouchY === null ) return;
+					const dy = currentY - _flyMobileLastTouchY;
+					if ( isFlythroughBranchSegment() && scrollContainer.scrollTop <= 2 && dy < -2.5 ) {
+						startReverseBridgeFromBranch();
+					}
+					_flyMobileLastTouchY = currentY;
+					return;
+				}
+				if ( _flyTouchY === null ) return;
+				e.preventDefault();
 				const delta = currentY - _flyTouchY;
+				const prevTop = scrollContainer.scrollTop;
+				if ( isFlythroughBranchSegment() && prevTop <= 1 && delta < 0 ) {
+					startReverseBridgeFromBranch();
+					_flyTouchY = currentY;
+					return;
+				}
 				scrollContainer.scrollTop += delta;
 				_flyTouchY = currentY;
+			}, { passive: isMobileDevice } );
+			scrollContainer.addEventListener( 'wheel', ( e ) => {
+				if ( !flythroughActive || !isFlythroughBranchSegment() ) return;
+				if ( scrollContainer.scrollTop > 1 ) return;
+				if ( e.deltaY >= 0 ) return;
+				e.preventDefault();
+				startReverseBridgeFromBranch();
 			}, { passive: false } );
-			scrollContainer.addEventListener( 'touchend', () => { _flyTouchY = null; }, { passive: true } );
-			scrollContainer.addEventListener( 'touchcancel', () => { _flyTouchY = null; }, { passive: true } );
+			scrollContainer.addEventListener( 'touchend', () => {
+				_flyTouchY = null;
+				_flyMobileLastTouchY = null;
+			}, { passive: true } );
+			scrollContainer.addEventListener( 'touchcancel', () => {
+				_flyTouchY = null;
+				_flyMobileLastTouchY = null;
+			}, { passive: true } );
 
-			fetch( './freecam/flythrough-state.json' )
-				.then( r => r.json() )
-				.then( state => {
-					flythroughState = parseTheatreState( state );
-					if ( flythroughState ) {
-						const scrollPages = Math.max( 5, Math.ceil( flythroughState.duration ) );
-						scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
-						console.log( 'Flythrough loaded: ' + flythroughState.duration.toFixed( 1 ) + 's, ' + scrollPages + ' scroll pages' );
-					}
-				} )
-				.catch( e => console.warn( 'Flythrough state not loaded:', e ) );
+			Promise.all( [
+				fetch( './freecam/Fly Through.theatre-project-state (1).json' ).then( r => r.json() ),
+				fetch( './freecam/TheaterAnim.json' ).then( r => r.json() ),
+				fetch( './freecam/BookStoreAnim.json' ).then( r => r.json() ),
+				fetch( './freecam/ShipAnim.json' ).then( r => r.json() )
+			] ).then( ( [ mainJson, theaterJson, bookJson, shipJson ] ) => {
+				mainFlythroughState = parseTheatreState( mainJson );
+				branchFlythroughStates.theater = parseTheatreState( theaterJson );
+				branchFlythroughStates.bookstore = parseTheatreState( bookJson );
+				branchFlythroughStates.ship = parseTheatreState( shipJson );
+				flythroughState = mainFlythroughState;
+				if ( !branchFlythroughStates.theater ) console.warn( 'TheaterAnim.json not parsed' );
+				if ( !branchFlythroughStates.bookstore ) console.warn( 'BookStoreAnim.json not parsed' );
+				if ( !branchFlythroughStates.ship ) console.warn( 'ShipAnim.json not parsed' );
+				updateFlythroughChoiceButtonStates();
+				if ( mainFlythroughState ) {
+					const scrollPages = Math.max( 5, Math.ceil( mainFlythroughState.duration ) );
+					scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
+					console.log( 'Flythrough loaded: ' + mainFlythroughState.duration.toFixed( 1 ) + 's, ' + scrollPages + ' scroll pages (branches preloaded)' );
+				}
+			} ).catch( e => console.warn( 'Flythrough / branch state not loaded:', e ) );
 
 			const PHYSICS_TIMESTEP = 1/60;
 			const SPAWN_POSITION = { x: 1.74, y: 1.95, z: 93.46 };
@@ -698,6 +1748,25 @@
 
 				keyStates[ event.code ] = true;
 
+				if ( flythroughActive && flythroughSegment !== 'choice' && flythroughSegment !== 'bridge' && flythroughSegment !== 'reverseBridge' ) {
+					const maxS = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+					if ( maxS > 0 && ( event.code === 'ArrowRight' || event.code === 'ArrowLeft' || event.code === 'ArrowDown' || event.code === 'ArrowUp' ) ) {
+						if ( isFlythroughBranchSegment() && ( event.code === 'ArrowLeft' || event.code === 'ArrowUp' ) && scrollContainer.scrollTop <= 1 && flythroughTargetTime < 0.35 ) {
+							startReverseBridgeFromBranch();
+							event.preventDefault();
+						} else {
+							const page = event.shiftKey ? 0.22 : 0.08;
+							const delta = page * maxS;
+							if ( event.code === 'ArrowRight' || event.code === 'ArrowDown' ) {
+								scrollContainer.scrollTop = Math.min( maxS, scrollContainer.scrollTop + delta );
+							} else {
+								scrollContainer.scrollTop = Math.max( 0, scrollContainer.scrollTop - delta );
+							}
+							event.preventDefault();
+						}
+					}
+				}
+
 			} );
 
 			document.addEventListener( 'keyup', ( event ) => {
@@ -718,7 +1787,45 @@
 
 			window.addEventListener( 'mousedown', ( e ) => {
 				if ( e.button !== 0 ) return;
+				if ( shipLitModalOpen && activeMap === 'ship' && !flythroughActive && performance.now() - shipLitModalOpenedAt > 280 ) {
+					if ( shipLitModalCloseBtn.contains( e.target ) ) return;
+					closeShipLitModal();
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+				if ( flythroughActive && canPickFlythroughChoices() ) {
+					const canvas = renderer.domElement;
+					const rect = canvas.getBoundingClientRect();
+					const onCanvas = e.clientX >= rect.left && e.clientX < rect.right && e.clientY >= rect.top && e.clientY < rect.bottom;
+					if ( onCanvas && tryPickFlythroughChoice( e.clientX, e.clientY ) ) {
+						e.preventDefault();
+						return;
+					}
+					if ( flythroughSegment === 'choice' ) {
+						e.preventDefault();
+						return;
+					}
+				}
+				if ( flythroughActive && ( flythroughSegment === 'bridge' || flythroughSegment === 'reverseBridge' ) ) return;
 				if ( !theaterClickIsOnCanvas( e ) ) return;
+				if ( activeMap === 'ship' && !flythroughActive && !shipLitModalOpen ) {
+					const canShipPick = document.pointerLockElement === document.body || ( navigator.maxTouchPoints > 0 || 'ontouchstart' in window );
+					if ( canShipPick ) {
+						const litIdx = raycastShipLitCenterHitIndex();
+						if ( litIdx >= 0 ) {
+							const ap = globalThis.ART_PIECES;
+							if ( Array.isArray( ap ) && ap[ litIdx ]?.interaction === 'exitToCave' ) {
+								exitShipToMain();
+								mapTeleportCooldownUntil = performance.now() + 1600;
+							} else {
+								openShipLitModal( litIdx );
+							}
+							e.preventDefault();
+							return;
+						}
+					}
+				}
 				if ( activeMap === 'theater' && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
 					enterTheaterVideoFullscreen();
 					e.preventDefault();
@@ -729,6 +1836,7 @@
 
 			document.body.addEventListener( 'mousemove', ( event ) => {
 
+				if ( shipLitModalOpen ) return;
 				if ( !flythroughActive && document.pointerLockElement === document.body ) {
 
 					if ( isTheaterVideoFullscreen() ) return;
@@ -788,6 +1896,34 @@
 			
 			container.addEventListener( 'touchend', ( e ) => {
 				e.preventDefault();
+				if ( activeMap === 'ship' && !flythroughActive && shipLitModalOpen && performance.now() - shipLitModalOpenedAt > 320 ) {
+					closeShipLitModal();
+					touchState.active = touchState.isHolding = mobileMovingForward = false;
+					return;
+				}
+				if ( flythroughActive && canPickFlythroughChoices() && e.changedTouches.length === 1 ) {
+					const t = e.changedTouches[ 0 ];
+					if ( tryPickFlythroughChoice( t.clientX, t.clientY ) ) return;
+				}
+				if ( activeMap === 'ship' && !flythroughActive && !shipLitModalOpen && e.changedTouches.length === 1 ) {
+					const t = e.changedTouches[ 0 ];
+					const dist = Math.hypot( t.clientX - touchState.startX, t.clientY - touchState.startY );
+					const dt = performance.now() - touchState.touchStartTime;
+					if ( dist < 24 && dt < 450 ) {
+						const litIdx = raycastShipLitCenterHitIndex();
+						if ( litIdx >= 0 ) {
+							const ap = globalThis.ART_PIECES;
+							if ( Array.isArray( ap ) && ap[ litIdx ]?.interaction === 'exitToCave' ) {
+								exitShipToMain();
+								mapTeleportCooldownUntil = performance.now() + 1600;
+							} else {
+								openShipLitModal( litIdx );
+							}
+							touchState.active = touchState.isHolding = mobileMovingForward = false;
+							return;
+						}
+					}
+				}
 				if ( activeMap === 'theater' && e.changedTouches.length === 1 && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
 					enterTheaterVideoFullscreen();
 				}
@@ -799,6 +1935,10 @@
 			} );
 			
 			function updateMobileInput() {
+				if ( activeMap === 'ship' && !flythroughActive ) {
+					mobileMovingForward = false;
+					return;
+				}
 				if ( touchState.active && touchState.isHolding && performance.now() - touchState.touchStartTime > touchState.holdDelay ) {
 					mobileMovingForward = true;
 				}
@@ -887,6 +2027,11 @@
 			function applyPlayerMovement( deltaTime ) {
 				if ( !playerBody ) return;
 				jumpCooldownRemaining = Math.max( 0, jumpCooldownRemaining - deltaTime );
+				if ( activeMap === 'ship' && !flythroughActive ) {
+					playerBody.velocity.set( 0, 0, 0 );
+					playerBody.angularVelocity.set( 0, 0, 0 );
+					return;
+				}
 				_inputDirection.set( 0, 0, 0 );
 				
 				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
@@ -937,15 +2082,32 @@
 			/** Main world → theater portal at (-12, 7, -30); exit theater near back row */
 			const THEATER_PORTAL_MAIN = new THREE.Vector3( -12, 7, -30 );
 			const THEATER_PORTAL_ENTER_RADIUS = 5;
+			const BOOKSTORE_PORTAL_MAIN = new THREE.Vector3( -13, 2, -19 );
+			const BOOKSTORE_PORTAL_ENTER_RADIUS = 5;
+			const SHIP_PORTAL_MAIN = new THREE.Vector3( 4, 2, -15 );
+			const SHIP_PORTAL_ENTER_RADIUS = 5;
 			const THEATER_EXIT_POS = new THREE.Vector3( 0, 2, 20 );
 			const THEATER_PORTAL_EXIT_RADIUS = 4;
 			const THEATER_SPAWN = new THREE.Vector3( 0, 1.95, 12 );
 			const MAIN_RETURN_POS = new THREE.Vector3( -8, 7, -26 );
+			const BOOKSTORE_SPAWN = new THREE.Vector3( 0, 1.95, 14 );
+			const BOOKSTORE_EXIT_POS = new THREE.Vector3( 0, 2, -19 );
+			const BOOKSTORE_EXIT_RADIUS = 3.5;
+			const SHIP_SPAWN = new THREE.Vector3( 0, 1.95, 9 );
+			const SHIP_EXIT_POS = new THREE.Vector3( 0, 2, -14 );
+			const SHIP_EXIT_RADIUS = 3.5;
+			/** Bump when ship deck lighting/geometry changes so cached map rebuilds. */
+			const SHIP_DECK_MAP_REVISION = 15;
 			let activeMap = 'main';
 			let mainMapRoot = null;
 			const mainWorldStaticBodies = [];
 			let theaterMapCache = null;
+			let bookstoreMapCache = null;
+			let shipMapCache = null;
 			let mapTeleportCooldownUntil = 0;
+			function isInteriorMap() {
+				return activeMap === 'theater' || activeMap === 'bookstore' || activeMap === 'ship';
+			}
 			/** While in theater: bloom is off so the screen has no bloom halo (UnrealBloomPass is scene-wide). */
 			let theaterSavedBloomEnabled = null;
 			const theaterScreenRaycaster = new THREE.Raycaster();
@@ -1035,9 +2197,17 @@
 			
 			function updatePhysics( deltaTime ) {
 				if ( !playerBody ) return;
+				if ( activeMap === 'ship' && !flythroughActive ) {
+					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
+				}
 				checkGroundContact();
 				applyPlayerMovement( deltaTime );
 				world.step( PHYSICS_TIMESTEP, deltaTime, PHYSICS_MAX_SUBSTEPS );
+				if ( activeMap === 'ship' && !flythroughActive ) {
+					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					playerBody.angularVelocity.set( 0, 0, 0 );
+				}
 				updateColliderVisualization();
 				
 				const playerPos = playerBody.position;
@@ -1189,7 +2359,14 @@
 
 			loader.load( './freecam/maptest2-compressed.glb',
 				( gltf ) => {
+					loadingInfo.innerHTML = 'Loading gallery artwork…';
+					ensureShipArtTexturesPreloaded().then( () => {
 					loadingInfo.innerHTML = originalInfoText;
+					const dc = document.querySelector( '.desktop-controls' );
+					if ( dc && !isMobileDevice ) {
+						dc.textContent = 'Flythrough: scroll or arrow keys; at a branch start, wheel up or ← to tween back to main. At the fork, tap the 3D labels on screen. ';
+					}
+					if ( typeof window.__magnetSchedule3dWorldLoaderDone === 'function' ) window.__magnetSchedule3dWorldLoaderDone();
 					scene.add( gltf.scene );
 					mainMapRoot = gltf.scene;
 
@@ -1265,14 +2442,18 @@
 					} );
 
 					cameraMode = envSettings.cameraMode;
-					createGUI(); // Create GUI for both mobile and desktop
+					if ( !isMobileDevice ) createGUI();
+					} );
 				},
 				( progress ) => {
-					if ( progress.lengthComputable ) loadingInfo.innerHTML = `Loading model... ${ Math.round( progress.loaded / progress.total * 100 ) }%`;
+					if ( progress.lengthComputable ) loadingInfo.innerHTML = `Loading model… ${ Math.round( progress.loaded / progress.total * 100 ) }%`;
 				},
 				( error ) => {
 					console.error( 'Error loading model:', error );
 					loadingInfo.innerHTML = 'Error loading model. Check console.';
+					ensureShipArtTexturesPreloaded().finally( () => {
+						if ( typeof window.__magnetSchedule3dWorldLoaderDone === 'function' ) window.__magnetSchedule3dWorldLoaderDone();
+					} );
 				}
 			);
 
@@ -1280,9 +2461,7 @@
 
 
 			function createGUI() {
-				const gui = new GUI( { width: isMobile ? 260 : 280, title: 'Environment Settings' } );
-				// Keep GUI open on mobile as requested
-
+				const gui = new GUI( { width: 280, title: 'Environment Settings' } );
 				const skyFolder = gui.addFolder( 'Sky & Background' );
 				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background' ).onChange( ( v ) => { scene.background = new THREE.Color( v ); saveSettings(); } );
 
@@ -1521,6 +2700,939 @@
 				};
 			}
 
+			function buildBookstoreMap() {
+				const group = new THREE.Group();
+				group.name = 'BookstoreInterior';
+				const floorMat = new THREE.MeshStandardMaterial( { color: 0x6e5c4c, roughness: 0.78 } );
+				const shelfWood = new THREE.MeshStandardMaterial( { color: 0x554233, roughness: 0.78 } );
+				const bookMat = new THREE.MeshStandardMaterial( { color: 0x8b3a2a, roughness: 0.72 } );
+				const trimMat = new THREE.MeshStandardMaterial( { color: 0x383028, roughness: 0.82 } );
+
+				const floorMesh = new THREE.Mesh( new THREE.PlaneGeometry( 40, 36 ), floorMat );
+				floorMesh.rotation.x = -Math.PI / 2;
+				floorMesh.receiveShadow = !isMobile;
+				group.add( floorMesh );
+
+				const wallH = 6;
+				const wallGeoW = new THREE.PlaneGeometry( 40, wallH );
+				const wallGeoD = new THREE.PlaneGeometry( 36, wallH );
+				const mkWall = ( geo, x, y, z, ry ) => {
+					const m = new THREE.Mesh( geo, trimMat );
+					m.position.set( x, y, z );
+					m.rotation.y = ry;
+					m.receiveShadow = !isMobile;
+					group.add( m );
+				};
+				mkWall( wallGeoW, 0, wallH / 2, -18, 0 );
+				mkWall( wallGeoW, 0, wallH / 2, 18, Math.PI );
+				mkWall( wallGeoD, -20, wallH / 2, 0, Math.PI / 2 );
+				mkWall( wallGeoD, 20, wallH / 2, 0, -Math.PI / 2 );
+
+				function addShelfUnit( cx, cz, rotY ) {
+					const u = new THREE.Group();
+					u.position.set( cx, 0, cz );
+					u.rotation.y = rotY;
+					const w = 2.2, d = 0.45, h = 3.2;
+					for ( let s = 0; s < 4; s++ ) {
+						const y = 0.45 + s * 0.72;
+						const board = new THREE.Mesh( new THREE.BoxGeometry( w, 0.06, d ), shelfWood );
+						board.position.set( 0, y, 0 );
+						board.castShadow = !isMobile;
+						u.add( board );
+						for ( let b = -1; b <= 1; b++ ) {
+							const book = new THREE.Mesh( new THREE.BoxGeometry( 0.22, 0.5 + ( s % 2 ) * 0.08, 0.32 ), bookMat );
+							book.position.set( b * 0.55, y + 0.32, 0 );
+							book.rotation.y = ( b + s ) * 0.12;
+							book.castShadow = !isMobile;
+							u.add( book );
+						}
+					}
+					const back = new THREE.Mesh( new THREE.BoxGeometry( w, h, 0.08 ), shelfWood );
+					back.position.set( 0, h / 2 + 0.2, -d / 2 );
+					back.castShadow = !isMobile;
+					u.add( back );
+					group.add( u );
+				}
+				for ( let z = -14; z <= 12; z += 5.5 ) {
+					addShelfUnit( -18.5, z, 0 );
+					addShelfUnit( 18.5, z, Math.PI );
+				}
+				addShelfUnit( 0, -16.5, Math.PI / 2 );
+
+				const readLight = new THREE.PointLight( 0xfff0e0, 3.6, 42, 2 );
+				readLight.position.set( 0, 4.8, 2 );
+				group.add( readLight );
+				const warmFill = new THREE.PointLight( 0xf0e4d4, 2.6, 48, 2 );
+				warmFill.position.set( -7, 5.2, -6 );
+				group.add( warmFill );
+				const topFill = new THREE.PointLight( 0xfffcf5, 2.2, 45, 2 );
+				topFill.position.set( 6, 5.2, 8 );
+				group.add( topFill );
+
+				const bodies = [];
+				const floorBody = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				floorBody.addShape( new CANNON.Box( new CANNON.Vec3( 20, 0.08, 18 ) ), new CANNON.Vec3( 0, -0.08, 0 ) );
+				bodies.push( floorBody );
+				const wy = wallH / 2;
+				const n = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				n.addShape( new CANNON.Box( new CANNON.Vec3( 20, wy, 0.2 ) ), new CANNON.Vec3( 0, wy, -18 ) );
+				bodies.push( n );
+				const s = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				s.addShape( new CANNON.Box( new CANNON.Vec3( 20, wy, 0.2 ) ), new CANNON.Vec3( 0, wy, 18 ) );
+				bodies.push( s );
+				const e = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				e.addShape( new CANNON.Box( new CANNON.Vec3( 0.2, wy, 18 ) ), new CANNON.Vec3( -20, wy, 0 ) );
+				bodies.push( e );
+				const wst = new CANNON.Body( { mass: 0, material: groundMaterial } );
+				wst.addShape( new CANNON.Box( new CANNON.Vec3( 0.2, wy, 18 ) ), new CANNON.Vec3( 20, wy, 0 ) );
+				bodies.push( wst );
+
+				return { group, bodies };
+			}
+
+			function createShipWoodCanvasTexture() {
+				const canvas = document.createElement( 'canvas' );
+				canvas.width = 512;
+				canvas.height = 512;
+				const ctx = canvas.getContext( '2d' );
+				ctx.fillStyle = '#3a2318';
+				ctx.fillRect( 0, 0, 512, 512 );
+				for ( let i = 0; i < 2800; i++ ) {
+					ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.28)' : 'rgba(90,50,30,0.14)';
+					ctx.fillRect( Math.random() * 512, Math.random() * 512, Math.random() * 3 + 1, Math.random() * 50 + 8 );
+				}
+				ctx.fillStyle = '#0a0502';
+				const planks = 12;
+				const plankW = 512 / planks;
+				for ( let i = 1; i < planks; i++ ) ctx.fillRect( i * plankW - 2, 0, 4, 512 );
+				const tex = new THREE.CanvasTexture( canvas );
+				tex.colorSpace = THREE.SRGBColorSpace;
+				tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+				tex.anisotropy = 8;
+				return tex;
+			}
+
+			function buildShipLiteraturePanels( deckGroup ) {
+				const litRoot = new THREE.Group();
+				litRoot.name = 'ShipLiteraturePanels';
+				deckGroup.add( litRoot );
+				const literaturePickMeshes = [];
+				const literaturePanelMeta = [];
+				const pieces = globalThis.ART_PIECES;
+				if ( !Array.isArray( pieces ) || pieces.length === 0 ) {
+					return {
+						literaturePickMeshes,
+						literaturePanelMeta,
+						literatureRoot: litRoot,
+						disposeLiteraturePanels: () => {
+							if ( litRoot.parent ) litRoot.parent.remove( litRoot );
+							litRoot.clear();
+						}
+					};
+				}
+				const loader = new THREE.TextureLoader();
+				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const n = pieces.length;
+				const frameT = 0.18;
+				const Sship = deckGroup.scale.x;
+				const centerX = SHIP_SPAWN.x / Sship;
+				const centerZ = SHIP_SPAWN.z / Sship;
+				const eyeWorldY = SHIP_SPAWN.y + ( PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT );
+				const ringY = eyeWorldY / Sship;
+				const ringRadius = 20;
+
+				function shipArtPlaneSizeFromAspect( aspect ) {
+					const maxW = 6.35;
+					const maxH = 7.55;
+					if ( !isFinite( aspect ) || aspect <= 0 ) return { artW: 5.2, artH: 6.5 };
+					let h = maxH;
+					let w = h * aspect;
+					if ( w > maxW ) {
+						w = maxW;
+						h = w / aspect;
+					}
+					return { artW: w, artH: h };
+				}
+
+				function rebuildShipLitPanelFrame( parts, artW, artH, ft ) {
+					const pg = parts.panelGroup;
+					const fw = artW + ft * 2;
+					const fh = artH + ft * 2;
+					function replPlane( mesh, w, h ) {
+						mesh.geometry.dispose();
+						mesh.geometry = new THREE.PlaneGeometry( w, h );
+					}
+					replPlane( parts.back, artW + 0.3, artH + 0.3 );
+					replPlane( parts.art, artW, artH );
+					replPlane( parts.pick, artW + 0.28, artH + 0.28 );
+					parts.rimLine.geometry.dispose();
+					parts.rimLine.geometry = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+					parts.outerRimLine.geometry.dispose();
+					parts.outerRimLine.geometry = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+					parts.hoverEdgeLine.geometry.dispose();
+					parts.hoverEdgeLine.geometry = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+					for ( let fi = 0; fi < parts.frameBars.length; fi++ ) {
+						const mesh = parts.frameBars[ fi ];
+						pg.remove( mesh );
+						mesh.geometry.dispose();
+					}
+					parts.frameBars.length = 0;
+					function addFrameBar( sx, sy, sz, px, py, pz ) {
+						const geo = new THREE.BoxGeometry( sx, sy, sz );
+						const mesh = new THREE.Mesh( geo, parts.frameMat );
+						mesh.position.set( px, py, pz );
+						pg.add( mesh );
+						parts.frameBars.push( mesh );
+					}
+					addFrameBar( fw, ft, ft * 1.2, 0, fh / 2 + ft / 2, 0.035 );
+					addFrameBar( fw, ft, ft * 1.2, 0, -fh / 2 - ft / 2, 0.035 );
+					addFrameBar( ft, fh, ft * 1.2, fw / 2 + ft / 2, 0, 0.035 );
+					addFrameBar( ft, fh, ft * 1.2, -fw / 2 - ft / 2, 0, 0.035 );
+				}
+
+				for ( let i = 0; i < n; i++ ) {
+					const ang = ( i / n ) * Math.PI * 2;
+					const x = centerX + Math.cos( ang ) * ringRadius;
+					const z = centerZ + Math.sin( ang ) * ringRadius;
+					const pg = new THREE.Group();
+					pg.position.set( x, ringY, z );
+					pg.lookAt( centerX, ringY, centerZ );
+					litRoot.add( pg );
+
+					const piece = pieces[ i ];
+					if ( piece && piece.interaction === 'exitToCave' ) {
+						const artW = 5.45;
+						const artH = 2.5;
+						const line1 = piece.title != null ? String( piece.title ) : 'RETURN';
+						const line2Join = [ piece.subtitle, piece.medium ].filter( ( x ) => x != null && String( x ).trim() !== '' ).map( ( x ) => String( x ) ).join( ' ' );
+						const line2 = line2Join || 'TO THE CAVE';
+
+						const backGeo = new THREE.PlaneGeometry( artW + 0.3, artH + 0.3 );
+						const backMat = new THREE.MeshStandardMaterial( { color: 0x100d0b, roughness: 0.98 } );
+						const back = new THREE.Mesh( backGeo, backMat );
+						back.position.z = -0.055;
+						pg.add( back );
+
+						const artGeo = new THREE.PlaneGeometry( artW, artH );
+						const artMat = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0, toneMapped: false, depthWrite: false } );
+						const art = new THREE.Mesh( artGeo, artMat );
+						art.position.z = 0.02;
+						pg.add( art );
+
+						const fontRef = flythroughChoiceFontRef;
+						if ( fontRef ) {
+							const glowMat = new THREE.MeshBasicMaterial( {
+								color: 0xffb24a, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
+								toneMapped: false, depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending
+							} );
+							const textMat = new THREE.MeshBasicMaterial( {
+								color: 0xfffef5, transparent: true, opacity: 1, side: THREE.DoubleSide,
+								toneMapped: false, depthTest: true, depthWrite: true
+							} );
+							const titleParams = { font: fontRef, size: 0.48, height: 0.075, curveSegments: 10, bevelEnabled: false };
+							const subParams = { font: fontRef, size: 0.19, height: 0.034, curveSegments: 10, bevelEnabled: false };
+							const g1 = new TextGeometry( line1, titleParams );
+							g1.computeBoundingBox();
+							g1.center();
+							const g2 = new TextGeometry( line2, subParams );
+							g2.computeBoundingBox();
+							g2.center();
+							const bb1 = g1.boundingBox;
+							const bb2 = g2.boundingBox;
+							const h1 = bb1.max.y - bb1.min.y;
+							const h2 = bb2.max.y - bb2.min.y;
+							const gap = 0.12;
+							const totalH = h1 + gap + h2;
+							const yTitle = totalH * 0.5 - h1 * 0.5;
+							const ySub = -totalH * 0.5 + h2 * 0.5;
+							const zText = 0.045;
+							const g1g = g1.clone();
+							const glow1 = new THREE.Mesh( g1g, glowMat );
+							glow1.scale.setScalar( 1.06 );
+							glow1.position.set( 0, yTitle, zText - 0.02 );
+							glow1.renderOrder = 2;
+							pg.add( glow1 );
+							const fill1 = new THREE.Mesh( g1, textMat );
+							fill1.position.set( 0, yTitle, zText );
+							fill1.renderOrder = 3;
+							pg.add( fill1 );
+							const g2g = g2.clone();
+							const glow2 = new THREE.Mesh( g2g, glowMat );
+							glow2.scale.setScalar( 1.06 );
+							glow2.position.set( 0, ySub, zText - 0.02 );
+							glow2.renderOrder = 2;
+							pg.add( glow2 );
+							const fill2 = new THREE.Mesh( g2, textMat );
+							fill2.position.set( 0, ySub, zText );
+							fill2.renderOrder = 3;
+							pg.add( fill2 );
+						} else {
+							const c = document.createElement( 'canvas' );
+							c.width = 1024;
+							c.height = 512;
+							const ctx = c.getContext( '2d' );
+							const cw = c.width;
+							const ch = c.height;
+							ctx.fillStyle = '#1a1008';
+							ctx.fillRect( 0, 0, cw, ch );
+							ctx.strokeStyle = '#d4a574';
+							ctx.lineWidth = 10;
+							ctx.strokeRect( 24, 24, cw - 48, ch - 48 );
+							ctx.fillStyle = '#fffef5';
+							ctx.textAlign = 'center';
+							ctx.textBaseline = 'middle';
+							ctx.font = 'bold 86px Arial, Helvetica, sans-serif';
+							ctx.fillText( line1, cw / 2, ch * 0.38 );
+							ctx.font = '500 52px Arial, Helvetica, sans-serif';
+							ctx.fillStyle = '#ffe8c8';
+							ctx.fillText( line2, cw / 2, ch * 0.62 );
+							const signTex = new THREE.CanvasTexture( c );
+							signTex.colorSpace = THREE.SRGBColorSpace;
+							signTex.needsUpdate = true;
+							artMat.opacity = 1;
+							artMat.depthWrite = true;
+							artMat.map = signTex;
+							artMat.needsUpdate = true;
+						}
+
+						const frameMat = new THREE.MeshStandardMaterial( {
+							color: 0xd4af37, metalness: 0.52, roughness: 0.4,
+							emissive: new THREE.Color( 0x553311 ), emissiveIntensity: 0.11, toneMapped: true
+						} );
+						const frameBars = [];
+						function addFrameBar( sx, sy, sz, px, py, pz ) {
+							const geo = new THREE.BoxGeometry( sx, sy, sz );
+							const mesh = new THREE.Mesh( geo, frameMat );
+							mesh.position.set( px, py, pz );
+							pg.add( mesh );
+							frameBars.push( mesh );
+						}
+						const fw = artW + frameT * 2;
+						const fh = artH + frameT * 2;
+						addFrameBar( fw, frameT, frameT * 1.2, 0, fh / 2 + frameT / 2, 0.035 );
+						addFrameBar( fw, frameT, frameT * 1.2, 0, -fh / 2 - frameT / 2, 0.035 );
+						addFrameBar( frameT, fh, frameT * 1.2, fw / 2 + frameT / 2, 0, 0.035 );
+						addFrameBar( frameT, fh, frameT * 1.2, -fw / 2 - frameT / 2, 0, 0.035 );
+
+						const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+						const rimMat = new THREE.LineBasicMaterial( {
+							color: 0xffee66, transparent: true, opacity: 0.88, toneMapped: false,
+							depthTest: false, depthWrite: false
+						} );
+						const rimLine = new THREE.LineSegments( rimEdges, rimMat );
+						rimLine.position.z = 0.07;
+						rimLine.renderOrder = 2;
+						pg.add( rimLine );
+
+						const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+						const outerRimMat = new THREE.LineBasicMaterial( {
+							color: 0xffaa22, transparent: true, opacity: 0.62, toneMapped: false,
+							depthTest: false, depthWrite: false
+						} );
+						const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
+						outerRimLine.position.z = 0.068;
+						outerRimLine.renderOrder = 1;
+						pg.add( outerRimLine );
+
+						const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+						const hoverEdgeMat = new THREE.LineBasicMaterial( {
+							color: 0xffffff, transparent: true, opacity: 0.22, toneMapped: false,
+							depthTest: false, depthWrite: false
+						} );
+						const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
+						hoverEdgeLine.position.z = 0.082;
+						hoverEdgeLine.renderOrder = 3;
+						pg.add( hoverEdgeLine );
+
+						const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
+						const pickMat = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0, depthWrite: false } );
+						const pick = new THREE.Mesh( pickGeo, pickMat );
+						pick.position.z = 0.09;
+						pick.userData.kind = 'shipLit';
+						pick.userData.shipLitIndex = i;
+						pick.userData.shipExitToCave = true;
+						pg.add( pick );
+						literaturePickMeshes.push( pick );
+
+						pg.userData.shipPanelParts = {
+							panelGroup: pg,
+							back, art, pick, rimLine, outerRimLine, hoverEdgeLine,
+							frameBars,
+							frameMat,
+							frameT
+						};
+
+						literaturePanelMeta.push( { panelGroup: pg, rimMat, outerRimMat, frameMat, hoverEdgeMat } );
+						continue;
+					}
+
+					const artSrc = pieces[ i ]?.src;
+					let url = '';
+					let aspect = 4 / 5;
+					if ( artSrc ) {
+						url = resolveShipArtUrl( artSrc );
+						const pre = shipArtPreloadedTextureByUrl.get( url );
+						if ( pre && pre.image && pre.image.width > 0 && pre.image.height > 0 ) {
+							aspect = pre.image.width / pre.image.height;
+						}
+					}
+					const { artW, artH } = shipArtPlaneSizeFromAspect( aspect );
+
+					const backGeo = new THREE.PlaneGeometry( artW + 0.3, artH + 0.3 );
+					const backMat = new THREE.MeshStandardMaterial( { color: 0x100d0b, roughness: 0.98 } );
+					const back = new THREE.Mesh( backGeo, backMat );
+					back.position.z = -0.055;
+					pg.add( back );
+
+					const artGeo = new THREE.PlaneGeometry( artW, artH );
+					const artMat = new THREE.MeshBasicMaterial( {
+						color: 0xffffff, toneMapped: false
+					} );
+					const art = new THREE.Mesh( artGeo, artMat );
+					art.position.z = 0.02;
+					pg.add( art );
+
+					if ( artSrc ) {
+						const pre = shipArtPreloadedTextureByUrl.get( url );
+						if ( pre ) {
+							artMat.map = pre;
+							artMat.needsUpdate = true;
+						} else {
+							loader.load( url, ( tex ) => {
+								if ( artMat.map ) return;
+								tex.colorSpace = THREE.SRGBColorSpace;
+								tex.anisotropy = maxAniso;
+								tex.needsUpdate = true;
+								artMat.map = tex;
+								artMat.needsUpdate = true;
+								const a = tex.image && tex.image.width > 0 && tex.image.height > 0
+									? tex.image.width / tex.image.height
+									: 4 / 5;
+								const sz = shipArtPlaneSizeFromAspect( a );
+								if ( pg.userData.shipPanelParts ) {
+									rebuildShipLitPanelFrame( pg.userData.shipPanelParts, sz.artW, sz.artH, frameT );
+								}
+							}, undefined, () => {} );
+						}
+					}
+
+					const frameMat = new THREE.MeshStandardMaterial( {
+						color: 0xd4af37, metalness: 0.52, roughness: 0.4,
+						emissive: new THREE.Color( 0x553311 ), emissiveIntensity: 0.11, toneMapped: true
+					} );
+					const frameBars = [];
+					function addFrameBar( sx, sy, sz, px, py, pz ) {
+						const geo = new THREE.BoxGeometry( sx, sy, sz );
+						const mesh = new THREE.Mesh( geo, frameMat );
+						mesh.position.set( px, py, pz );
+						pg.add( mesh );
+						frameBars.push( mesh );
+					}
+					const fw = artW + frameT * 2;
+					const fh = artH + frameT * 2;
+					addFrameBar( fw, frameT, frameT * 1.2, 0, fh / 2 + frameT / 2, 0.035 );
+					addFrameBar( fw, frameT, frameT * 1.2, 0, -fh / 2 - frameT / 2, 0.035 );
+					addFrameBar( frameT, fh, frameT * 1.2, fw / 2 + frameT / 2, 0, 0.035 );
+					addFrameBar( frameT, fh, frameT * 1.2, -fw / 2 - frameT / 2, 0, 0.035 );
+
+					const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+					const rimMat = new THREE.LineBasicMaterial( {
+						color: 0xffee66, transparent: true, opacity: 0.88, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const rimLine = new THREE.LineSegments( rimEdges, rimMat );
+					rimLine.position.z = 0.07;
+					rimLine.renderOrder = 2;
+					pg.add( rimLine );
+
+					const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+					const outerRimMat = new THREE.LineBasicMaterial( {
+						color: 0xffaa22, transparent: true, opacity: 0.62, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
+					outerRimLine.position.z = 0.068;
+					outerRimLine.renderOrder = 1;
+					pg.add( outerRimLine );
+
+					const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+					const hoverEdgeMat = new THREE.LineBasicMaterial( {
+						color: 0xffffff, transparent: true, opacity: 0.22, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
+					hoverEdgeLine.position.z = 0.082;
+					hoverEdgeLine.renderOrder = 3;
+					pg.add( hoverEdgeLine );
+
+					const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
+					const pickMat = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0, depthWrite: false } );
+					const pick = new THREE.Mesh( pickGeo, pickMat );
+					pick.position.z = 0.09;
+					pick.userData.kind = 'shipLit';
+					pick.userData.shipLitIndex = i;
+					pg.add( pick );
+					literaturePickMeshes.push( pick );
+
+					pg.userData.shipPanelParts = {
+						panelGroup: pg,
+						back, art, pick, rimLine, outerRimLine, hoverEdgeLine,
+						frameBars,
+						frameMat,
+						frameT
+					};
+
+					literaturePanelMeta.push( { panelGroup: pg, rimMat, outerRimMat, frameMat, hoverEdgeMat } );
+				}
+
+				function disposeLiteraturePanels() {
+					const disposedMats = new Set();
+					const sharedTex = new Set( shipArtPreloadedTextureByUrl.values() );
+					litRoot.traverse( ( o ) => {
+						if ( o.geometry ) o.geometry.dispose();
+						if ( o.material ) {
+							const m = o.material;
+							if ( disposedMats.has( m ) ) return;
+							disposedMats.add( m );
+							if ( m.map ) {
+								if ( !sharedTex.has( m.map ) ) m.map.dispose();
+								m.map = null;
+							}
+							m.dispose();
+						}
+					} );
+					litRoot.clear();
+					if ( litRoot.parent ) litRoot.parent.remove( litRoot );
+				}
+
+				return {
+					literaturePickMeshes,
+					literaturePanelMeta,
+					literatureRoot: litRoot,
+					disposeLiteraturePanels
+				};
+			}
+
+			function buildShipDeckMap() {
+				const group = new THREE.Group();
+				group.name = 'ShipDeckInterior';
+				const S = 0.42;
+				group.scale.setScalar( S );
+
+				const DECK_HALF_X = 31;
+				const DECK_HALF_Z = 68;
+				const DECK_SIZE_X = DECK_HALF_X * 2;
+				const DECK_SIZE_Z = DECK_HALF_Z * 2;
+
+				const woodBase = createShipWoodCanvasTexture();
+				const texFloor = woodBase.clone();
+				texFloor.needsUpdate = true;
+				texFloor.repeat.set( 10, 22 );
+				const texWall = woodBase.clone();
+				texWall.needsUpdate = true;
+				texWall.repeat.set( 12, 4 );
+				const texPillar = woodBase.clone();
+				texPillar.needsUpdate = true;
+				texPillar.repeat.set( 2, 3 );
+
+				const matFloor = new THREE.MeshStandardMaterial( {
+					map: texFloor, roughness: 0.42, metalness: 0.03,
+					emissive: new THREE.Color( 0x4a3020 ), emissiveIntensity: 0.55, toneMapped: true
+				} );
+				const matWall = new THREE.MeshStandardMaterial( {
+					map: texWall, roughness: 0.52, metalness: 0.02,
+					emissive: new THREE.Color( 0x3d2818 ), emissiveIntensity: 0.42, toneMapped: true
+				} );
+				const matPillar = new THREE.MeshStandardMaterial( {
+					map: texPillar, roughness: 0.48, metalness: 0.02,
+					emissive: new THREE.Color( 0x3a2616 ), emissiveIntensity: 0.4, toneMapped: true
+				} );
+				const matMetal = new THREE.MeshStandardMaterial( { color: 0x1a1a1a, metalness: 0.75, roughness: 0.45 } );
+
+				const floor = new THREE.Mesh( new THREE.PlaneGeometry( DECK_SIZE_X, DECK_SIZE_Z ), matFloor );
+				floor.rotation.x = -Math.PI / 2;
+				floor.receiveShadow = !isMobile;
+				group.add( floor );
+
+				const deckSpot = new THREE.SpotLight( 0xfff6ea, 32, 168, Math.PI / 4.2, 0.48, 1.1 );
+				deckSpot.position.set( 0, 28, 12 );
+				deckSpot.target.position.set( 0, 1.2, -18 );
+				deckSpot.castShadow = false;
+				group.add( deckSpot );
+				group.add( deckSpot.target );
+
+				const deckFill = new THREE.PointLight( 0xf5ebe3, 6.2, 148, 1 );
+				deckFill.position.set( 0, 14, -6 );
+				group.add( deckFill );
+				const ceiling = new THREE.Mesh( new THREE.PlaneGeometry( DECK_SIZE_X, DECK_SIZE_Z ), matWall );
+				ceiling.rotation.x = Math.PI / 2;
+				ceiling.position.set( 0, 25, 0 );
+				group.add( ceiling );
+
+				const wallGeo = new THREE.PlaneGeometry( DECK_SIZE_Z, 25 );
+				const leftWall = new THREE.Mesh( wallGeo, matWall );
+				leftWall.rotation.y = Math.PI / 2;
+				leftWall.position.set( -DECK_HALF_X, 12.5, 0 );
+				leftWall.receiveShadow = !isMobile;
+				group.add( leftWall );
+				const rightWall = new THREE.Mesh( wallGeo, matWall );
+				rightWall.rotation.y = -Math.PI / 2;
+				rightWall.position.set( DECK_HALF_X, 12.5, 0 );
+				rightWall.receiveShadow = !isMobile;
+				group.add( rightWall );
+				const backWall = new THREE.Mesh( new THREE.PlaneGeometry( DECK_SIZE_X, 25 ), matWall );
+				backWall.position.set( 0, 12.5, -DECK_HALF_Z );
+				backWall.receiveShadow = !isMobile;
+				group.add( backWall );
+
+				const balconyY = 12;
+				const leftBal = new THREE.Mesh( new THREE.BoxGeometry( 15, 1, DECK_SIZE_Z ), matFloor );
+				leftBal.position.set( -22.5, balconyY, 0 );
+				leftBal.castShadow = !isMobile;
+				leftBal.receiveShadow = !isMobile;
+				group.add( leftBal );
+				const rightBal = new THREE.Mesh( new THREE.BoxGeometry( 15, 1, DECK_SIZE_Z ), matFloor );
+				rightBal.position.set( 22.5, balconyY, 0 );
+				rightBal.castShadow = !isMobile;
+				rightBal.receiveShadow = !isMobile;
+				group.add( rightBal );
+				const backBalZ = -DECK_HALF_Z + 7.5;
+				const backBal = new THREE.Mesh( new THREE.BoxGeometry( 30, 1, 15 ), matFloor );
+				backBal.position.set( 0, balconyY, backBalZ );
+				backBal.castShadow = !isMobile;
+				backBal.receiveShadow = !isMobile;
+				group.add( backBal );
+
+				const railLenZ = DECK_SIZE_Z - 4;
+				const topRailGeo = new THREE.BoxGeometry( 0.4, 0.3, railLenZ );
+				const railL = new THREE.Mesh( topRailGeo, matPillar );
+				railL.position.set( -15, balconyY + 3, 0 );
+				railL.castShadow = !isMobile;
+				group.add( railL );
+				const railR = new THREE.Mesh( topRailGeo, matPillar );
+				railR.position.set( 15, balconyY + 3, 0 );
+				railR.castShadow = !isMobile;
+				group.add( railR );
+				const railB = new THREE.Mesh( new THREE.BoxGeometry( 28, 0.3, 0.4 ), matPillar );
+				railB.position.set( 0, balconyY + 3, -DECK_HALF_Z + 18 );
+				railB.castShadow = !isMobile;
+				group.add( railB );
+
+				const ladderGroup = new THREE.Group();
+				const ladderLen = 14;
+				const railGeo = new THREE.BoxGeometry( 0.28, ladderLen, 0.45 );
+				const lr = new THREE.Mesh( railGeo, matPillar );
+				lr.position.set( -1.8, ladderLen / 2, 0 );
+				const rr = new THREE.Mesh( railGeo, matPillar );
+				rr.position.set( 1.8, ladderLen / 2, 0 );
+				ladderGroup.add( lr, rr );
+				const rungGeo = new THREE.BoxGeometry( 3.8, 0.12, 0.45 );
+				for ( let i = 1; i < ladderLen; i++ ) {
+					const rung = new THREE.Mesh( rungGeo, matPillar );
+					rung.position.set( 0, i, 0 );
+					ladderGroup.add( rung );
+				}
+				ladderGroup.rotation.x = -0.58;
+				ladderGroup.position.set( 0, 0, -15 );
+				group.add( ladderGroup );
+
+				function addBarrel( x, z ) {
+					const g = new THREE.Group();
+					const body = new THREE.Mesh( new THREE.CylinderGeometry( 1, 1, 2.4, 14 ), matPillar );
+					body.castShadow = !isMobile;
+					g.add( body );
+					const band = new THREE.TorusGeometry( 1.02, 0.05, 6, 24 );
+					const b1 = new THREE.Mesh( band, matMetal );
+					b1.position.y = 0.65;
+					b1.rotation.x = Math.PI / 2;
+					const b2 = new THREE.Mesh( band, matMetal );
+					b2.position.y = -0.65;
+					b2.rotation.x = Math.PI / 2;
+					g.add( b1, b2 );
+					g.position.set( x, 1.2, z );
+					g.rotation.y = Math.random() * Math.PI;
+					group.add( g );
+				}
+				[ [ -22, -32 ], [ 24, -30 ], [ -11, 8 ], [ 12, -6 ] ].forEach( ( p ) => addBarrel( p[ 0 ], p[ 1 ] ) );
+
+				const lanternLights = [];
+				function registerLanternLight( pl ) {
+					pl.castShadow = false;
+					lanternLights.push( { light: pl, baseIntensity: pl.intensity } );
+				}
+				function addLanternMesh( x, y, z ) {
+					const lg = new THREE.Group();
+					lg.position.set( x, y, z );
+					const bulb = new THREE.Mesh(
+						new THREE.SphereGeometry( 0.22, 10, 10 ),
+						new THREE.MeshStandardMaterial( { color: 0x000000, emissive: 0xffeeaa, emissiveIntensity: 2.4, toneMapped: true } )
+					);
+					lg.add( bulb );
+					const pl = new THREE.PointLight( 0xffddaa, 4.2, 88, 1 );
+					pl.position.set( 0, 0, 0 );
+					lg.add( pl );
+					registerLanternLight( pl );
+					group.add( lg );
+				}
+				addLanternMesh( -14.1, 8.2, 8 );
+				addLanternMesh( 14.1, 8.2, -8 );
+
+				function addBrazier( x, z ) {
+					const g = new THREE.Group();
+					g.position.set( x, 19, z );
+					const basket = new THREE.Mesh(
+						new THREE.SphereGeometry( 0.95, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2 ),
+						new THREE.MeshStandardMaterial( { color: 0x151515, metalness: 0.75, roughness: 0.55, side: THREE.DoubleSide } )
+					);
+					basket.rotation.x = Math.PI;
+					g.add( basket );
+					const coals = new THREE.Mesh(
+						new THREE.SphereGeometry( 0.65, 8, 8 ),
+						new THREE.MeshStandardMaterial( { color: 0x050505, emissive: 0xffcc77, emissiveIntensity: 2.2 } )
+					);
+					coals.position.y = -0.08;
+					g.add( coals );
+					const pl = new THREE.PointLight( 0xffcc88, 5.5, 95, 1 );
+					pl.position.y = 0.2;
+					g.add( pl );
+					registerLanternLight( pl );
+					group.add( g );
+				}
+				addBrazier( 0, 2 );
+
+				function addRope( ax, ay, az, bx, by, bz, sag ) {
+					const A = new THREE.Vector3( ax, ay, az );
+					const B = new THREE.Vector3( bx, by, bz );
+					const mid = new THREE.Vector3().addVectors( A, B ).multiplyScalar( 0.5 );
+					mid.y -= sag;
+					const curve = new THREE.CatmullRomCurve3( [ A, mid, B ] );
+					const tube = new THREE.Mesh(
+						new THREE.TubeGeometry( curve, 16, 0.055, 6, false ),
+						new THREE.MeshStandardMaterial( { color: 0x4a3b2c, roughness: 0.95 } )
+					);
+					tube.castShadow = !isMobile;
+					group.add( tube );
+				}
+				addRope( -14, 19, -6, 14, 19, 8, 3.5 );
+				addRope( -12, 21, 12, 12, 21, -22, 4 );
+
+				const bodies = [];
+				const addBox = ( hx, hy, hz, x, y, z ) => {
+					const b = new CANNON.Body( { mass: 0, material: groundMaterial } );
+					b.addShape( new CANNON.Box( new CANNON.Vec3( hx, hy, hz ) ), new CANNON.Vec3( x, y, z ) );
+					bodies.push( b );
+				};
+				addBox( DECK_HALF_X * S, 0.1 * S, DECK_HALF_Z * S, 0, -0.1 * S, 0 );
+				addBox( 7.5 * S, 0.5 * S, DECK_HALF_Z * S, -22.5 * S, balconyY * S, 0 );
+				addBox( 7.5 * S, 0.5 * S, DECK_HALF_Z * S, 22.5 * S, balconyY * S, 0 );
+				addBox( 15 * S, 0.5 * S, 7.5 * S, 0, balconyY * S, backBalZ * S );
+
+				const lit = buildShipLiteraturePanels( group );
+				return {
+					group,
+					bodies,
+					lanternLights,
+					literaturePickMeshes: lit.literaturePickMeshes,
+					literaturePanelMeta: lit.literaturePanelMeta,
+					disposeLiteraturePanels: lit.disposeLiteraturePanels
+				};
+			}
+
+			function updateShipLanternFlicker( elapsed ) {
+				const cache = shipMapCache;
+				if ( !cache?.lanternLights ) return;
+				const arr = cache.lanternLights;
+				for ( let i = 0; i < arr.length; i++ ) {
+					const e = arr[ i ];
+					const n = Math.sin( elapsed * 7.5 + i * 2.1 ) * 0.06 + Math.sin( elapsed * 13 + i ) * 0.03;
+					e.light.intensity = Math.max( e.baseIntensity * 0.88, e.baseIntensity + n );
+				}
+			}
+
+			function raycastShipLitCenterHitIndex() {
+				if ( activeMap !== 'ship' || shipLitModalOpen || !shipMapCache?.literaturePickMeshes?.length ) return -1;
+				camera.updateMatrixWorld( true );
+				shipLitRaycaster.setFromCamera( shipLitNdcCenter, camera );
+				const hits = shipLitRaycaster.intersectObjects( shipMapCache.literaturePickMeshes, false );
+				if ( !hits.length ) return -1;
+				const u = hits[ 0 ].object.userData;
+				return u && u.kind === 'shipLit' ? u.shipLitIndex : -1;
+			}
+
+			function updateShipLiteraturePanelsHover( elapsed ) {
+				const meta = shipMapCache?.literaturePanelMeta;
+				if ( !meta?.length ) return;
+				if ( activeMap !== 'ship' || shipLitModalOpen || flythroughActive ) {
+					shipLitHoverIndex = -1;
+					shipLitHoverIndexCached = -1;
+					for ( let i = 0; i < meta.length; i++ ) {
+						const m = meta[ i ];
+						m.rimMat.opacity = 0.88;
+						if ( m.outerRimMat ) m.outerRimMat.opacity = 0.62;
+						m.frameMat.emissiveIntensity = 0.11;
+						if ( m.hoverEdgeMat ) m.hoverEdgeMat.opacity = 0.22;
+						m.panelGroup.scale.setScalar( 1 );
+					}
+					return;
+				}
+				shipLitRaycastFrame++;
+				if ( ( shipLitRaycastFrame & 1 ) === 0 ) {
+					shipLitHoverIndexCached = raycastShipLitCenterHitIndex();
+				}
+				shipLitHoverIndex = shipLitHoverIndexCached;
+				for ( let i = 0; i < meta.length; i++ ) {
+					const m = meta[ i ];
+					const on = i === shipLitHoverIndex;
+					const pulse = 0.5 * Math.sin( elapsed * 4.8 );
+					m.rimMat.opacity = on ? 1 : 0.88;
+					m.rimMat.color.setHex( on ? 0xffffcc : 0xffee66 );
+					if ( m.outerRimMat ) {
+						m.outerRimMat.opacity = on ? 0.92 + 0.08 * pulse : 0.62;
+						m.outerRimMat.color.setHex( on ? 0xffdd44 : 0xffaa22 );
+					}
+					m.frameMat.emissiveIntensity = on ? 0.42 + 0.28 * Math.sin( elapsed * 3.8 ) : 0.14;
+					if ( m.hoverEdgeMat ) {
+						m.hoverEdgeMat.color.setHex( on ? 0xffffff : 0xfffef0 );
+						m.hoverEdgeMat.opacity = on ? 0.96 + 0.04 * pulse : 0.22;
+					}
+					m.panelGroup.scale.setScalar( on ? 1.028 + 0.018 * Math.sin( elapsed * 3.2 ) : 1 );
+				}
+			}
+
+			function getBookstoreMap() {
+				if ( !bookstoreMapCache ) bookstoreMapCache = buildBookstoreMap();
+				return bookstoreMapCache;
+			}
+
+			function getShipMap() {
+				if ( !shipMapCache || shipMapCache._revision !== SHIP_DECK_MAP_REVISION ) {
+					if ( shipMapCache?.disposeLiteraturePanels ) shipMapCache.disposeLiteraturePanels();
+					shipMapCache = buildShipDeckMap();
+					shipMapCache._revision = SHIP_DECK_MAP_REVISION;
+				}
+				return shipMapCache;
+			}
+
+			function swapToInteriorMap( mapKey, interior ) {
+				scene.remove( mainMapRoot );
+				setMainMapTorchEffectsVisible( false );
+				for ( let i = 0; i < mainWorldStaticBodies.length; i++ ) world.removeBody( mainWorldStaticBodies[ i ] );
+				if ( collisionWireframe ) collisionWireframe.visible = false;
+				scene.add( interior.group );
+				for ( let i = 0; i < interior.bodies.length; i++ ) world.addBody( interior.bodies[ i ] );
+				if ( water ) water.visible = false;
+				activeMap = mapKey;
+			}
+
+			function restoreMainWorldFromInterior( interior ) {
+				scene.remove( interior.group );
+				for ( let i = 0; i < interior.bodies.length; i++ ) world.removeBody( interior.bodies[ i ] );
+				scene.add( mainMapRoot );
+				setMainMapTorchEffectsVisible( true );
+				for ( let i = 0; i < mainWorldStaticBodies.length; i++ ) world.addBody( mainWorldStaticBodies[ i ] );
+				if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
+				if ( water ) water.visible = true;
+				activeMap = 'main';
+			}
+
+			function enterBookstoreMap() {
+				if ( activeMap !== 'main' || !mainMapRoot ) return;
+				const b = getBookstoreMap();
+				swapToInteriorMap( 'bookstore', b );
+				playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
+				playerBody.velocity.set( 0, 0, 0 );
+				const eyeH = getPlayerEyeHeight();
+				smoothedCameraPos.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y + eyeH, BOOKSTORE_SPAWN.z );
+				camera.rotation.order = 'YXZ';
+				camera.rotation.x = 0;
+				camera.rotation.y = 0;
+				scene.background = new THREE.Color( 0x353028 );
+				scene.fog = new THREE.Fog( 0x353028, 8, 58 );
+				/* Defaults often use very low hemi/sun; set readable floors for MeshStandard interiors. */
+				fillLight1.intensity = Math.max( 0.78, fillLight1.intensity * 0.82 + 0.42 );
+				directionalLight.intensity = Math.max( 1.05, Math.min( 2.6, directionalLight.intensity * 0.92 + 0.55 ) );
+				ambientLight.intensity = Math.max( 0.55, ambientLight.intensity + 0.32 );
+			}
+
+			function exitBookstoreToMain() {
+				if ( activeMap !== 'bookstore' || !mainMapRoot ) return;
+				restoreMainWorldFromInterior( getBookstoreMap() );
+				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
+				playerBody.velocity.set( 0, 0, 0 );
+				const eyeH = getPlayerEyeHeight();
+				smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
+				camera.rotation.order = 'YXZ';
+				camera.rotation.x = 0;
+				camera.rotation.y = 0;
+				applySettings();
+			}
+
+			let shipEntryLoadInProgress = false;
+			const SHIP_ENTRY_LOADER_MIN_MS = 520;
+
+			function showShipEntryLoader() {
+				const el = document.getElementById( 'ship-entry-loader' );
+				if ( !el ) return;
+				el.setAttribute( 'aria-hidden', 'false' );
+				el.setAttribute( 'aria-busy', 'true' );
+				el.classList.add( 'ship-entry-loader--visible' );
+			}
+			function hideShipEntryLoader() {
+				const el = document.getElementById( 'ship-entry-loader' );
+				if ( !el ) return;
+				el.classList.remove( 'ship-entry-loader--visible' );
+				el.setAttribute( 'aria-hidden', 'true' );
+				el.setAttribute( 'aria-busy', 'false' );
+			}
+
+			function enterShipMap() {
+				if ( activeMap !== 'main' || !mainMapRoot || shipEntryLoadInProgress ) return;
+				shipEntryLoadInProgress = true;
+				showShipEntryLoader();
+				const t0 = performance.now();
+				Promise.all( [
+					ensureShipArtTexturesPreloaded(),
+					flythroughFontLoadPromise,
+					new Promise( ( r ) => { window.setTimeout( r, SHIP_ENTRY_LOADER_MIN_MS ); } )
+				] ).then( () => {
+					const s = getShipMap();
+					swapToInteriorMap( 'ship', s );
+					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					const eyeH = getPlayerEyeHeight();
+					smoothedCameraPos.set( SHIP_SPAWN.x, SHIP_SPAWN.y + eyeH, SHIP_SPAWN.z );
+					camera.rotation.order = 'YXZ';
+					camera.rotation.x = 0;
+					camera.rotation.y = 0;
+					scene.background = new THREE.Color( 0x4a423a );
+					scene.fog = null;
+					fillLight1.intensity = Math.max( 1.05, fillLight1.intensity + 0.8 );
+					directionalLight.intensity = Math.max( 1.5, Math.min( 3.5, directionalLight.intensity + 1.0 ) );
+					ambientLight.intensity = Math.max( 0.92, ambientLight.intensity + 0.55 );
+					window.requestAnimationFrame( () => {
+						window.requestAnimationFrame( () => { hideShipEntryLoader(); } );
+					} );
+				} ).catch( () => {
+					hideShipEntryLoader();
+				} ).finally( () => {
+					shipEntryLoadInProgress = false;
+				} );
+			}
+
+			function exitShipToMain() {
+				if ( activeMap !== 'ship' || !mainMapRoot ) return;
+				closeShipLitModal();
+				restoreMainWorldFromInterior( getShipMap() );
+				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
+				playerBody.velocity.set( 0, 0, 0 );
+				const eyeH = getPlayerEyeHeight();
+				smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
+				camera.rotation.order = 'YXZ';
+				camera.rotation.x = 0;
+				camera.rotation.y = 0;
+				applySettings();
+			}
+
 			function theaterRaycastHitsScreen() {
 				if ( activeMap !== 'theater' || !theaterMapCache?.screenFront ) return false;
 				syncTheaterScreenRaycastMatrices();
@@ -1532,6 +3644,100 @@
 				const v = theaterMapCache?.videoEl;
 				if ( !v ) return;
 				v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+			}
+
+			function hideFlythroughChoiceHoverOverlay() {
+				const el = flythroughChoiceHoverOverlay;
+				if ( !el ) return;
+				el.style.display = 'none';
+				el.style.background = '';
+				el.style.backgroundImage = '';
+				el.style.backgroundOrigin = '';
+				el.style.backgroundClip = '';
+				el.style.removeProperty( '-webkit-background-clip' );
+				el.style.boxShadow = '';
+				el.style.border = '';
+				el.style.outline = '';
+			}
+
+			function updateFlythroughChoiceHover() {
+				const el = flythroughChoiceHoverOverlay;
+				if ( !el ) return;
+				if ( isInteriorMap() || !flythroughChoiceMenuGroup.visible || flythroughChoicePickables.length === 0 ) {
+					hideFlythroughChoiceHoverOverlay();
+					return;
+				}
+				if ( !canPickFlythroughChoices() ) {
+					hideFlythroughChoiceHoverOverlay();
+					return;
+				}
+				const canvas = renderer.domElement;
+				const cr = canvas.getBoundingClientRect();
+				if ( flythroughChoiceHoverClientX < cr.left || flythroughChoiceHoverClientX >= cr.right ||
+					flythroughChoiceHoverClientY < cr.top || flythroughChoiceHoverClientY >= cr.bottom ) {
+					hideFlythroughChoiceHoverOverlay();
+					return;
+				}
+				flythroughChoiceMenuGroup.updateMatrixWorld( true );
+				_choiceNdc.x = ( ( flythroughChoiceHoverClientX - cr.left ) / cr.width ) * 2 - 1;
+				_choiceNdc.y = -( ( flythroughChoiceHoverClientY - cr.top ) / cr.height ) * 2 + 1;
+				flythroughChoiceRaycaster.setFromCamera( _choiceNdc, camera );
+				const hits = flythroughChoiceRaycaster.intersectObjects( flythroughChoicePickables, false );
+				if ( hits.length === 0 ) {
+					hideFlythroughChoiceHoverOverlay();
+					return;
+				}
+				const key = hits[ 0 ].object.userData.branchKey;
+				if ( !key || !branchFlythroughStates[ key ] ) {
+					hideFlythroughChoiceHoverOverlay();
+					return;
+				}
+				const hm = hits[ 0 ].object;
+				const w = hm.geometry?.parameters?.width ?? 1;
+				const h = hm.geometry?.parameters?.height ?? 1;
+				const hw = w * 0.5, hh = h * 0.5;
+				_flyChoiceHitCorners[ 0 ].set( -hw, -hh, 0 ).applyMatrix4( hm.matrixWorld );
+				_flyChoiceHitCorners[ 1 ].set( hw, -hh, 0 ).applyMatrix4( hm.matrixWorld );
+				_flyChoiceHitCorners[ 2 ].set( hw, hh, 0 ).applyMatrix4( hm.matrixWorld );
+				_flyChoiceHitCorners[ 3 ].set( -hw, hh, 0 ).applyMatrix4( hm.matrixWorld );
+				let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+				let anyInFront = false;
+				for ( let i = 0; i < 4; i++ ) {
+					_flyChoiceProj.copy( _flyChoiceHitCorners[ i ] ).project( camera );
+					if ( Math.abs( _flyChoiceProj.z ) > 1.01 ) continue;
+					anyInFront = true;
+					const px = ( _flyChoiceProj.x * 0.5 + 0.5 ) * cr.width + cr.left;
+					const py = ( -_flyChoiceProj.y * 0.5 + 0.5 ) * cr.height + cr.top;
+					minX = Math.min( minX, px );
+					minY = Math.min( minY, py );
+					maxX = Math.max( maxX, px );
+					maxY = Math.max( maxY, py );
+				}
+				if ( !anyInFront || minX >= maxX || minY >= maxY ) {
+					hideFlythroughChoiceHoverOverlay();
+					return;
+				}
+				const t = masterPostPass.uniforms[ 'time' ].value;
+				const bw = 3.5 + 0.2 * Math.sin( t * 1.7 );
+				const hue = 198 + 10 * Math.sin( t * 0.85 );
+				const sat = 88 + 6 * Math.sin( t * 1.1 );
+				const lit = 72 + 5 * Math.sin( t * 0.95 );
+				const alpha = 0.78 + 0.14 * Math.sin( t * 1.35 );
+				el.style.display = 'block';
+				el.style.left = `${ minX }px`;
+				el.style.top = `${ minY }px`;
+				el.style.width = `${ Math.max( 8, maxX - minX ) }px`;
+				el.style.height = `${ Math.max( 8, maxY - minY ) }px`;
+				el.style.boxSizing = 'border-box';
+				el.style.background = 'transparent';
+				el.style.backgroundImage = 'none';
+				el.style.backgroundOrigin = '';
+				el.style.backgroundClip = '';
+				el.style.removeProperty( '-webkit-background-clip' );
+				el.style.borderRadius = '5px';
+				el.style.outline = 'none';
+				el.style.border = `${ bw.toFixed( 2 ) }px solid hsla(${ hue.toFixed( 1 ) }, ${ sat.toFixed( 0 ) }%, ${ lit.toFixed( 1 ) }%, ${ alpha.toFixed( 3 ) })`;
+				el.style.boxShadow = `0 0 ${ Math.round( 16 + 5 * Math.sin( t * 1.15 ) ) }px 1px hsla(${ ( hue - 6 ).toFixed( 1 ) }, 85%, 58%, ${ ( 0.2 * alpha ).toFixed( 3 ) }), 0 0 ${ Math.round( 28 + 8 * Math.sin( t * 0.75 ) ) }px 2px hsla(${ ( hue + 8 ).toFixed( 1 ) }, 90%, 68%, ${ ( 0.1 * alpha ).toFixed( 3 ) })`;
 			}
 
 			function updateTheaterScreenHover() {
@@ -1714,18 +3920,40 @@
 
 			function checkTheaterPortals() {
 				if ( performance.now() < mapTeleportCooldownUntil ) return;
-				const rEnterSq = THEATER_PORTAL_ENTER_RADIUS * THEATER_PORTAL_ENTER_RADIUS;
+				if ( flythroughActive && flythroughSegment !== 'main' ) return;
+				const rTheaterEnterSq = THEATER_PORTAL_ENTER_RADIUS * THEATER_PORTAL_ENTER_RADIUS;
+				const rBookEnterSq = BOOKSTORE_PORTAL_ENTER_RADIUS * BOOKSTORE_PORTAL_ENTER_RADIUS;
+				const rShipEnterSq = SHIP_PORTAL_ENTER_RADIUS * SHIP_PORTAL_ENTER_RADIUS;
 				const rExitSq = THEATER_PORTAL_EXIT_RADIUS * THEATER_PORTAL_EXIT_RADIUS;
 
 				if ( activeMap === 'main' && mainMapRoot ) {
 					const pos = flythroughActive ? camera.position : playerBody.position;
-					const dx = pos.x - THEATER_PORTAL_MAIN.x;
-					const dy = pos.y - THEATER_PORTAL_MAIN.y;
-					const dz = pos.z - THEATER_PORTAL_MAIN.z;
-					if ( dx * dx + dy * dy + dz * dz <= rEnterSq ) {
+					const dxT = pos.x - THEATER_PORTAL_MAIN.x;
+					const dyT = pos.y - THEATER_PORTAL_MAIN.y;
+					const dzT = pos.z - THEATER_PORTAL_MAIN.z;
+					if ( dxT * dxT + dyT * dyT + dzT * dzT <= rTheaterEnterSq ) {
 						if ( flythroughActive ) exitFlythrough();
 						enterTheaterMap();
 						mapTeleportCooldownUntil = performance.now() + 1600;
+						return;
+					}
+					const dxB = pos.x - BOOKSTORE_PORTAL_MAIN.x;
+					const dyB = pos.y - BOOKSTORE_PORTAL_MAIN.y;
+					const dzB = pos.z - BOOKSTORE_PORTAL_MAIN.z;
+					if ( dxB * dxB + dyB * dyB + dzB * dzB <= rBookEnterSq ) {
+						if ( flythroughActive ) exitFlythrough();
+						enterBookstoreMap();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+						return;
+					}
+					const dxS = pos.x - SHIP_PORTAL_MAIN.x;
+					const dyS = pos.y - SHIP_PORTAL_MAIN.y;
+					const dzS = pos.z - SHIP_PORTAL_MAIN.z;
+					if ( dxS * dxS + dyS * dyS + dzS * dzS <= rShipEnterSq ) {
+						if ( flythroughActive ) exitFlythrough();
+						enterShipMap();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+						return;
 					}
 				} else if ( activeMap === 'theater' && !isTheaterVideoFullscreen() ) {
 					const p = playerBody.position;
@@ -1734,6 +3962,26 @@
 					const ez = p.z - THEATER_EXIT_POS.z;
 					if ( ex * ex + ey * ey + ez * ez <= rExitSq ) {
 						exitTheaterToMain();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+					}
+				} else if ( activeMap === 'bookstore' ) {
+					const p = playerBody.position;
+					const bx = p.x - BOOKSTORE_EXIT_POS.x;
+					const by = p.y - BOOKSTORE_EXIT_POS.y;
+					const bz = p.z - BOOKSTORE_EXIT_POS.z;
+					const rBookSq = BOOKSTORE_EXIT_RADIUS * BOOKSTORE_EXIT_RADIUS;
+					if ( bx * bx + by * by + bz * bz <= rBookSq ) {
+						exitBookstoreToMain();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+					}
+				} else if ( activeMap === 'ship' ) {
+					const p = playerBody.position;
+					const sx = p.x - SHIP_EXIT_POS.x;
+					const sy = p.y - SHIP_EXIT_POS.y;
+					const sz = p.z - SHIP_EXIT_POS.z;
+					const rShipSq = SHIP_EXIT_RADIUS * SHIP_EXIT_RADIUS;
+					if ( sx * sx + sy * sy + sz * sz <= rShipSq ) {
+						exitShipToMain();
 						mapTeleportCooldownUntil = performance.now() + 1600;
 					}
 				}
@@ -1765,6 +4013,14 @@
 					playerBody.position.set( THEATER_SPAWN.x, THEATER_SPAWN.y, THEATER_SPAWN.z );
 					playerBody.velocity.set( 0, 0, 0 );
 				}
+				if ( activeMap === 'bookstore' && playerBody.position.y <= -2 ) {
+					playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+				}
+				if ( activeMap === 'ship' && playerBody.position.y <= -2 ) {
+					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+				}
 			}
 
 			function animate() {
@@ -1786,7 +4042,21 @@
 				if ( activeMap === 'theater' && theaterMapCache && theaterMapCache.videoTexture ) {
 					theaterMapCache.videoTexture.needsUpdate = true;
 				}
+				if ( activeMap === 'ship' ) {
+					updateShipLanternFlicker( clock.getElapsedTime() );
+					updateShipLiteraturePanelsHover( clock.getElapsedTime() );
+				}
 				if ( activeMap === 'theater' ) updateTheaterGodRaySunPosition();
+				flythroughChoiceMenuGroup.visible = !isInteriorMap();
+				if ( flythroughChoiceMenuGroup.visible && ( flythroughChoiceEntries.length > 0 || flythroughExtraLabelRows.length > 0 ) ) {
+					for ( let i = 0; i < flythroughChoiceEntries.length; i++ ) {
+						flythroughChoiceEntries[ i ].row.quaternion.copy( camera.quaternion );
+					}
+					for ( let j = 0; j < flythroughExtraLabelRows.length; j++ ) {
+						flythroughExtraLabelRows[ j ].row.quaternion.copy( camera.quaternion );
+					}
+				}
+				updateFlythroughChoiceHover();
 				composer.render( deltaTime );
 				if ( activeMap === 'theater' ) updateTheaterScreenHover();
 				stats.update();

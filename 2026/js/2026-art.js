@@ -99,4 +99,10 @@ const ART_PIECES = [
     medium:     'Digital Photography',
     year:       '2026',
   },
+  {
+    interaction: 'exitToCave',
+    title:       'RETURN',
+    subtitle:    'TO THE CAVE',
+  },
 ];
+globalThis.ART_PIECES = ART_PIECES;
