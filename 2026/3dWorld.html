@@ -995,8 +995,8 @@
 				bloomPass.strength = postProcessingSettings.bloomStrength;
 				bloomPass.radius = postProcessingSettings.bloomRadius;
 				bloomPass.threshold = postProcessingSettings.bloomThreshold;
-				masterPostPass.uniforms[ 'grainEnabled' ].value = postProcessingSettings.filmEnabled;
-				masterPostPass.uniforms[ 'grainIntensity' ].value = postProcessingSettings.filmNoiseIntensity;
+				masterPostPass.uniforms[ 'grainEnabled' ].value = isMobileDevice ? false : postProcessingSettings.filmEnabled;
+				masterPostPass.uniforms[ 'grainIntensity' ].value = isMobileDevice ? 0 : postProcessingSettings.filmNoiseIntensity;
 				masterPostPass.uniforms[ 'vignetteEnabled' ].value = postProcessingSettings.vignetteEnabled;
 				masterPostPass.uniforms[ 'vignetteOffset' ].value = postProcessingSettings.vignetteOffset;
 				masterPostPass.uniforms[ 'vignetteDarkness' ].value = postProcessingSettings.vignetteDarkness;
