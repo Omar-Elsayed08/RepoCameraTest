@@ -147,6 +147,403 @@
 			mix-blend-mode: normal;
 			opacity: 1;
 		}
+		/* On each load (main map): choose free camera vs guided flythrough */
+		#nav-startup-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 10080;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: clamp(12px, 3vmin, 28px);
+			box-sizing: border-box;
+			pointer-events: none;
+		}
+		#nav-startup-overlay.nav-startup-overlay--open {
+			display: flex;
+			pointer-events: auto;
+		}
+		#nav-startup-overlay .nav-startup-backdrop {
+			position: absolute;
+			inset: 0;
+			background: radial-gradient(ellipse 75% 65% at 50% 38%, rgba(20, 14, 10, 0.55) 0%, rgba(6, 4, 3, 0.88) 72%);
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
+		}
+		#nav-startup-overlay .nav-startup-card {
+			position: relative;
+			z-index: 1;
+			width: min(100%, 720px);
+			max-height: min(92vh, 640px);
+			overflow: auto;
+			-webkit-overflow-scrolling: touch;
+			padding: clamp(20px, 3.2vmin, 32px) clamp(18px, 2.8vmin, 28px) clamp(22px, 3vmin, 34px);
+			box-sizing: border-box;
+			border-radius: 10px;
+			border: 1px solid rgba(200, 170, 120, 0.35);
+			background:
+				radial-gradient(ellipse 100% 80% at 50% 0%, rgba(90, 62, 36, 0.35) 0%, transparent 55%),
+				linear-gradient(168deg, rgba(42, 30, 20, 0.97) 0%, rgba(18, 12, 8, 0.99) 100%);
+			box-shadow:
+				0 0 0 1px rgba(0, 0, 0, 0.45),
+				0 24px 80px rgba(0, 0, 0, 0.55),
+				inset 0 1px 0 rgba(255, 230, 190, 0.08);
+			color: #f2e8d8;
+			font-family: Georgia, 'Times New Roman', serif;
+		}
+		#nav-startup-overlay .nav-startup-title {
+			margin: 0 0 8px;
+			font-size: clamp(1.15rem, 2.4vmin, 1.45rem);
+			font-weight: 600;
+			letter-spacing: 0.02em;
+			text-align: center;
+			color: #fff8ee;
+		}
+		#nav-startup-overlay .nav-startup-sub {
+			margin: 0 0 clamp(18px, 3vmin, 26px);
+			font-size: clamp(12px, 1.35vmin, 14px);
+			line-height: 1.55;
+			text-align: center;
+			color: rgba(230, 210, 180, 0.82);
+		}
+		#nav-startup-overlay .nav-startup-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: clamp(12px, 2vmin, 20px);
+		}
+		@media (max-width: 560px) {
+			#nav-startup-overlay .nav-startup-grid { grid-template-columns: 1fr; }
+		}
+		#nav-startup-overlay .nav-startup-option {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 10px;
+			padding: clamp(14px, 2.2vmin, 22px) clamp(12px, 2vmin, 18px);
+			border-radius: 8px;
+			border: 1px solid rgba(160, 120, 70, 0.4);
+			background: linear-gradient(180deg, rgba(55, 40, 26, 0.65) 0%, rgba(28, 20, 14, 0.9) 100%);
+			color: inherit;
+			font: inherit;
+			cursor: pointer;
+			text-align: center;
+			text-transform: none;
+			transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+		}
+		#nav-startup-overlay .nav-startup-option:hover:not(:disabled) {
+			border-color: rgba(255, 210, 140, 0.55);
+			box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+			transform: translateY(-1px);
+		}
+		#nav-startup-overlay .nav-startup-option:disabled {
+			opacity: 0.45;
+			cursor: not-allowed;
+			transform: none;
+		}
+		#nav-startup-overlay .nav-startup-gif-wrap {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 88px;
+			height: 88px;
+			border-radius: 8px;
+			background: rgba(250, 243, 230, 0.94);
+			box-shadow: inset 0 0 0 1px rgba(46, 28, 10, 0.12);
+		}
+		#nav-startup-overlay .nav-startup-gif-wrap img {
+			display: block;
+			width: 72px;
+			height: 72px;
+			object-fit: contain;
+		}
+		#nav-startup-overlay .nav-startup-option-label {
+			font-size: clamp(13px, 1.5vmin, 15px);
+			font-weight: 600;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: #fff4e4;
+			font-family: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Menlo, Consolas, monospace;
+		}
+		#nav-startup-overlay .nav-startup-option-hint {
+			font-size: clamp(11px, 1.25vmin, 13px);
+			line-height: 1.45;
+			color: rgba(210, 190, 160, 0.88);
+			max-width: 280px;
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#nav-startup-overlay .nav-startup-option { transition: none; }
+			#nav-startup-overlay .nav-startup-option:hover:not(:disabled) { transform: none; }
+		}
+		/* Chart menu — matches 2026/index + 2026-shared (cream / navy / gold) */
+		#treasure-map-nav {
+			position: fixed;
+			right: clamp(10px, 2vmin, 18px);
+			bottom: clamp(10px, 2vmin, 18px);
+			z-index: 10040;
+			font-family: 'Times New Roman', Times, Georgia, serif;
+			color: var(--navy);
+			-webkit-user-select: none;
+			user-select: none;
+		}
+		#treasure-map-nav .treasure-map-nav__fab {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+			padding: 12px 20px 12px 16px;
+			border-radius: 999px;
+			border: 1px solid rgba(213, 150, 9, 0.35);
+			background:
+				radial-gradient(ellipse 70% 60% at 20% 20%, rgba(213, 150, 9, 0.2) 0%, transparent 55%),
+				radial-gradient(ellipse 60% 70% at 85% 80%, rgba(213, 150, 9, 0.1) 0%, transparent 55%),
+				linear-gradient(160deg,
+					color-mix(in srgb, var(--brown) 92%, black 8%) 0%,
+					var(--brown) 60%,
+					var(--brown-deep) 100%);
+			color: var(--gold);
+			font-size: 12px;
+			font-weight: 700;
+			letter-spacing: 0.22em;
+			text-transform: uppercase;
+			cursor: pointer;
+			position: relative;
+			box-shadow:
+				0 1px 0 rgba(255, 255, 255, 0.08) inset,
+				0 10px 36px rgba(0, 0, 0, 0.35);
+			transition: transform 0.25s var(--ease-out-expo), border-color 0.25s ease, box-shadow 0.25s ease;
+		}
+		#treasure-map-nav .treasure-map-nav__fab::after {
+			content: '';
+			position: absolute;
+			left: 12%;
+			right: 12%;
+			bottom: 6px;
+			height: 2px;
+			background: linear-gradient(90deg, transparent 0%, var(--gold) 35%, var(--red) 65%, transparent 100%);
+			opacity: 0.45;
+			border-radius: 2px;
+			pointer-events: none;
+		}
+		#treasure-map-nav .treasure-map-nav__fab:hover {
+			border-color: color-mix(in srgb, var(--gold) 70%, var(--cream) 30%);
+			transform: translateY(-2px);
+		}
+		#treasure-map-nav .treasure-map-nav__fab[aria-expanded="true"] {
+			box-shadow:
+				0 1px 0 rgba(0, 0, 0, 0.25) inset,
+				0 6px 24px rgba(0, 0, 0, 0.45);
+		}
+		#treasure-map-nav .treasure-map-nav__fab-icon {
+			flex-shrink: 0;
+			width: 22px;
+			height: 22px;
+			color: color-mix(in srgb, var(--gold) 88%, var(--cream) 12%);
+		}
+		#treasure-map-nav .treasure-map-nav__panel {
+			position: absolute;
+			right: 0;
+			bottom: calc(100% + 12px);
+			width: min(94vw, 320px);
+			max-height: min(78vh, 540px);
+			overflow: auto;
+			-webkit-overflow-scrolling: touch;
+			padding: 0;
+			border: none;
+			background: transparent;
+			filter: drop-shadow(0 20px 48px rgba(26, 15, 4, 0.35));
+		}
+		#treasure-map-nav .treasure-map-nav__panel[hidden] {
+			display: none !important;
+		}
+		#treasure-map-nav .treasure-map-nav__card {
+			position: relative;
+			padding: clamp(20px, 3vmin, 26px) clamp(18px, 2.8vw, 24px) clamp(18px, 2.5vmin, 22px);
+			border-radius: 0;
+			border: 1px solid rgba(46, 28, 10, 0.1);
+			background: var(--cream);
+			color: var(--navy);
+			box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+		}
+		#treasure-map-nav .treasure-map-nav__card::before {
+			content: '';
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: 0;
+			height: 2px;
+			background: linear-gradient(90deg, transparent 0%, var(--gold) 30%, var(--red) 70%, transparent 100%);
+			opacity: 0.55;
+			pointer-events: none;
+		}
+		#treasure-map-nav .treasure-map-nav__head {
+			margin: 0 0 clamp(18px, 2.5vmin, 24px);
+			text-align: center;
+		}
+		#treasure-map-nav .treasure-map-nav__head .toc-head-meta {
+			display: block;
+			margin-bottom: 10px;
+		}
+		#treasure-map-nav .treasure-map-nav__head-title {
+			font-family: 'Times New Roman', Times, serif;
+			font-weight: 700;
+			font-size: clamp(26px, 4.2vw, 34px);
+			line-height: 1.1;
+			letter-spacing: 0.02em;
+			text-transform: uppercase;
+			color: var(--navy);
+			margin: 0;
+		}
+		#treasure-map-nav .treasure-map-nav__block {
+			position: relative;
+			margin-bottom: clamp(16px, 2.2vmin, 22px);
+		}
+		#treasure-map-nav .treasure-map-nav__block:last-of-type {
+			margin-bottom: 0;
+		}
+		#treasure-map-nav .section-eyebrow {
+			margin-bottom: 10px;
+		}
+		#treasure-map-nav .treasure-map-nav__segment {
+			display: flex;
+			padding: 5px;
+			border-radius: 0;
+			gap: 6px;
+			background: var(--hero-cream);
+			border: 1px solid rgba(46, 28, 10, 0.08);
+		}
+		#treasure-map-nav .treasure-map-nav__seg {
+			flex: 1;
+			padding: 11px 10px;
+			border: 1px solid rgba(46, 28, 10, 0.1);
+			border-radius: 0;
+			background: color-mix(in srgb, var(--cream) 92%, transparent);
+			color: var(--navy);
+			font-family: 'Times New Roman', Times, Georgia, serif;
+			font-size: 12px;
+			font-weight: 700;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			cursor: pointer;
+			transition: background 0.35s var(--ease-out-expo), color 0.25s ease, border-color 0.25s ease;
+		}
+		#treasure-map-nav .treasure-map-nav__seg:hover:not(:disabled) {
+			background: color-mix(in srgb, var(--gold) 8%, var(--cream));
+			border-color: rgba(213, 150, 9, 0.35);
+		}
+		#treasure-map-nav .treasure-map-nav__seg:disabled {
+			opacity: 0.45;
+			cursor: not-allowed;
+		}
+		#treasure-map-nav .treasure-map-nav__seg.treasure-map-nav__seg--active {
+			background: var(--navy);
+			color: var(--cream);
+			border-color: var(--navy);
+			box-shadow: none;
+		}
+		#treasure-map-nav .treasure-map-nav__dest-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 10px;
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 4px;
+			padding: 14px 14px 14px 16px;
+			border-radius: 0;
+			border: 1px solid rgba(46, 28, 10, 0.1);
+			background: var(--cream);
+			color: var(--navy);
+			font: inherit;
+			text-align: left;
+			text-transform: none;
+			cursor: pointer;
+			transition: background 0.4s var(--ease-out-expo), border-color 0.25s ease, padding 0.4s var(--ease-out-expo);
+			isolation: isolate;
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn::before {
+			content: '';
+			position: absolute;
+			left: 0;
+			top: 0;
+			bottom: 0;
+			width: 3px;
+			background: var(--gold);
+			transform: scaleY(0);
+			transform-origin: top center;
+			transition: transform 0.45s var(--ease-out-expo);
+			z-index: 0;
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn:hover:not(:disabled) {
+			background: color-mix(in srgb, var(--gold) 5%, transparent);
+			border-color: rgba(213, 150, 9, 0.28);
+			padding-left: 18px;
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn:hover:not(:disabled)::before {
+			transform: scaleY(1);
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn:disabled {
+			opacity: 0.45;
+			cursor: not-allowed;
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn.treasure-map-nav__dest-btn--here {
+			background: color-mix(in srgb, var(--gold) 6%, var(--cream));
+			border-color: rgba(213, 150, 9, 0.4);
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn.treasure-map-nav__dest-btn--here::before {
+			transform: scaleY(1);
+		}
+		#treasure-map-nav .treasure-map-nav__dest-name {
+			position: relative;
+			z-index: 1;
+			font-size: 13px;
+			font-weight: 700;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			color: var(--navy);
+		}
+		#treasure-map-nav .treasure-map-nav__dest-hint {
+			position: relative;
+			z-index: 1;
+			font-size: 12px;
+			line-height: 1.45;
+			font-style: italic;
+			color: rgba(46, 28, 10, 0.72);
+		}
+		#treasure-map-nav .treasure-map-nav__dest-btn--span {
+			grid-column: 1 / -1;
+		}
+		#treasure-map-nav .treasure-map-nav__site {
+			margin-top: clamp(18px, 2.5vmin, 22px);
+			padding-top: 18px;
+			border-top: 1px solid rgba(46, 28, 10, 0.12);
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 10px;
+			-webkit-user-select: text;
+			user-select: text;
+		}
+		#treasure-map-nav .treasure-map-nav__site .footer-link {
+			width: 100%;
+			justify-content: center;
+			text-align: center;
+			text-decoration: none;
+		}
+		#treasure-map-nav .treasure-map-nav__site .footer-link:hover {
+			text-decoration: none;
+		}
+		@media (max-width: 400px) {
+			#treasure-map-nav .treasure-map-nav__dest-grid { grid-template-columns: 1fr; }
+			#treasure-map-nav .treasure-map-nav__dest-btn--span { grid-column: 1; }
+		}
+		@media (prefers-reduced-motion: reduce) {
+			#treasure-map-nav .treasure-map-nav__fab { transition: none; }
+			#treasure-map-nav .treasure-map-nav__fab:hover { transform: none; }
+			#treasure-map-nav .treasure-map-nav__dest-btn,
+			#treasure-map-nav .treasure-map-nav__dest-btn::before { transition: none; }
+		}
 		#bookLitLightbox,
 		#bookLitLightbox .lightbox-panel,
 		#bookLitLightbox .lightbox-content,
@@ -248,7 +645,6 @@
 			}, 12000 );
 		} )();
 	</script>
-	<a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:10002;font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:#2e1c0a;text-decoration:none;background:rgba(250,243,224,0.92);padding:8px 14px;border-radius:4px;border:1px solid rgba(46,28,10,0.15);box-shadow:0 2px 8px rgba(0,0,0,0.08);">← The Magnet home</a>
 	<div id="info">
 		<br />
 		<span class="desktop-controls"></span>
@@ -256,11 +652,75 @@
 	</div>
 	<div id="container"></div>
 	<div id="scroll-container"><div id="scroll-spacer"></div></div>
-	<div id="mode-toggle">
-		<button id="btn-freecam" class="mode-btn active">Free Cam</button>
-		<button id="btn-flythrough" class="mode-btn">Flythrough</button>
+	<div id="nav-startup-overlay" class="nav-startup-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="nav-startup-title">
+		<div class="nav-startup-backdrop" aria-hidden="true"></div>
+		<div class="nav-startup-card">
+			<h2 id="nav-startup-title" class="nav-startup-title">How do you want to explore?</h2>
+			<p class="nav-startup-sub">Choose a navigation style. You can change it anytime from the <strong>Menu</strong> button (bottom-right).</p>
+			<div class="nav-startup-grid">
+				<button type="button" id="nav-startup-pick-free" class="nav-startup-option">
+					<span class="nav-startup-gif-wrap"><img src="./freecam/icons8-swipe.gif" alt="" width="72" height="72" decoding="async" /></span>
+					<span class="nav-startup-option-label">Free camera</span>
+					<span class="nav-startup-option-hint">Swipe or drag to look around and move through the space on your own.</span>
+				</button>
+				<button type="button" id="nav-startup-pick-guided" class="nav-startup-option">
+					<span class="nav-startup-gif-wrap"><img src="./freecam/icons8-double-down.gif" alt="" width="72" height="72" decoding="async" /></span>
+					<span class="nav-startup-option-label">Guided navigation</span>
+					<span class="nav-startup-option-hint">Scroll or swipe along the page to follow a choreographed path through the scene.</span>
+				</button>
+			</div>
+		</div>
 	</div>
-
+	<div id="treasure-map-nav" class="treasure-map-nav" aria-label="Chart and navigation">
+		<button type="button" id="treasure-map-nav-toggle" class="treasure-map-nav__fab" aria-expanded="false" aria-controls="treasure-map-nav-panel">
+			<svg class="treasure-map-nav__fab-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+				<circle cx="12" cy="12" r="9" opacity="0.9"/>
+				<path d="M12 3.5v2.5M12 18v2.5M3.5 12h2.5M18 12h2.5" opacity="0.55"/>
+				<path d="M12 7.5 L12 16.5 M9 10.5l3-3 3 3" stroke-linejoin="round"/>
+			</svg>
+			<span>Menu</span>
+		</button>
+		<div id="treasure-map-nav-panel" class="treasure-map-nav__panel" role="region" aria-label="Navigation" hidden>
+			<div class="treasure-map-nav__card">
+				<header class="treasure-map-nav__head">
+					<p class="treasure-map-nav__head-kicker toc-head-meta">The Magnet · 2026</p>
+					<h2 class="treasure-map-nav__head-title">Navigation Menu</h2>
+				</header>
+				<section class="treasure-map-nav__block" aria-labelledby="tmh-move">
+					<p id="tmh-move" class="section-eyebrow">Movement</p>
+					<div class="treasure-map-nav__segment" role="group" aria-label="Navigation mode">
+						<button type="button" id="treasure-map-mode-free" class="treasure-map-nav__seg">Free explore</button>
+						<button type="button" id="treasure-map-mode-guided" class="treasure-map-nav__seg">Guided path</button>
+					</div>
+				</section>
+				<section class="treasure-map-nav__block" aria-labelledby="tmh-go">
+					<p id="tmh-go" class="section-eyebrow">Teleport</p>
+					<div class="treasure-map-nav__dest-grid" role="group" aria-label="Go to location">
+						<button type="button" id="treasure-map-go-island" class="treasure-map-nav__dest-btn treasure-map-nav__dest-btn--span">
+							<span class="treasure-map-nav__dest-name">Cave</span>
+							<span class="treasure-map-nav__dest-hint">Main open Cave</span>
+						</button>
+						<button type="button" id="treasure-map-go-theater" class="treasure-map-nav__dest-btn">
+							<span class="treasure-map-nav__dest-name">Theater</span>
+							<span class="treasure-map-nav__dest-hint">Film</span>
+						</button>
+						<button type="button" id="treasure-map-go-bookstore" class="treasure-map-nav__dest-btn">
+							<span class="treasure-map-nav__dest-name">Bookstore</span>
+							<span class="treasure-map-nav__dest-hint">Literature</span>
+						</button>
+						<button type="button" id="treasure-map-go-ship" class="treasure-map-nav__dest-btn">
+							<span class="treasure-map-nav__dest-name">Ship</span>
+							<span class="treasure-map-nav__dest-hint">Art</span>
+						</button>
+					</div>
+				</section>
+				<div class="treasure-map-nav__site">
+					<a href="../index.html" class="footer-link">The Magnet Home</a>
+					<a href="./index.html" class="footer-link">Volume V · Treasure (read the edition)</a>
+				</div>
+			</div>
+		</div>
+	</div>
 
 	<script type="importmap">
 		{
@@ -285,8 +745,6 @@
 			import Stats from 'three/addons/libs/stats.module.js';
 
 			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
-			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 			import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 			import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -738,6 +1196,118 @@
 			}
 			shipLitModalCloseBtn.addEventListener( 'click', ( e ) => { e.stopPropagation(); closeShipLitModal(); } );
 
+			/** 3D TextGeometry uses the flythrough typeface (Latin); CJK must use canvas + system fonts like the DOM modal. */
+			function shipLitCaptionNeedsCanvasTexture( titleStr, artistStr ) {
+				const combined = String( titleStr || '' ) + String( artistStr || '' );
+				return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7af]/.test( combined );
+			}
+
+			function buildShipLitCaptionRowCanvasGroup( titleStr, artistStr, titleTargetW ) {
+				const row = new THREE.Group();
+				row.name = 'ShipLitCaptionBitmap';
+				const titleRaw = String( titleStr || '' ).trim() || '—';
+				const artistRaw = String( artistStr || '' ).trim();
+				const hasSub = artistRaw.length > 0;
+				const maxWorldW = Math.max( 1.2, Math.min( 6.35, titleTargetW > 0 ? titleTargetW : 3.2 ) );
+				const cw = Math.min( 2048, Math.max( 640, Math.round( maxWorldW * 210 ) ) );
+				const padX = 34;
+				const padY = 26;
+				const fontFamily = 'system-ui, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Hiragino Sans", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", sans-serif';
+				const titleFont = `600 42px ${ fontFamily }`;
+				const subFont = `500 28px ${ fontFamily }`;
+				const measureCanvas = document.createElement( 'canvas' );
+				const mctx = measureCanvas.getContext( '2d' );
+				if ( !mctx ) return null;
+				function wrapLinesCharWise( fontSpec, text, maxInnerPx ) {
+					mctx.font = fontSpec;
+					const lines = [];
+					let acc = '';
+					for ( let i = 0; i < text.length; i++ ) {
+						const ch = text.charAt( i );
+						const trial = acc + ch;
+						if ( mctx.measureText( trial ).width <= maxInnerPx || acc.length === 0 ) acc = trial;
+						else {
+							lines.push( acc );
+							acc = ch;
+						}
+					}
+					if ( acc.length ) lines.push( acc );
+					return lines.length ? lines : [ '' ];
+				}
+				const innerW = cw - padX * 2;
+				const titleLines = wrapLinesCharWise( titleFont, titleRaw, innerW );
+				const subLines = hasSub ? wrapLinesCharWise( subFont, artistRaw, innerW ) : [];
+				const titleLH = 50;
+				const subLH = 34;
+				const gapTitleSub = 14;
+				let contentH = padY + titleLines.length * titleLH;
+				if ( hasSub && subLines.length ) contentH += gapTitleSub + subLines.length * subLH;
+				contentH += padY;
+				const ch = Math.min( 1400, Math.max( 96, Math.ceil( contentH ) ) );
+
+				const c = document.createElement( 'canvas' );
+				c.width = cw;
+				c.height = ch;
+				const ctx = c.getContext( '2d' );
+				if ( !ctx ) return null;
+				ctx.fillStyle = 'rgba(18,10,6,0.95)';
+				ctx.fillRect( 0, 0, cw, ch );
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'middle';
+				let y = padY + titleLH * 0.5;
+				ctx.font = titleFont;
+				ctx.fillStyle = '#fffff8';
+				for ( let ti = 0; ti < titleLines.length; ti++ ) {
+					ctx.fillText( titleLines[ ti ], cw * 0.5, y );
+					y += titleLH;
+				}
+				if ( hasSub && subLines.length ) {
+					y += gapTitleSub - titleLH * 0.5 + subLH * 0.5;
+					ctx.font = subFont;
+					ctx.fillStyle = '#f8f0e4';
+					for ( let si = 0; si < subLines.length; si++ ) {
+						ctx.fillText( subLines[ si ], cw * 0.5, y );
+						y += subLH;
+					}
+				}
+
+				const tex = new THREE.CanvasTexture( c );
+				tex.colorSpace = THREE.SRGBColorSpace;
+				tex.minFilter = THREE.LinearFilter;
+				tex.magFilter = THREE.LinearFilter;
+				tex.generateMipmaps = false;
+				tex.needsUpdate = true;
+
+				const aspect = cw / ch;
+				const blockW = maxWorldW;
+				const blockH = blockW / aspect;
+
+				const backGeo = new THREE.PlaneGeometry( blockW * 1.05, blockH * 1.08 );
+				const backMat = new THREE.MeshBasicMaterial( {
+					color: 0x120a06, transparent: true, opacity: 0.92, side: THREE.DoubleSide,
+					toneMapped: false, depthTest: true, depthWrite: false,
+					polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
+				} );
+				const backMesh = new THREE.Mesh( backGeo, backMat );
+				backMesh.position.set( 0, 0, -0.07 );
+				backMesh.renderOrder = 4;
+				row.add( backMesh );
+
+				const fgGeo = new THREE.PlaneGeometry( blockW, blockH );
+				const fgMat = new THREE.MeshBasicMaterial( {
+					map: tex, transparent: true, opacity: 1, side: THREE.DoubleSide,
+					toneMapped: false, depthTest: true, depthWrite: true,
+					polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+				} );
+				const fgMesh = new THREE.Mesh( fgGeo, fgMat );
+				fgMesh.position.set( 0, 0, 0.012 );
+				fgMesh.renderOrder = 6;
+				row.add( fgMesh );
+
+				row.userData.shipCaptionBlockH = blockH;
+				return row;
+			}
+
 			const bookLitLightbox = document.createElement( 'div' );
 			bookLitLightbox.id = 'bookLitLightbox';
 			bookLitLightbox.className = 'lightbox';
@@ -1054,8 +1624,6 @@
 			const _bridgeQ1 = new THREE.Quaternion();
 			const scrollContainer = document.getElementById( 'scroll-container' );
 			const scrollSpacer = document.getElementById( 'scroll-spacer' );
-			const btnFreecam = document.getElementById( 'btn-freecam' );
-			const btnFlythrough = document.getElementById( 'btn-flythrough' );
 
 			const flythroughChoiceMenuGroup = new THREE.Group();
 			flythroughChoiceMenuGroup.name = 'FlythroughChoiceMenu';
@@ -1780,6 +2348,32 @@
 				flythroughSegment = 'reverseBridge';
 			}
 
+			function updateTreasureMapNavUi() {
+				const freeChip = document.getElementById( 'treasure-map-mode-free' );
+				const guidedChip = document.getElementById( 'treasure-map-mode-guided' );
+				const islandBtn = document.getElementById( 'treasure-map-go-island' );
+				const theaterBtn = document.getElementById( 'treasure-map-go-theater' );
+				const bookBtn = document.getElementById( 'treasure-map-go-bookstore' );
+				const shipBtn = document.getElementById( 'treasure-map-go-ship' );
+				if ( freeChip && guidedChip ) {
+					freeChip.classList.toggle( 'treasure-map-nav__seg--active', !flythroughActive );
+					guidedChip.classList.toggle( 'treasure-map-nav__seg--active', flythroughActive );
+					guidedChip.disabled = !mainFlythroughState;
+				}
+				const locBtns = [ islandBtn, theaterBtn, bookBtn, shipBtn ];
+				const locKeys = [ 'main', 'theater', 'bookstore', 'ship' ];
+				for ( let i = 0; i < locBtns.length; i++ ) {
+					const b = locBtns[ i ];
+					if ( !b ) continue;
+					b.classList.toggle( 'treasure-map-nav__dest-btn--here', activeMap === locKeys[ i ] );
+				}
+				const ready = !!mainMapRoot;
+				for ( let j = 0; j < locBtns.length; j++ ) {
+					const bb = locBtns[ j ];
+					if ( bb ) bb.disabled = !ready;
+				}
+			}
+
 			function enterFlythrough() {
 				if ( !mainFlythroughState ) return;
 				hideFlythroughChoiceMenu();
@@ -1803,8 +2397,7 @@
 				const scrollPages = Math.max( 5, Math.ceil( mainFlythroughState.duration ) );
 				scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
 				if ( document.pointerLockElement ) document.exitPointerLock();
-				btnFlythrough.classList.add( 'active' );
-				btnFreecam.classList.remove( 'active' );
+				updateTreasureMapNavUi();
 			}
 
 			function exitFlythrough() {
@@ -1827,12 +2420,64 @@
 					smoothedCameraPos.copy( camera.position );
 				}
 				camera.rotation.order = 'YXZ';
-				btnFreecam.classList.add( 'active' );
-				btnFlythrough.classList.remove( 'active' );
+				updateTreasureMapNavUi();
 			}
 
-			btnFreecam.addEventListener( 'click', () => { if ( flythroughActive ) exitFlythrough(); } );
-			btnFlythrough.addEventListener( 'click', () => { if ( !flythroughActive && mainFlythroughState ) enterFlythrough(); } );
+			/** After leaving an interior map: land on the main flythrough path at the end (choice hub), not free-roam at MAIN_RETURN_POS. */
+			function activateMainFlythroughAtPathEnd() {
+				if ( !mainFlythroughState || !mainFlythroughState.tracks ) {
+					const eyeH = getPlayerEyeHeight();
+					playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
+					camera.position.copy( smoothedCameraPos );
+					camera.rotation.order = 'YXZ';
+					camera.rotation.x = 0;
+					camera.rotation.y = 0;
+					flythroughActive = false;
+					hideFlythroughChoiceMenu();
+					scrollContainer.style.display = 'none';
+					scrollContainer.style.touchAction = '';
+					scrollContainer.style.overscrollBehavior = '';
+					updateTreasureMapNavUi();
+					return;
+				}
+				hideFlythroughChoiceMenu();
+				bridgePendingState = null;
+				bridgePendingKey = '';
+				bridgeElapsed = 0;
+				reverseBridgeFromState = null;
+				reverseBridgeMainEndT = 0;
+				reverseBridgeElapsed = 0;
+				flythroughState = mainFlythroughState;
+				flythroughSegment = 'choice';
+				flythroughActive = true;
+				const D = mainFlythroughState.duration;
+				flythroughTime = flythroughTargetTime = D;
+				scrollContainer.style.display = 'block';
+				if ( isMobileDevice ) {
+					scrollContainer.style.touchAction = 'pan-y';
+					scrollContainer.style.overscrollBehavior = 'contain';
+				}
+				const scrollPages = Math.max( 5, Math.ceil( D ) );
+				scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
+				if ( document.pointerLockElement ) document.exitPointerLock();
+				void scrollContainer.offsetHeight;
+				void scrollSpacer.offsetHeight;
+				let maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+				if ( maxScroll > 0 ) scrollContainer.scrollTop = maxScroll;
+				void scrollContainer.offsetHeight;
+				maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+				if ( maxScroll > 0 ) scrollContainer.scrollTop = maxScroll;
+				applyFlythroughCamera( mainFlythroughState, D );
+				if ( playerBody ) {
+					playerBody.position.set( camera.position.x, camera.position.y, camera.position.z );
+					playerBody.velocity.set( 0, 0, 0 );
+				}
+				smoothedCameraPos.copy( camera.position );
+				updateTreasureMapNavUi();
+				showFlythroughChoiceMenu();
+			}
 
 			let _flyTouchY = null;
 			let _flyMobileLastTouchY = null;
@@ -1883,7 +2528,7 @@
 				_flyMobileLastTouchY = null;
 			}, { passive: true } );
 
-			Promise.all( [
+			const flythroughLoadPromise = Promise.all( [
 				fetch( './freecam/Fly Through.theatre-project-state (1).json' ).then( r => r.json() ),
 				fetch( './freecam/TheaterAnim.json' ).then( r => r.json() ),
 				fetch( './freecam/BookStoreAnim.json' ).then( r => r.json() ),
@@ -1898,6 +2543,7 @@
 				if ( !branchFlythroughStates.bookstore ) console.warn( 'BookStoreAnim.json not parsed' );
 				if ( !branchFlythroughStates.ship ) console.warn( 'ShipAnim.json not parsed' );
 				updateFlythroughChoiceButtonStates();
+				updateTreasureMapNavUi();
 				if ( mainFlythroughState ) {
 					const scrollPages = Math.max( 5, Math.ceil( mainFlythroughState.duration ) );
 					scrollSpacer.style.height = ( scrollPages * 100 ) + 'vh';
@@ -1905,8 +2551,90 @@
 				}
 			} ).catch( e => console.warn( 'Flythrough / branch state not loaded:', e ) );
 
+			const navStartupOverlay = document.getElementById( 'nav-startup-overlay' );
+			const navStartupBtnFree = document.getElementById( 'nav-startup-pick-free' );
+			const navStartupBtnGuided = document.getElementById( 'nav-startup-pick-guided' );
+
+			function waitForHtmlPageLoadedClass() {
+
+				return new Promise( ( resolve ) => {
+
+					const html = document.documentElement;
+					if ( html.classList.contains( 'page-loaded' ) ) {
+
+						resolve();
+						return;
+
+					}
+
+					const mo = new MutationObserver( () => {
+
+						if ( html.classList.contains( 'page-loaded' ) ) {
+
+							mo.disconnect();
+							resolve();
+
+						}
+
+					} );
+					mo.observe( html, { attributes: true, attributeFilter: [ 'class' ] } );
+
+				} );
+
+			}
+
+			function dismissNavStartupChoice() {
+
+				if ( navStartupOverlay ) {
+
+					navStartupOverlay.classList.remove( 'nav-startup-overlay--open' );
+					navStartupOverlay.setAttribute( 'aria-hidden', 'true' );
+
+				}
+
+			}
+
+			function showNavStartupChoiceIfNeeded() {
+
+				if ( !navStartupOverlay || !navStartupBtnFree || !navStartupBtnGuided ) return;
+				if ( activeMap !== 'main' ) return;
+
+				navStartupBtnGuided.disabled = !mainFlythroughState;
+				navStartupOverlay.classList.add( 'nav-startup-overlay--open' );
+				navStartupOverlay.setAttribute( 'aria-hidden', 'false' );
+
+			}
+
+			if ( navStartupBtnFree ) {
+
+				navStartupBtnFree.addEventListener( 'click', () => {
+
+					if ( flythroughActive ) exitFlythrough();
+					dismissNavStartupChoice();
+
+				} );
+
+			}
+
+			if ( navStartupBtnGuided ) {
+
+				navStartupBtnGuided.addEventListener( 'click', () => {
+
+					if ( mainFlythroughState && !flythroughActive ) enterFlythrough();
+					dismissNavStartupChoice();
+
+				} );
+
+			}
+
+			Promise.all( [ flythroughLoadPromise.catch( () => {} ), waitForHtmlPageLoadedClass() ] ).then( () => {
+
+				showNavStartupChoiceIfNeeded();
+
+			} );
+
 			const PHYSICS_TIMESTEP = 1/60;
-			const SPAWN_POSITION = { x: 1.74, y: 1.95, z: 93.46 };
+			const SPAWN_POSITION = { x: 2.90, y: 1.65, z: 81.38 };
 			const PLAYER_HEIGHT = 1.8;
 			const PLAYER_RADIUS = 0.4;
 			const PLAYER_EYE_HEIGHT = 1.6;
@@ -2171,6 +2899,15 @@
 						}
 					}
 				}
+				if ( activeMap === 'theater' && !isTheaterVideoFullscreen() ) {
+					const canTheaterPick = document.pointerLockElement === document.body || ( navigator.maxTouchPoints > 0 || 'ontouchstart' in window );
+					if ( canTheaterPick && raycastTheaterReturnCenterHit() ) {
+						exitTheaterToMain();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+						e.preventDefault();
+						return;
+					}
+				}
 				if ( activeMap === 'theater' && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
 					enterTheaterVideoFullscreen();
 					e.preventDefault();
@@ -2286,6 +3023,17 @@
 							touchState.active = touchState.isHolding = mobileMovingForward = false;
 							return;
 						}
+					}
+				}
+				if ( activeMap === 'theater' && !isTheaterVideoFullscreen() && e.changedTouches.length === 1 ) {
+					const tt = e.changedTouches[ 0 ];
+					const distT = Math.hypot( tt.clientX - touchState.startX, tt.clientY - touchState.startY );
+					const dtT = performance.now() - touchState.touchStartTime;
+					if ( distT < 24 && dtT < 450 && raycastTheaterReturnCenterHit() ) {
+						exitTheaterToMain();
+						mapTeleportCooldownUntil = performance.now() + 1600;
+						touchState.active = touchState.isHolding = mobileMovingForward = false;
+						return;
 					}
 				}
 				if ( activeMap === 'theater' && e.changedTouches.length === 1 && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
@@ -2488,6 +3236,7 @@
 			/** While in theater: bloom is off so the screen has no bloom halo (UnrealBloomPass is scene-wide). */
 			let theaterSavedBloomEnabled = null;
 			const theaterScreenRaycaster = new THREE.Raycaster();
+			const theaterReturnRaycaster = new THREE.Raycaster();
 			const theaterScreenNdcCenter = new THREE.Vector2( 0, 0 );
 			const _theaterScrVerts = [
 				new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
@@ -2562,6 +3311,18 @@
 			function syncTheaterScreenRaycastMatrices() {
 				camera.updateMatrixWorld( true );
 				if ( theaterMapCache?.screenFront ) theaterMapCache.screenFront.updateMatrixWorld( true );
+			}
+
+			function syncTheaterReturnPickMatrices() {
+				camera.updateMatrixWorld( true );
+				if ( theaterMapCache?.theaterReturnPickGroup ) theaterMapCache.theaterReturnPickGroup.updateMatrixWorld( true );
+			}
+
+			function raycastTheaterReturnCenterHit() {
+				if ( activeMap !== 'theater' || !theaterMapCache?.theaterReturnPickMeshes?.length ) return false;
+				syncTheaterReturnPickMatrices();
+				theaterReturnRaycaster.setFromCamera( theaterScreenNdcCenter, camera );
+				return theaterReturnRaycaster.intersectObjects( theaterMapCache.theaterReturnPickMeshes, false ).length > 0;
 			}
 			const _targetCameraPos = new THREE.Vector3();
 			const _playerCenter = new THREE.Vector3();
@@ -2749,11 +3510,11 @@
 					loadingInfo.innerHTML = originalInfoText;
 					const dc = document.querySelector( '.desktop-controls' );
 					if ( dc && !isMobileDevice ) {
-						dc.textContent = 'Flythrough: scroll or arrow keys; at a branch start, wheel up or ← to tween back to main. At the fork, tap the 3D labels on screen. ';
 					}
 					if ( typeof window.__magnetSchedule3dWorldLoaderDone === 'function' ) window.__magnetSchedule3dWorldLoaderDone();
 					scene.add( gltf.scene );
 					mainMapRoot = gltf.scene;
+					updateTreasureMapNavUi();
 
 					let collisionMesh = null;
 					const collisionNameSet = new Set( [ 'collisionmesh', 'collision', 'collision1' ] );
@@ -2827,7 +3588,6 @@
 					} );
 
 					cameraMode = envSettings.cameraMode;
-					if ( !isMobileDevice ) createGUI();
 					} );
 				},
 				( progress ) => {
@@ -2841,120 +3601,6 @@
 					} );
 				}
 			);
-
-
-
-
-			function createGUI() {
-				const gui = new GUI( { width: 280, title: 'Environment Settings' } );
-				const skyFolder = gui.addFolder( 'Sky & Background' );
-				skyFolder.addColor( envSettings, 'backgroundColor' ).name( 'Background' ).onChange( ( v ) => { scene.background = new THREE.Color( v ); saveSettings(); } );
-
-				const fogFolder = gui.addFolder( 'Fog' );
-				fogFolder.add( envSettings, 'fogEnabled' ).name( 'Enabled' ).onChange( ( v ) => { scene.fog = v ? new THREE.Fog( envSettings.fogColor, envSettings.fogNear, envSettings.fogFar ) : null; saveSettings(); } );
-				fogFolder.addColor( envSettings, 'fogColor' ).name( 'Color' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.color.set( v ); saveSettings(); } );
-				fogFolder.add( envSettings, 'fogNear', 0, 100, 1 ).name( 'Near' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.near = v; saveSettings(); } );
-				fogFolder.add( envSettings, 'fogFar', 10, 500, 1 ).name( 'Far' ).onChange( ( v ) => { if ( scene.fog ) scene.fog.far = v; saveSettings(); } );
-
-				const hemiFolder = gui.addFolder( 'Hemisphere Light' );
-				hemiFolder.addColor( envSettings, 'hemiSkyColor' ).name( 'Sky' ).onChange( ( v ) => { fillLight1.color.set( v ); saveSettings(); } );
-				hemiFolder.addColor( envSettings, 'hemiGroundColor' ).name( 'Ground' ).onChange( ( v ) => { fillLight1.groundColor.set( v ); saveSettings(); } );
-				hemiFolder.add( envSettings, 'hemiIntensity', 0, 5, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { fillLight1.intensity = v; saveSettings(); } );
-
-				const sunFolder = gui.addFolder( 'Sun Light' );
-				sunFolder.addColor( envSettings, 'sunColor' ).name( 'Color' ).onChange( ( v ) => { directionalLight.color.set( v ); saveSettings(); } );
-				sunFolder.add( envSettings, 'sunIntensity', 0, 10, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { directionalLight.intensity = v; saveSettings(); } );
-				sunFolder.add( envSettings, 'sunPosX', -50, 50, 1 ).name( 'X' ).onChange( ( v ) => { directionalLight.position.x = v; saveSettings(); } );
-				sunFolder.add( envSettings, 'sunPosY', 0, 100, 1 ).name( 'Y' ).onChange( ( v ) => { directionalLight.position.y = v; saveSettings(); } );
-				sunFolder.add( envSettings, 'sunPosZ', -50, 50, 1 ).name( 'Z' ).onChange( ( v ) => { directionalLight.position.z = v; saveSettings(); } );
-
-				const ambientFolder = gui.addFolder( 'Ambient Light' );
-				ambientFolder.addColor( envSettings, 'ambientColor' ).name( 'Color' ).onChange( ( v ) => { ambientLight.color.set( v ); saveSettings(); } );
-				ambientFolder.add( envSettings, 'ambientIntensity', 0, 3, 0.1 ).name( 'Intensity' ).onChange( ( v ) => { ambientLight.intensity = v; saveSettings(); } );
-
-				const renderFolder = gui.addFolder( 'Renderer' );
-				renderFolder.add( envSettings, 'toneMapping', Object.keys( toneMappingOptions ) ).name( 'Tone Mapping' ).onChange( ( v ) => { renderer.toneMapping = toneMappingOptions[ v ]; saveSettings(); } );
-				renderFolder.add( envSettings, 'exposure', 0, 3, 0.05 ).name( 'Exposure' ).onChange( ( v ) => { renderer.toneMappingExposure = v; saveSettings(); } );
-
-				const movementFolder = gui.addFolder( 'Movement & Physics' );
-				movementFolder.add( envSettings, 'moveSpeed', 1, 100, 1 ).name( 'Speed' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'acceleration', 10, 500, 10 ).name( 'Acceleration' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'deceleration', 1, 100, 1 ).name( 'Deceleration' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'gravity', 5, 50, 1 ).name( 'Gravity' ).onChange( ( v ) => { world.gravity.set( 0, -v, 0 ); saveSettings(); } );
-				movementFolder.add( envSettings, 'jumpVelocity', 1, 15, 0.5 ).name( 'Jump' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'friction', 0, 1, 0.01 ).name( 'Friction' ).onChange( ( v ) => { playerGroundContact.friction = v; saveSettings(); } );
-				movementFolder.add( envSettings, 'airControl', 0, 1, 0.05 ).name( 'Air Control' ).onChange( saveSettings );
-				movementFolder.add( envSettings, 'playerMass', 1, 100, 1 ).name( 'Mass' ).onChange( ( v ) => { playerBody.mass = v; playerBody.updateMassProperties(); saveSettings(); } );
-				movementFolder.add( envSettings, 'cameraSmoothing', 1, 30, 1 ).name( 'Cam Smoothing' ).onChange( saveSettings );
-
-				const debugFolder = gui.addFolder( 'Debug' );
-				debugFolder.add( envSettings, 'showCollisionWireframe' ).name( 'Collision Wireframe' ).onChange( ( v ) => { if ( collisionWireframe ) collisionWireframe.visible = v; saveSettings(); } );
-				debugFolder.add( envSettings, 'showColliderVisualization' ).name( 'Player Collider' ).onChange( ( v ) => { if ( colliderVisualization ) colliderVisualization.visible = v; saveSettings(); } );
-
-				const cameraFolder = gui.addFolder( 'Camera' );
-				cameraFolder.add( envSettings, 'cameraMode', [ 'firstPerson', 'thirdPerson' ] ).name( 'Mode' ).onChange( ( v ) => { cameraMode = v; saveSettings(); } );
-				cameraFolder.add( envSettings, 'thirdPersonDistance', 2, 15, 0.5 ).name( '3P Distance' ).onChange( saveSettings );
-				cameraFolder.add( envSettings, 'thirdPersonHeight', 0, 5, 0.1 ).name( '3P Height' ).onChange( saveSettings );
-				cameraFolder.add( envSettings, 'thirdPersonAngle', -0.5, 0.5, 0.05 ).name( '3P Angle' ).onChange( saveSettings );
-
-				const waterFolder = gui.addFolder( 'Water' );
-				waterFolder.addColor( waterParams, 'color' ).name( 'Color' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'color' ].value.set( v ); } );
-				waterFolder.add( waterParams, 'scale', 1, 10, 0.5 ).name( 'Scale' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'config' ].value.w = v; } );
-				waterFolder.add( waterParams, 'flowX', -2, 2, 0.1 ).name( 'Flow X' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.x = v; } );
-				waterFolder.add( waterParams, 'flowY', -2, 2, 0.1 ).name( 'Flow Y' ).onChange( ( v ) => { if ( water?.material ) water.material.uniforms[ 'flowDirection' ].value.y = v; } );
-				waterParams.waterHeight = 0;
-				waterFolder.add( waterParams, 'waterHeight', -10, 10, 0.1 ).name( 'Height' ).onChange( ( v ) => { if ( water ) water.position.y = v; } );
-				waterFolder.close();
-
-				const postFolder = gui.addFolder( 'Post-Processing' );
-
-				const bloomFolder = postFolder.addFolder( 'Bloom' );
-				bloomFolder.add( postProcessingSettings, 'bloomEnabled' ).name( 'Enabled' ).onChange( ( v ) => { bloomPass.enabled = v; savePostProcessingSettings(); } );
-				bloomFolder.add( postProcessingSettings, 'bloomStrength', 0, 2, 0.01 ).name( 'Strength' ).onChange( ( v ) => { bloomPass.strength = v; savePostProcessingSettings(); } );
-				bloomFolder.add( postProcessingSettings, 'bloomRadius', 0, 1, 0.01 ).name( 'Radius' ).onChange( ( v ) => { bloomPass.radius = v; savePostProcessingSettings(); } );
-				bloomFolder.add( postProcessingSettings, 'bloomThreshold', 0, 1, 0.01 ).name( 'Threshold' ).onChange( ( v ) => { bloomPass.threshold = v; savePostProcessingSettings(); } );
-
-				const filmFolder = postFolder.addFolder( 'Film Grain' );
-				filmFolder.add( postProcessingSettings, 'filmEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainEnabled' ].value = v; savePostProcessingSettings(); } );
-				filmFolder.add( postProcessingSettings, 'filmNoiseIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { masterPostPass.uniforms[ 'grainIntensity' ].value = v; savePostProcessingSettings(); } );
-
-				const vignetteFolder = postFolder.addFolder( 'Vignette' );
-				vignetteFolder.add( postProcessingSettings, 'vignetteEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteEnabled' ].value = v; savePostProcessingSettings(); } );
-				vignetteFolder.add( postProcessingSettings, 'vignetteOffset', 0.5, 2.0, 0.05 ).name( 'Offset' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteOffset' ].value = v; savePostProcessingSettings(); } );
-				vignetteFolder.add( postProcessingSettings, 'vignetteDarkness', 0.5, 3.0, 0.1 ).name( 'Darkness' ).onChange( ( v ) => { masterPostPass.uniforms[ 'vignetteDarkness' ].value = v; savePostProcessingSettings(); } );
-
-				const tiltShiftFolder = postFolder.addFolder( 'Tilt-Shift' );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftEnabled' ).name( 'Enabled' ).onChange( ( v ) => { masterPostPass.uniforms[ 'tiltShiftEnabled' ].value = v; savePostProcessingSettings(); } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusY', 0, 1, 0.01 ).name( 'Focus Y' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusY' ].value = v; savePostProcessingSettings(); } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftFocusWidth', 0.1, 0.8, 0.01 ).name( 'Width' ).onChange( ( v ) => { masterPostPass.uniforms[ 'focusWidth' ].value = v; savePostProcessingSettings(); } );
-				tiltShiftFolder.add( postProcessingSettings, 'tiltShiftBlurAmount', 0, 6, 0.1 ).name( 'Blur' ).onChange( ( v ) => { masterPostPass.uniforms[ 'blurAmount' ].value = v; savePostProcessingSettings(); } );
-
-				const lutFolder = postFolder.addFolder( 'LUT' );
-				lutFolder.add( postProcessingSettings, 'lutEnabled' ).name( 'Enabled' ).onChange( ( v ) => { if ( lutPass ) lutPass.enabled = v; savePostProcessingSettings(); } );
-				lutFolder.add( postProcessingSettings, 'lutIntensity', 0, 1, 0.01 ).name( 'Intensity' ).onChange( ( v ) => { if ( lutPass ) lutPass.intensity = v; savePostProcessingSettings(); } );
-
-				postFolder.add( { resetPost: () => {
-					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
-					applyPostProcessingSettings();
-					gui.controllersRecursive().forEach( c => c.updateDisplay() );
-					savePostProcessingSettings();
-				} }, 'resetPost' ).name( 'Reset to Defaults' );
-
-				debugFolder.add( { reset: () => {
-					Object.assign( envSettings, defaultEnvSettings );
-					Object.assign( postProcessingSettings, defaultPostProcessingSettings );
-					applySettings();
-					applyPostProcessingSettings();
-					if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
-					if ( colliderVisualization ) colliderVisualization.visible = envSettings.showColliderVisualization;
-					cameraMode = envSettings.cameraMode;
-					gui.controllersRecursive().forEach( c => c.updateDisplay() );
-					saveSettings();
-					savePostProcessingSettings();
-				} }, 'reset' ).name( 'Reset Defaults' );
-
-				[ fogFolder, hemiFolder, sunFolder, ambientFolder, renderFolder, movementFolder, debugFolder, postFolder ].forEach( f => f.close() );
-			}
 
 			function getPlayerEyeHeight() {
 				return PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT;
@@ -3006,7 +3652,7 @@
 
 				/** 3D video screen (VideoTexture + black backing; toneMapped off for stable color through main composer) */
 				const theaterVideo = document.createElement( 'video' );
-				theaterVideo.src = './freecam/theater-screen.mp4';
+				theaterVideo.src = './assets/misc/scored_d1_fruitflies.mov';
 				theaterVideo.crossOrigin = 'anonymous';
 				theaterVideo.loop = true;
 				theaterVideo.muted = true;
@@ -3047,6 +3693,179 @@
 
 				group.add( screenGroup );
 
+				const theaterReturnPickMeshes = [];
+				const theaterReturnPickGroup = new THREE.Group();
+				theaterReturnPickGroup.name = 'TheaterReturnSign';
+				theaterReturnPickGroup.position.set( 0, 2.35, 18.88 );
+				theaterReturnPickGroup.lookAt( 0, 2.35, 8 );
+				group.add( theaterReturnPickGroup );
+				{
+					const pg = theaterReturnPickGroup;
+					const artW = 3.85;
+					const artH = 1.85;
+					let line1 = 'Return';
+					let line2 = 'BACK TO THE Cave';
+					const litPieces = globalThis.LIT_PIECES;
+					if ( Array.isArray( litPieces ) ) {
+						for ( let li = 0; li < litPieces.length; li++ ) {
+							const ep = litPieces[ li ];
+							if ( ep && ep.interaction === 'exitBookstore' ) {
+								line1 = ep.title != null ? String( ep.title ) : line1;
+								const line2Join = [ ep.subtitle, ep.medium ].filter( ( x ) => x != null && String( x ).trim() !== '' ).map( ( x ) => String( x ) ).join( ' ' );
+								line2 = line2Join || line2;
+								break;
+							}
+						}
+					}
+					const frameT = 0.18;
+					const backGeo = new THREE.PlaneGeometry( artW + 0.3, artH + 0.3 );
+					const backMat = new THREE.MeshStandardMaterial( { color: 0x100d0b, roughness: 0.98 } );
+					const back = new THREE.Mesh( backGeo, backMat );
+					back.position.z = -0.055;
+					pg.add( back );
+
+					const artGeo = new THREE.PlaneGeometry( artW, artH );
+					const artMat = new THREE.MeshBasicMaterial( {
+						color: 0xffffff, transparent: true, opacity: 0, toneMapped: false, depthWrite: false
+					} );
+					const art = new THREE.Mesh( artGeo, artMat );
+					art.position.z = 0.02;
+					pg.add( art );
+
+					const fontRef = flythroughChoiceFontRef;
+					if ( fontRef ) {
+						const glowMat = new THREE.MeshBasicMaterial( {
+							color: 0xffb24a, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
+							toneMapped: false, depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending
+						} );
+						const textMat = new THREE.MeshBasicMaterial( {
+							color: 0xfffef5, transparent: true, opacity: 1, side: THREE.DoubleSide,
+							toneMapped: false, depthTest: true, depthWrite: true
+						} );
+						const titleParams = { font: fontRef, size: 0.38, height: 0.06, curveSegments: 10, bevelEnabled: false };
+						const subParams = { font: fontRef, size: 0.165, height: 0.03, curveSegments: 10, bevelEnabled: false };
+						const g1 = new TextGeometry( line1, titleParams );
+						g1.computeBoundingBox();
+						g1.center();
+						const g2 = new TextGeometry( line2, subParams );
+						g2.computeBoundingBox();
+						g2.center();
+						const bb1 = g1.boundingBox;
+						const bb2 = g2.boundingBox;
+						const h1 = bb1.max.y - bb1.min.y;
+						const h2 = bb2.max.y - bb2.min.y;
+						const gap = 0.12;
+						const totalH = h1 + gap + h2;
+						const yTitle = totalH * 0.5 - h1 * 0.5;
+						const ySub = -totalH * 0.5 + h2 * 0.5;
+						const zText = 0.045;
+						const g1g = g1.clone();
+						const glow1 = new THREE.Mesh( g1g, glowMat );
+						glow1.scale.setScalar( 1.06 );
+						glow1.position.set( 0, yTitle, zText - 0.02 );
+						glow1.renderOrder = 2;
+						pg.add( glow1 );
+						const fill1 = new THREE.Mesh( g1, textMat );
+						fill1.position.set( 0, yTitle, zText );
+						fill1.renderOrder = 3;
+						pg.add( fill1 );
+						const g2g = g2.clone();
+						const glow2 = new THREE.Mesh( g2g, glowMat );
+						glow2.scale.setScalar( 1.06 );
+						glow2.position.set( 0, ySub, zText - 0.02 );
+						glow2.renderOrder = 2;
+						pg.add( glow2 );
+						const fill2 = new THREE.Mesh( g2, textMat );
+						fill2.position.set( 0, ySub, zText );
+						fill2.renderOrder = 3;
+						pg.add( fill2 );
+					} else {
+						const c = document.createElement( 'canvas' );
+						c.width = 1024;
+						c.height = 512;
+						const ctx = c.getContext( '2d' );
+						const cw = c.width;
+						const ch = c.height;
+						ctx.fillStyle = '#1a1008';
+						ctx.fillRect( 0, 0, cw, ch );
+						ctx.strokeStyle = '#d4a574';
+						ctx.lineWidth = 10;
+						ctx.strokeRect( 24, 24, cw - 48, ch - 48 );
+						ctx.fillStyle = '#fffef5';
+						ctx.textAlign = 'center';
+						ctx.textBaseline = 'middle';
+						ctx.font = 'bold 86px Arial, Helvetica, sans-serif';
+						ctx.fillText( line1, cw / 2, ch * 0.38 );
+						ctx.font = '500 52px Arial, Helvetica, sans-serif';
+						ctx.fillStyle = '#ffe8c8';
+						ctx.fillText( line2, cw / 2, ch * 0.62 );
+						const signTex = new THREE.CanvasTexture( c );
+						signTex.colorSpace = THREE.SRGBColorSpace;
+						signTex.needsUpdate = true;
+						artMat.opacity = 1;
+						artMat.depthWrite = true;
+						artMat.map = signTex;
+						artMat.needsUpdate = true;
+					}
+
+					const frameMat = new THREE.MeshStandardMaterial( {
+						color: 0xd4af37, metalness: 0.52, roughness: 0.4,
+						emissive: new THREE.Color( 0x553311 ), emissiveIntensity: 0.11, toneMapped: true
+					} );
+					const frameBars = [];
+					function addFrameBar( sx, sy, sz, px, py, pz ) {
+						const geo = new THREE.BoxGeometry( sx, sy, sz );
+						const mesh = new THREE.Mesh( geo, frameMat );
+						mesh.position.set( px, py, pz );
+						pg.add( mesh );
+						frameBars.push( mesh );
+					}
+					const fw = artW + frameT * 2;
+					const fh = artH + frameT * 2;
+					addFrameBar( fw, frameT, frameT * 1.2, 0, fh / 2 + frameT / 2, 0.035 );
+					addFrameBar( fw, frameT, frameT * 1.2, 0, -fh / 2 - frameT / 2, 0.035 );
+					addFrameBar( frameT, fh, frameT * 1.2, fw / 2 + frameT / 2, 0, 0.035 );
+					addFrameBar( frameT, fh, frameT * 1.2, -fw / 2 - frameT / 2, 0, 0.035 );
+
+					const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+					const rimMat = new THREE.LineBasicMaterial( {
+						color: 0x7a9ec8, transparent: true, opacity: 0.56, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const rimLine = new THREE.LineSegments( rimEdges, rimMat );
+					rimLine.position.z = 0.07;
+					rimLine.renderOrder = 2;
+					pg.add( rimLine );
+
+					const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+					const outerRimMat = new THREE.LineBasicMaterial( {
+						color: 0x5a7aa8, transparent: true, opacity: 0.44, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
+					outerRimLine.position.z = 0.068;
+					outerRimLine.renderOrder = 1;
+					pg.add( outerRimLine );
+
+					const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+					const hoverEdgeMat = new THREE.LineBasicMaterial( {
+						color: 0xa8c8e8, transparent: true, opacity: 0.34, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
+					hoverEdgeLine.position.z = 0.082;
+					hoverEdgeLine.renderOrder = 3;
+					pg.add( hoverEdgeLine );
+
+					const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
+					const pickMat = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0, depthWrite: false } );
+					const pick = new THREE.Mesh( pickGeo, pickMat );
+					pick.position.z = 0.09;
+					pick.userData.kind = 'theaterReturn';
+					pg.add( pick );
+					theaterReturnPickMeshes.push( pick );
+				}
+
 				const bodies = [];
 				const floorShape = new CANNON.Box( new CANNON.Vec3( 22, 0.08, 24 ) );
 				const floorBody = new CANNON.Body( { mass: 0, material: groundMaterial } );
@@ -3081,7 +3900,9 @@
 					godRayScreenMesh: screenFront,
 					screenFront,
 					screenHalfW: screenW * 0.5,
-					screenHalfH: screenH * 0.5
+					screenHalfH: screenH * 0.5,
+					theaterReturnPickMeshes,
+					theaterReturnPickGroup
 				};
 			}
 
@@ -3138,7 +3959,14 @@
 					if ( !row ) return;
 					row.traverse( ( o ) => {
 						if ( o.geometry ) o.geometry.dispose();
-						if ( o.material ) o.material.dispose();
+						if ( o.material ) {
+							const m = o.material;
+							if ( m.map ) {
+								m.map.dispose();
+								m.map = null;
+							}
+							m.dispose();
+						}
 					} );
 				}
 
@@ -3397,24 +4225,24 @@
 					addFrameBar( ft, fh, ft * 1.2, fw / 2 + ft / 2, 0, 0.035 );
 					addFrameBar( ft, fh, ft * 1.2, -fw / 2 - ft / 2, 0, 0.035 );
 					if ( parts.captionRow ) {
-						const fontR = flythroughChoiceFontRef;
 						disposeShipLitCaptionRow( parts.captionRow );
 						parts.panelGroup.remove( parts.captionRow );
 						parts.captionRow = null;
-						if ( fontR ) {
-							const capW = Math.min( 6.35, fw * 0.98 );
-							const row = buildShipLitCaptionRowGroup(
-								fontR,
-								parts.captionTitle != null ? parts.captionTitle : '',
-								parts.captionAuthor != null ? parts.captionAuthor : '',
-								capW
-							);
-							if ( row ) {
-								const bh = row.userData.shipCaptionBlockH || 0.48;
-								row.position.set( 0, -fh * 0.5 - ft - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
-								parts.panelGroup.add( row );
-								parts.captionRow = row;
-							}
+						const capW = Math.min( 6.35, fw * 0.98 );
+						const ct = parts.captionTitle != null ? parts.captionTitle : '';
+						const ca = parts.captionAuthor != null ? parts.captionAuthor : '';
+						const fontR = flythroughChoiceFontRef;
+						let row = null;
+						if ( shipLitCaptionNeedsCanvasTexture( ct, ca ) ) {
+							row = buildShipLitCaptionRowCanvasGroup( ct, ca, capW );
+						} else if ( fontR ) {
+							row = buildShipLitCaptionRowGroup( fontR, ct, ca, capW );
+						}
+						if ( row ) {
+							const bh = row.userData.shipCaptionBlockH || 0.48;
+							row.position.set( 0, -fh * 0.5 - ft - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+							parts.panelGroup.add( row );
+							parts.captionRow = row;
 						}
 					}
 				}
@@ -3699,15 +4527,16 @@
 					const captionTitle = capPiece?.title != null ? String( capPiece.title ) : '';
 					const captionAuthor = capPiece?.author != null ? String( capPiece.author ) : '';
 					let captionRow = null;
-					const capFont = flythroughChoiceFontRef;
-					if ( capFont ) {
-						const capTargetW = Math.min( 6.35, fw * 0.98 );
-						captionRow = buildShipLitCaptionRowGroup( capFont, captionTitle, captionAuthor, capTargetW );
-						if ( captionRow ) {
-							const bh = captionRow.userData.shipCaptionBlockH || 0.48;
-							captionRow.position.set( 0, -fh * 0.5 - frameT - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
-							pg.add( captionRow );
-						}
+					const capTargetW = Math.min( 6.35, fw * 0.98 );
+					if ( shipLitCaptionNeedsCanvasTexture( captionTitle, captionAuthor ) ) {
+						captionRow = buildShipLitCaptionRowCanvasGroup( captionTitle, captionAuthor, capTargetW );
+					} else if ( flythroughChoiceFontRef ) {
+						captionRow = buildShipLitCaptionRowGroup( flythroughChoiceFontRef, captionTitle, captionAuthor, capTargetW );
+					}
+					if ( captionRow ) {
+						const bh = captionRow.userData.shipCaptionBlockH || 0.48;
+						captionRow.position.set( 0, -fh * 0.5 - frameT - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+						pg.add( captionRow );
 					}
 
 					const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
@@ -4078,7 +4907,14 @@
 					if ( !row ) return;
 					row.traverse( ( o ) => {
 						if ( o.geometry ) o.geometry.dispose();
-						if ( o.material ) o.material.dispose();
+						if ( o.material ) {
+							const m = o.material;
+							if ( m.map ) {
+								m.map.dispose();
+								m.map = null;
+							}
+							m.dispose();
+						}
 					} );
 				}
 
@@ -4337,24 +5173,24 @@
 					addFrameBar( ft, fh, ft * 1.2, fw / 2 + ft / 2, 0, 0.035 );
 					addFrameBar( ft, fh, ft * 1.2, -fw / 2 - ft / 2, 0, 0.035 );
 					if ( parts.captionRow ) {
-						const fontR = flythroughChoiceFontRef;
 						disposeShipLitCaptionRow( parts.captionRow );
 						parts.panelGroup.remove( parts.captionRow );
 						parts.captionRow = null;
-						if ( fontR ) {
-							const capW = Math.min( 6.35, fw * 0.98 );
-							const row = buildShipLitCaptionRowGroup(
-								fontR,
-								parts.captionTitle != null ? parts.captionTitle : '',
-								parts.captionArtist != null ? parts.captionArtist : '',
-								capW
-							);
-							if ( row ) {
-								const bh = row.userData.shipCaptionBlockH || 0.48;
-								row.position.set( 0, -fh * 0.5 - ft - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
-								parts.panelGroup.add( row );
-								parts.captionRow = row;
-							}
+						const capW = Math.min( 6.35, fw * 0.98 );
+						const ct = parts.captionTitle != null ? parts.captionTitle : '';
+						const ca = parts.captionArtist != null ? parts.captionArtist : '';
+						const fontR = flythroughChoiceFontRef;
+						let row = null;
+						if ( shipLitCaptionNeedsCanvasTexture( ct, ca ) ) {
+							row = buildShipLitCaptionRowCanvasGroup( ct, ca, capW );
+						} else if ( fontR ) {
+							row = buildShipLitCaptionRowGroup( fontR, ct, ca, capW );
+						}
+						if ( row ) {
+							const bh = row.userData.shipCaptionBlockH || 0.48;
+							row.position.set( 0, -fh * 0.5 - ft - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+							parts.panelGroup.add( row );
+							parts.captionRow = row;
 						}
 					}
 				}
@@ -4638,15 +5474,16 @@
 					const captionTitle = capPiece?.title != null ? String( capPiece.title ) : '';
 					const captionArtist = capPiece?.artist != null ? String( capPiece.artist ) : '';
 					let captionRow = null;
-					const capFont = flythroughChoiceFontRef;
-					if ( capFont ) {
-						const capTargetW = Math.min( 6.35, fw * 0.98 );
-						captionRow = buildShipLitCaptionRowGroup( capFont, captionTitle, captionArtist, capTargetW );
-						if ( captionRow ) {
-							const bh = captionRow.userData.shipCaptionBlockH || 0.48;
-							captionRow.position.set( 0, -fh * 0.5 - frameT - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
-							pg.add( captionRow );
-						}
+					const capTargetW = Math.min( 6.35, fw * 0.98 );
+					if ( shipLitCaptionNeedsCanvasTexture( captionTitle, captionArtist ) ) {
+						captionRow = buildShipLitCaptionRowCanvasGroup( captionTitle, captionArtist, capTargetW );
+					} else if ( flythroughChoiceFontRef ) {
+						captionRow = buildShipLitCaptionRowGroup( flythroughChoiceFontRef, captionTitle, captionArtist, capTargetW );
+					}
+					if ( captionRow ) {
+						const bh = captionRow.userData.shipCaptionBlockH || 0.48;
+						captionRow.position.set( 0, -fh * 0.5 - frameT - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+						pg.add( captionRow );
 					}
 
 					const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
@@ -5171,7 +6008,10 @@
 					directionalLight.intensity = Math.max( 1.05, Math.min( 2.6, directionalLight.intensity * 0.92 + 0.55 ) );
 					ambientLight.intensity = Math.max( 0.55, ambientLight.intensity + 0.32 );
 					window.requestAnimationFrame( () => {
-						window.requestAnimationFrame( () => { hideShipEntryLoader(); } );
+						window.requestAnimationFrame( () => {
+							hideShipEntryLoader();
+							updateTreasureMapNavUi();
+						} );
 					} );
 				} ).catch( () => {
 					hideShipEntryLoader();
@@ -5188,14 +6028,8 @@
 				if ( activeMap !== 'bookstore' || !mainMapRoot ) return;
 				closeBookLitModal();
 				restoreMainWorldFromInterior( getBookstoreMap() );
-				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
-				playerBody.velocity.set( 0, 0, 0 );
-				const eyeH = getPlayerEyeHeight();
-				smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
-				camera.rotation.order = 'YXZ';
-				camera.rotation.x = 0;
-				camera.rotation.y = 0;
 				applySettings();
+				activateMainFlythroughAtPathEnd();
 			}
 
 			let bookstoreEntryLoadInProgress = false;
@@ -5250,7 +6084,10 @@
 					directionalLight.intensity = Math.max( 1.5, Math.min( 3.5, directionalLight.intensity + 1.0 ) );
 					ambientLight.intensity = Math.max( 0.92, ambientLight.intensity + 0.55 );
 					window.requestAnimationFrame( () => {
-						window.requestAnimationFrame( () => { hideShipEntryLoader(); } );
+						window.requestAnimationFrame( () => {
+							hideShipEntryLoader();
+							updateTreasureMapNavUi();
+						} );
 					} );
 				} ).catch( () => {
 					hideShipEntryLoader();
@@ -5267,14 +6104,8 @@
 				if ( activeMap !== 'ship' || !mainMapRoot ) return;
 				closeShipLitModal();
 				restoreMainWorldFromInterior( getShipMap() );
-				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
-				playerBody.velocity.set( 0, 0, 0 );
-				const eyeH = getPlayerEyeHeight();
-				smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
-				camera.rotation.order = 'YXZ';
-				camera.rotation.x = 0;
-				camera.rotation.y = 0;
 				applySettings();
+				activateMainFlythroughAtPathEnd();
 			}
 
 			function theaterRaycastHitsScreen() {
@@ -5517,6 +6348,7 @@
 				if ( t.videoEl ) {
 					t.videoEl.play().catch( () => {} );
 				}
+				updateTreasureMapNavUi();
 			}
 
 			function exitTheaterToMain() {
@@ -5536,13 +6368,6 @@
 				if ( collisionWireframe ) collisionWireframe.visible = envSettings.showCollisionWireframe;
 				if ( water ) water.visible = true;
 
-				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
-				playerBody.velocity.set( 0, 0, 0 );
-				const eyeH = getPlayerEyeHeight();
-				smoothedCameraPos.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y + eyeH, MAIN_RETURN_POS.z );
-				camera.rotation.order = 'YXZ';
-				camera.rotation.x = 0;
-				camera.rotation.y = 0;
 				if ( theaterSavedBloomEnabled !== null ) {
 					bloomPass.enabled = theaterSavedBloomEnabled;
 					theaterSavedBloomEnabled = null;
@@ -5550,6 +6375,7 @@
 				theaterGodRaysPass.uniforms.strength.value = 0;
 				theaterGodRaysPass.uniforms.exposure.value = 0.52;
 				applySettings();
+				activateMainFlythroughAtPathEnd();
 
 				if ( t.videoEl ) {
 					t.videoEl.muted = true;
@@ -5557,7 +6383,134 @@
 				}
 				restoreTheaterVideoDomPeek();
 				if ( theaterHoverOverlay ) theaterHoverOverlay.style.display = 'none';
+				updateTreasureMapNavUi();
 			}
+
+			function teleportMiniNavExitFlythroughIfNeeded() {
+				if ( flythroughActive ) exitFlythrough();
+			}
+
+			/**
+			 * Menu: Guided path. If we are inside theater / bookstore / ship, entering flythrough
+			 * would sample the main path while the interior scene is still active — fix by exiting
+			 * to the main world on the main path end (same as interior exits), not enterFlythrough() from t=0.
+			 */
+			function enterGuidedFlythroughFromNav() {
+				if ( !mainFlythroughState || !mainMapRoot ) return;
+				if ( isInteriorMap() ) {
+					teleportMiniNavExitFlythroughIfNeeded();
+					mapTeleportCooldownUntil = performance.now() + 1600;
+					if ( activeMap === 'theater' ) exitTheaterToMain();
+					else if ( activeMap === 'bookstore' ) exitBookstoreToMain();
+					else if ( activeMap === 'ship' ) exitShipToMain();
+					return;
+				}
+				if ( !flythroughActive ) enterFlythrough();
+			}
+
+			function teleportMiniNavToMainWorld() {
+				if ( !mainMapRoot ) return;
+				teleportMiniNavExitFlythroughIfNeeded();
+				mapTeleportCooldownUntil = performance.now() + 1600;
+				if ( activeMap === 'theater' ) exitTheaterToMain();
+				else if ( activeMap === 'bookstore' ) exitBookstoreToMain();
+				else if ( activeMap === 'ship' ) exitShipToMain();
+			}
+
+			function teleportMiniNavToTheater() {
+				if ( !mainMapRoot ) return;
+				teleportMiniNavExitFlythroughIfNeeded();
+				mapTeleportCooldownUntil = performance.now() + 1600;
+				if ( activeMap === 'theater' ) return;
+				if ( activeMap === 'bookstore' ) exitBookstoreToMain();
+				else if ( activeMap === 'ship' ) exitShipToMain();
+				enterTheaterMap();
+			}
+
+			function teleportMiniNavToBookstore() {
+				if ( !mainMapRoot ) return;
+				teleportMiniNavExitFlythroughIfNeeded();
+				mapTeleportCooldownUntil = performance.now() + 1600;
+				if ( activeMap === 'bookstore' ) return;
+				if ( activeMap === 'theater' ) exitTheaterToMain();
+				else if ( activeMap === 'ship' ) exitShipToMain();
+				enterBookstoreMap( false );
+			}
+
+			function teleportMiniNavToShip() {
+				if ( !mainMapRoot ) return;
+				teleportMiniNavExitFlythroughIfNeeded();
+				mapTeleportCooldownUntil = performance.now() + 1600;
+				if ( activeMap === 'ship' ) return;
+				if ( activeMap === 'theater' ) exitTheaterToMain();
+				else if ( activeMap === 'bookstore' ) exitBookstoreToMain();
+				enterShipMap( false );
+			}
+
+			function bindTreasureMapNavigation() {
+				const root = document.getElementById( 'treasure-map-nav' );
+				const toggle = document.getElementById( 'treasure-map-nav-toggle' );
+				const panel = document.getElementById( 'treasure-map-nav-panel' );
+				const modeFree = document.getElementById( 'treasure-map-mode-free' );
+				const modeGuided = document.getElementById( 'treasure-map-mode-guided' );
+				const goIsland = document.getElementById( 'treasure-map-go-island' );
+				const goTheater = document.getElementById( 'treasure-map-go-theater' );
+				const goBook = document.getElementById( 'treasure-map-go-bookstore' );
+				const goShip = document.getElementById( 'treasure-map-go-ship' );
+				if ( !root || !toggle || !panel ) return;
+
+				function setTreasureMapPanelOpen( open ) {
+					panel.hidden = !open;
+					toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+					if ( open ) updateTreasureMapNavUi();
+				}
+
+				toggle.addEventListener( 'click', ( e ) => {
+					e.stopPropagation();
+					setTreasureMapPanelOpen( panel.hidden );
+				} );
+
+				if ( modeFree ) {
+					modeFree.addEventListener( 'click', () => {
+						if ( flythroughActive ) exitFlythrough();
+						updateTreasureMapNavUi();
+					} );
+				}
+				if ( modeGuided ) {
+					modeGuided.addEventListener( 'click', () => {
+						enterGuidedFlythroughFromNav();
+						updateTreasureMapNavUi();
+					} );
+				}
+
+				function wireGo( el, fn ) {
+					if ( !el ) return;
+					el.addEventListener( 'click', () => {
+						fn();
+						setTreasureMapPanelOpen( false );
+						updateTreasureMapNavUi();
+					} );
+				}
+				wireGo( goIsland, teleportMiniNavToMainWorld );
+				wireGo( goTheater, teleportMiniNavToTheater );
+				wireGo( goBook, teleportMiniNavToBookstore );
+				wireGo( goShip, teleportMiniNavToShip );
+
+				document.addEventListener( 'pointerdown', ( e ) => {
+					if ( panel.hidden ) return;
+					if ( root.contains( e.target ) ) return;
+					setTreasureMapPanelOpen( false );
+				}, true );
+
+				document.addEventListener( 'keydown', ( e ) => {
+					if ( e.key !== 'Escape' || panel.hidden ) return;
+					setTreasureMapPanelOpen( false );
+				} );
+
+				updateTreasureMapNavUi();
+			}
+
+			bindTreasureMapNavigation();
 
 			function checkTheaterPortals() {
 				if ( performance.now() < mapTeleportCooldownUntil ) return;

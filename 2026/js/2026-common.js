@@ -48,12 +48,21 @@ function resolveEditionAsset(rel) {
   }
 }
 
+/** Literature rows used on the edition site (index): exclude 3D-only interaction stubs (e.g. bookstore exit). */
+function getLitPiecesForEditionPage() {
+  if (typeof LIT_PIECES === 'undefined' || !Array.isArray(LIT_PIECES)) return null;
+  const filtered = LIT_PIECES.filter((p) => !p.interaction);
+  return filtered.length ? filtered : null;
+}
+
 // ───────────────────────────────────────────────────────
 //  RENDER — LITERATURE
 // ───────────────────────────────────────────────────────
 (function renderLiterature() {
   const list = document.getElementById('litList');
   if (!list) return;
+  const litPool = getLitPiecesForEditionPage();
+  if (!litPool) return;
   const fallbackDoodles = [
     // simple ink-style placeholder doodles used when a piece has no `doodle` set
     `<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 90 C 30 60, 60 40, 90 30"/><path d="M30 95 C 45 75, 70 60, 100 55"/><circle cx="92" cy="32" r="3"/><path d="M16 100 L 104 100"/></svg>`,
@@ -63,8 +72,7 @@ function resolveEditionAsset(rel) {
     `<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 60 Q 60 20 100 60 Q 60 100 20 60 Z"/><circle cx="60" cy="60" r="8"/></svg>`
   ];
 
-  if (typeof LIT_PIECES === 'undefined' || !Array.isArray(LIT_PIECES)) return;
-    list.innerHTML = LIT_PIECES.map((p, i) => {
+    list.innerHTML = litPool.map((p, i) => {
     const num = String(i + 1).padStart(2, '0');
     const kind = p.kind && p.kind.toLowerCase() !== 'literature' ? p.kind : 'Piece';
     const role = p.author_role ? `<span class="lit-author-dot" aria-hidden="true"></span><span>${escapeHTML(p.author_role)}</span>` : '';
@@ -99,29 +107,46 @@ function resolveEditionAsset(rel) {
   const grid = document.getElementById('filmGrid');
   if (!grid) return;
   if (typeof FILM_PIECES === 'undefined' || !Array.isArray(FILM_PIECES)) return;
-    grid.innerHTML = FILM_PIECES.map((f, i) => `
-    <article class="film-card reveal" role="button" tabindex="0" data-type="film" data-index="${i}" aria-label="Watch ${escapeAttr(f.title)}">
-      <div class="film-thumb">
-        <div class="film-thumb-label">
-          <div class="film-thumb-label-kicker">${escapeHTML(f.kicker)} · ${escapeHTML(f.duration)}</div>
-          <div class="film-thumb-label-title">${escapeHTML(f.title)}</div>
-        </div>
-        <div class="film-play" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        </div>
+  grid.innerHTML = FILM_PIECES.map((f) => {
+    const posterAttr = f.poster ? ` poster="${escapeAttr(f.poster)}"` : '';
+    const posterSource = f.poster
+      ? `<source src="${escapeAttr(f.poster)}" type="video/webm" />`
+      : '';
+    const crewHtml = (f.crew || []).map(c => `
+      <div class="film-panel-credit"><span class="film-panel-credit-role">${escapeHTML(c.role)}</span><strong>${escapeHTML(c.name)}</strong></div>
+    `).join('');
+    const creditsHtml = crewHtml.trim()
+      ? `<div class="film-panel-credits">${crewHtml}</div>`
+      : '';
+    const descHtml = (f.desc && String(f.desc).trim())
+      ? `<p class="film-panel-desc">${escapeHTML(f.desc)}</p>`
+      : '';
+    const metaBits = [ f.kicker, f.duration, f.genre ].filter((x) => x != null && String(x).trim() !== '');
+    const metaHtml = metaBits.length
+      ? `<p class="film-panel-meta">${metaBits.map((x) => escapeHTML(String(x))).join(' · ')}</p>`
+      : '';
+    return `
+    <article class="film-panel reveal">
+      <h2 class="film-panel-title">${escapeHTML(f.title)}</h2>
+      <div class="video-wrapper">
+        <video controls${posterAttr}>
+          ${posterSource}
+          <source src="${escapeAttr(f.video)}" type="video/mp4" />
+        </video>
       </div>
-      <div class="film-body">
-        <div class="film-meta">
-          <span>${escapeHTML(f.duration)}</span>
-          <span class="film-meta-dot" aria-hidden="true"></span>
-          <span>${escapeHTML(f.genre)}</span>
-        </div>
-        <h3 class="film-title">${escapeHTML(f.title)}</h3>
-        <p class="film-desc">${escapeHTML(f.desc)}</p>
-        <p class="film-credit"><strong>Directed by ${escapeHTML(f.director)}</strong>${f.crew && f.crew[0] ? ' · ' + escapeHTML(f.crew[0].role) + ' ' + escapeHTML(f.crew[0].name) : ''}</p>
-      </div>
-    </article>
-  `).join('');
+      ${metaHtml}
+      ${descHtml}
+      ${creditsHtml}
+    </article>`;
+  }).join('');
+
+  grid.querySelectorAll('video').forEach((video) => {
+    video.addEventListener('error', () => {
+      const wrap = video.closest('.video-wrapper');
+      if (wrap && wrap.querySelector('.film-panel-error')) return;
+      video.insertAdjacentHTML('afterend', '<p class="film-panel-error" role="alert">Video could not be loaded. Check the file path in FILM_PIECES.</p>');
+    }, { once: true });
+  });
 })();
 
 // ───────────────────────────────────────────────────────
@@ -218,8 +243,7 @@ function escapeAttr(str) { return escapeHTML(str); }
   if (!lightbox || !content) return;
 
   const POOLS = {
-    lit:  typeof LIT_PIECES  !== 'undefined' ? LIT_PIECES  : null,
-    film: typeof FILM_PIECES !== 'undefined' ? FILM_PIECES : null,
+    lit:  getLitPiecesForEditionPage(),
     art:  typeof ART_PIECES  !== 'undefined' ? ART_PIECES  : null,
   };
   let currentType = null;
@@ -273,22 +297,8 @@ function escapeAttr(str) { return escapeHTML(str); }
     content.innerHTML = '';
     let html = '';
     if (type === 'lit') html = renderLitModal(piece);
-    else if (type === 'film') html = renderFilmModal(piece);
     else if (type === 'art') html = renderArtModal(piece);
     content.innerHTML = html;
-
-    // Attempt to play film automatically once the user clicks play
-    if (type === 'film') {
-      const wrap = content.querySelector('.lb-film');
-      const video = content.querySelector('video');
-      if (wrap && video) {
-        video.addEventListener('play', () => wrap.classList.add('is-playing'));
-        video.addEventListener('error', () => {
-          const note = content.querySelector('.lb-film-placeholder-note');
-          if (note) note.textContent = 'Placeholder video · replace src in FILM_PIECES';
-        });
-      }
-    }
   }
 
   /** Join soft line wraps in prose (e.g. column breaks); hyphen at line end joins without hyphen. */
@@ -370,45 +380,6 @@ function escapeAttr(str) { return escapeHTML(str); }
         </header>
         <div class="lb-lit-body ${isPoem ? 'lb-lit-body--poem' : ''}">${bodyHtml}</div>
         <div class="lb-lit-end">◆ ◆ ◆</div>
-      </div>
-    `;
-  }
-
-  function renderFilmModal(f) {
-    const crew = (f.crew || []).map(c => `
-      <div class="lb-film-credit-item">${escapeHTML(c.role)}<strong>${escapeHTML(c.name)}</strong></div>
-    `).join('');
-    return `
-      <div class="lb-film">
-        <div class="lb-film-video">
-          <div class="lb-film-placeholder">
-            <div class="lb-film-placeholder-kicker">${escapeHTML(f.kicker)} · ${escapeHTML(f.duration)}</div>
-            <div class="lb-film-placeholder-title">${escapeHTML(f.title)}</div>
-            <div class="lb-film-placeholder-note">Press play · placeholder clip</div>
-          </div>
-          <video
-            controls
-            preload="metadata"
-            playsinline
-            src="${escapeAttr(f.video)}"
-            crossorigin="anonymous"
-          ></video>
-        </div>
-        <div class="lb-film-body">
-          <div class="lb-film-meta">
-            <span>${escapeHTML(f.duration)}</span>
-            <span class="film-meta-dot" aria-hidden="true"></span>
-            <span>${escapeHTML(f.genre)}</span>
-            <span class="film-meta-dot" aria-hidden="true"></span>
-            <span>Directed by ${escapeHTML(f.director)}</span>
-          </div>
-          <h2 class="lb-film-title" id="lightboxTitle">${escapeHTML(f.title)}</h2>
-          <p class="lb-film-desc">${escapeHTML(f.desc)}</p>
-          <div class="lb-film-credits">
-            <div class="lb-film-credit-item">Director<strong>${escapeHTML(f.director)}</strong></div>
-            ${crew}
-          </div>
-        </div>
       </div>
     `;
   }

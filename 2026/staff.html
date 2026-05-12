@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Staff — The Magnet Volume V (2026)</title>
+  <meta name="description" content="Meet the staff and contributors behind The Magnet Volume V, the 2026 Treasure edition." />
+  <link rel="icon" href="./assets/brand/full_color_magnet_logo.png" type="image/png" sizes="any" />
+  <link rel="apple-touch-icon" href="./assets/brand/full_color_magnet_logo.png" />
+  <link rel="stylesheet" href="../magnet-navbar.css" />
+  <link rel="stylesheet" href="css/2026-shared.css" />
+</head>
+<body class="edition-2026">
+  <nav>
+    <a href="./" class="nav-brand">
+      <img class="nav-brand-logo" src="./assets/brand/2026 logo.png" alt="" width="42" height="42" decoding="async" />
+      <span class="nav-brand-name">The Magnet</span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="../index.html">Home</a></li>
+      <li><a href="../index.html#about">About</a></li>
+      <li><a href="../index.html#books">Editions</a></li>
+      <li><a href="./#literature">Literature</a></li>
+      <li><a href="./#art">Art</a></li>
+      <li><a href="./#film">Film</a></li>
+      <li><a href="./staff.html" aria-current="page">Staff</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <main class="staff-page-main">
+    <header class="staff-page-hero">
+      <div class="staff-page-hero-inner reveal">
+        <div>
+          <div class="staff-page-kicker">Volume V · 2026 Edition</div>
+          <h1 class="staff-page-title">Staff</h1>
+          <p class="staff-page-intro">Meet the students and contributors whose writing, art, film, editing, and creative direction made <em>The Magnet</em> possible.</p>
+        </div>
+        <figure class="staff-page-photo">
+          <img src="./assets/brand/StaffPhoto.jpeg" alt="The Magnet 2026 staff group photo" loading="eager" decoding="async" />
+        </figure>
+      </div>
+    </header>
+
+    <section class="staff-list-section" aria-labelledby="staffListTitle">
+      <div class="staff-list-inner">
+        <div class="staff-list-head reveal">
+          <h2 class="staff-list-title" id="staffListTitle">The Students Behind The Magnet</h2>
+        </div>
+
+        <div class="staff-groups" id="staffGroups" aria-live="polite"></div>
+
+        <div class="staff-page-actions reveal">
+          <a class="staff-page-back" href="./#staff">Back</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="contact">
+    <div class="footer-title">The Magnet</div>
+    <p class="footer-desc">A Literary Arts Magazine brought to you by Madison Academic High School's Humanities team. Published annually since 2022.</p>
+    <div class="footer-links">
+      <a class="footer-link" href="https://www.instagram.com/mahs.themagnet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Instagram
+      </a>
+      <a class="footer-link" href="mailto:editors@themagnet.org">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email Us
+      </a>
+      <a class="footer-link" href="./">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+        Back to Edition
+      </a>
+    </div>
+    <div class="footer-divider"></div>
+  </footer>
+
+  <script src="js/2026-literature.js"></script>
+  <script src="js/2026-film.js"></script>
+  <script src="js/2026-art.js"></script>
+  <script>
+    (function () {
+      const target = document.getElementById('staffGroups');
+      if (!target) return;
+
+      /*
+        Add or edit staff members here.
+        Format:
+        {
+          title: 'Group Name',
+          people: [
+            { name: 'Student Name', role: 'Role or Team' },
+            { name: 'Another Student', role: 'Role or Team' }
+          ]
+        }
+      */
+      const STAFF_GROUPS = [
+        {
+          title: 'Executive Team',
+          people: [
+            { name: 'Ali Garner', role: 'Editor-in-Chief' },
+            { name: 'Lilly Chattin', role: ' Literary Director' },
+            { name: 'Peter Snowden', role: 'Art and Film Director' },
+            { name: 'Bryleigh Dill', role: 'Logistics Director' },
+            { name: 'Ansleigh Dill', role: 'Logistics Director' },
+            { name: 'Omar Elsayed', role: 'Tech Director' }] 
+
+            
+
+        },
+        {
+          title: 'Logistics Team',
+          people: [
+          { name: 'Bryleigh Dill', role: 'Executive Leader' },
+          { name: 'Ansleigh Dill', role: 'Executive Leader' },
+
+            { name: 'Amanda Pearson', role: 'Member' },
+            { name: 'Ava Torres', role: ' Member' },
+            { name: 'Ella Stephenson', role: 'Member' },
+            { name: 'Ella Stewart', role: 'Member' },
+            { name: 'Jackson Jones', role: 'Member' },
+            { name: 'Jason Jordan', role: 'Member' },
+            { name: 'Jimmy Gonzalez', role: 'Member' },
+            { name: 'Julia Roberts', role: 'Member' },
+            { name: 'Landon Simmons', role: 'Member' },
+            { name: 'London Johnson', role: 'Member' },
+            { name: 'Maddia Patton', role: 'Member' },
+            { name: 'Makayla Bryson', role: 'Member' },
+            { name: 'Michelle Navarrete', role: 'Member' },
+            { name: 'Noah Svebakken', role: 'Member' },
+            { name: 'Riley Burleson', role: 'Member' },
+            { name: 'Ryan Presson', role: 'Member' },
+            { name: 'Samuel Latham', role: 'Member' },
+            { name: 'Savannah Hinton', role: 'Member' },
+            { name: 'Serentiy Wilkes', role: 'Member' },
+            { name: 'Trinity Robertson', role: 'Member' },
+            { name: 'Zoe Bailey', role: 'Member' }
+          ] 
+        },
+        {
+          title: 'Website Team',
+          people: [
+          { name: 'Omar Elsayed', role: 'Executive Leader' },
+            { name: 'Coby Cheng', role: 'Member' },
+            { name: 'Santiago Aguirre', role: ' Member' },
+            { name: 'Elliot Enyeart', role: 'Member' },
+          ] 
+
+            
+
+        },
+        {
+          title: 'Film Team',
+          people: [
+          { name: 'Peter Snowden', role: 'Director and Animator' },
+            { name: 'Alex Decosta', role: 'Writer' },
+            { name: 'David Scott', role: ' Score Composer' },
+          ] 
+        },
+      ];
+
+     
+      const AUTO_CONTRIBUTOR_GROUPS = [
+        {
+          title: 'Literature Contributors',
+          people: uniquePeople(globalThis.LIT_PIECES, 'author', 'Writer')
+        },
+        {
+          title: 'Art Contributors',
+          people: uniquePeople(globalThis.ART_PIECES, 'artist', 'Artist')
+        },
+      ];
+
+      const groups = [
+        ...STAFF_GROUPS,
+        ...AUTO_CONTRIBUTOR_GROUPS
+      ].filter((group) => group.people.length);
+
+      target.innerHTML = groups.map((group) => `
+        <section class="staff-group reveal">
+          <h3 class="staff-group-title">${escapeHTML(group.title)}</h3>
+          <div class="staff-card-grid">
+            ${group.people.map((person) => `
+              <article class="staff-card">
+                <h4 class="staff-card-name">${escapeHTML(person.name)}</h4>
+                <p class="staff-card-role">${escapeHTML(person.role)}</p>
+              </article>
+            `).join('')}
+          </div>
+        </section>
+      `).join('');
+
+      document.dispatchEvent(new CustomEvent('magnet:refreshReveal'));
+
+      function uniquePeople(source, key, role) {
+        if (!Array.isArray(source)) return [];
+        const seen = new Set();
+        return source.reduce((people, item) => {
+          const name = item && String(item[key] || '').trim();
+          const normalized = name.toLowerCase();
+          if (!name || seen.has(normalized)) return people;
+          seen.add(normalized);
+          people.push({ name, role });
+          return people;
+        }, []);
+      }
+
+      function collectFilmPeople(source) {
+        if (!Array.isArray(source)) return [];
+        const byName = new Map();
+        source.forEach((film) => {
+          addPerson(film && film.director, 'Director');
+          (film && Array.isArray(film.crew) ? film.crew : []).forEach((credit) => {
+            addPerson(credit && credit.name, credit && credit.role);
+          });
+        });
+        return Array.from(byName.values());
+
+        function addPerson(name, role) {
+          const trimmedName = String(name || '').trim();
+          if (!trimmedName) return;
+          const key = trimmedName.toLowerCase();
+          const cleanRole = String(role || 'Film Contributor').trim() || 'Film Contributor';
+          if (byName.has(key)) {
+            const current = byName.get(key);
+            if (!current.role.split(', ').includes(cleanRole)) current.role += ', ' + cleanRole;
+          } else {
+            byName.set(key, { name: trimmedName, role: cleanRole });
+          }
+        }
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+    })();
+  </script>
+  <script src="js/2026-common.js"></script>
+</body>
+</html>
