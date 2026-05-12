@@ -1399,6 +1399,10 @@ i thrash, because not trying
 would mean the cage has won.
 `
       },
-      
+      {
+        interaction: 'exitBookstore',
+        title: 'Return',
+        subtitle: 'BACK TO THE Cave',
+      },
     ];
     globalThis.LIT_PIECES = LIT_PIECES;

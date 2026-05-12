@@ -76,7 +76,9 @@
 		#ship-lit-modal .ship-lit-close:hover { border-color: rgba(255, 210, 120, 0.65); color: #fffaf0; }
 		#ship-lit-modal .ship-lit-close-x { font-size: 18px; line-height: 1; opacity: 0.88; }
 		#ship-lit-modal .ship-lit-layout {
-			flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(220px, 26%) 1fr; gap: clamp(18px, 3.2vw, 44px);
+			flex: 1; min-height: 0; display: grid;
+			grid-template-columns: minmax(220px, 26%) minmax(0, 1fr);
+			gap: clamp(18px, 3.2vw, 44px);
 			padding: clamp(52px, 7.5vmin, 84px) clamp(18px, 2.8vw, 44px) clamp(18px, 2.8vw, 36px);
 		}
 		@media (max-width: 900px) {
@@ -92,27 +94,58 @@
 			font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(210, 180, 130, 0.55);
 		}
 		#ship-lit-modal .ship-lit-value { font-size: clamp(15px, 1.35vw, 19px); line-height: 1.38; color: #fff6e8; font-weight: 500; word-break: break-word; }
-		#ship-lit-modal .ship-lit-main { display: flex; flex-direction: column; gap: clamp(12px, 1.8vmin, 20px); min-width: 0; min-height: 0; }
+		#ship-lit-modal .ship-lit-main {
+			display: flex; flex-direction: column; gap: clamp(14px, 2.2vmin, 24px);
+			flex: 1; min-width: 0; min-height: 0;
+			overflow: hidden;
+		}
 		#ship-lit-modal .ship-lit-img-frame {
-			flex: 1; min-height: min(52vh, 520px); display: flex; align-items: center; justify-content: center;
+			flex: 1 1 0;
+			min-height: 0;
+			max-height: 100%;
+			overflow: hidden;
+			display: flex; align-items: center; justify-content: center;
 			background: radial-gradient(ellipse at 50% 30%, rgba(60, 40, 22, 0.5) 0%, rgba(12, 8, 5, 0.85) 70%);
 			border: 1px solid rgba(110, 75, 40, 0.55); border-radius: 4px;
 			box-shadow: inset 0 0 0 1px rgba(0,0,0,0.35), inset 0 12px 40px rgba(0,0,0,0.35);
 			padding: clamp(12px, 1.8vmin, 22px);
 		}
 		#ship-lit-modal .ship-lit-img {
-			max-width: 100%; max-height: min(82vh, 980px); width: auto; height: auto; object-fit: contain;
+			max-width: 100%;
+			max-height: 100%;
+			width: auto; height: auto;
+			object-fit: contain;
+			object-position: center;
 			border-radius: 3px;
 			box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(80, 55, 30, 0.4);
 		}
 		#ship-lit-modal .ship-lit-statement {
-			margin: 0; font-size: clamp(13px, 1.1vw, 16px); line-height: 1.65; color: rgba(232, 214, 188, 0.9);
-			max-height: min(18vh, 180px); overflow: auto; padding-right: 6px;
+			flex: 0 1 auto;
+			margin: 0;
+			font-size: clamp(13px, 1.1vw, 16px); line-height: 1.65; color: rgba(232, 214, 188, 0.92);
+			max-height: min(32vh, 320px);
+			min-height: 0;
+			overflow-y: auto;
+			overflow-x: hidden;
+			padding: clamp(10px, 1.4vmin, 14px) clamp(4px, 0.8vw, 10px) 2px 0;
+			box-sizing: border-box;
+			-webkit-overflow-scrolling: touch;
 		}
 		#ship-lit-modal .ship-lit-statement:empty { display: none; }
 		#ship-lit-modal .ship-lit-hint {
 			position: absolute; bottom: clamp(12px, 2vmin, 22px); left: 50%; transform: translateX(-50%); z-index: 5;
 			font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(200, 170, 120, 0.5); pointer-events: none;
+		}
+		/* Literature reader: same lightbox as 2026/index.html (see css/2026-shared.css); stack above canvas UI */
+		#bookLitLightbox.lightbox { z-index: 10062; }
+		#bookLitLightbox .lb-lit-head-doodle {
+			background: #fff;
+			border-radius: 8px;
+			box-shadow: inset 0 0 0 1px rgba(46, 28, 10, 0.08);
+		}
+		#bookLitLightbox .lb-lit-head-doodle img {
+			mix-blend-mode: normal;
+			opacity: 1;
 		}
 	</style>
 	<style id="3dworld-treasure-loader-theme">
@@ -229,6 +262,7 @@
 		</script>
 
 	<script src="./js/2026-art.js"></script>
+	<script src="./js/2026-literature.js"></script>
 
 	<script type="module">
 
@@ -262,6 +296,13 @@
 			let shipLitHoverIndexCached = -1;
 			let shipLitModalOpen = false;
 			let shipLitModalOpenedAt = 0;
+
+			const bookstoreLitRaycaster = new THREE.Raycaster();
+			const bookstoreLitNdcCenter = new THREE.Vector2( 0, 0 );
+			let bookstoreLitHoverIndex = -1;
+			let bookstoreLitRaycastFrame = 0;
+			let bookstoreLitHoverIndexCached = -1;
+			let bookLitModalOpenedAt = 0;
 
 			/** Consolidated post-processing shader (vignette, tilt-shift, film grain) */
 			const MasterPostShader = {
@@ -510,6 +551,31 @@
 				if ( !/^https?:/i.test( url ) ) url = './' + url.replace( /^\.\//, '' );
 				return url;
 			}
+			/** Raster doodles onto a flat white backing for framed panels + modal (matches index lightbox on cream). */
+			function finalizeBookstoreDoodleTexture( inputTex, maxAniso ) {
+				if ( !inputTex || !inputTex.image ) return inputTex;
+				const img = inputTex.image;
+				const w = img.naturalWidth || img.width;
+				const h = img.naturalHeight || img.height;
+				if ( !w || !h ) return inputTex;
+				const canvas = document.createElement( 'canvas' );
+				canvas.width = w;
+				canvas.height = h;
+				const ctx = canvas.getContext( '2d' );
+				ctx.fillStyle = '#ffffff';
+				ctx.fillRect( 0, 0, w, h );
+				try {
+					ctx.drawImage( img, 0, 0 );
+				} catch ( _e ) {
+					return inputTex;
+				}
+				const out = new THREE.CanvasTexture( canvas );
+				out.colorSpace = THREE.SRGBColorSpace;
+				out.anisotropy = maxAniso;
+				out.needsUpdate = true;
+				inputTex.dispose();
+				return out;
+			}
 			function ensureShipArtTexturesPreloaded() {
 				if ( shipArtPreloadPromise != null ) return shipArtPreloadPromise;
 				const pieces = globalThis.ART_PIECES;
@@ -548,6 +614,46 @@
 				return shipArtPreloadPromise;
 			}
 			ensureShipArtTexturesPreloaded();
+
+			const bookstoreLitPreloadedTextureByUrl = new Map();
+			let bookstoreLitPreloadPromise = null;
+			function ensureBookstoreLitTexturesPreloaded() {
+				if ( bookstoreLitPreloadPromise != null ) return bookstoreLitPreloadPromise;
+				const pieces = globalThis.LIT_PIECES;
+				if ( !Array.isArray( pieces ) || pieces.length === 0 ) {
+					bookstoreLitPreloadPromise = Promise.resolve();
+					return bookstoreLitPreloadPromise;
+				}
+				const texLoader = new THREE.TextureLoader();
+				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const entries = [];
+				for ( let pi = 0; pi < pieces.length; pi++ ) {
+					const u = resolveShipArtUrl( pieces[ pi ]?.doodle );
+					if ( u ) entries.push( u );
+				}
+				if ( entries.length === 0 ) {
+					bookstoreLitPreloadPromise = Promise.resolve();
+					return bookstoreLitPreloadPromise;
+				}
+				const urlOnce = new Map();
+				function loadUrlOnce( url ) {
+					if ( urlOnce.has( url ) ) return urlOnce.get( url );
+					const p = new Promise( ( resolve ) => {
+						texLoader.load( url, ( tex ) => {
+							tex.colorSpace = THREE.SRGBColorSpace;
+							tex.anisotropy = maxAniso;
+							tex.needsUpdate = true;
+							const fin = finalizeBookstoreDoodleTexture( tex, maxAniso );
+							bookstoreLitPreloadedTextureByUrl.set( url, fin );
+							resolve( fin );
+						}, undefined, () => { resolve( null ); } );
+					} );
+					urlOnce.set( url, p );
+					return p;
+				}
+				bookstoreLitPreloadPromise = Promise.all( entries.map( ( url ) => loadUrlOnce( url ) ) ).then( () => undefined );
+				return bookstoreLitPreloadPromise;
+			}
 
 			const theaterHoverOverlay = document.createElement( 'div' );
 			theaterHoverOverlay.setAttribute( 'aria-hidden', 'true' );
@@ -619,7 +725,186 @@
 				} );
 			}
 			shipLitModalCloseBtn.addEventListener( 'click', ( e ) => { e.stopPropagation(); closeShipLitModal(); } );
+
+			const bookLitLightbox = document.createElement( 'div' );
+			bookLitLightbox.id = 'bookLitLightbox';
+			bookLitLightbox.className = 'lightbox';
+			bookLitLightbox.setAttribute( 'role', 'dialog' );
+			bookLitLightbox.setAttribute( 'aria-modal', 'true' );
+			bookLitLightbox.setAttribute( 'aria-labelledby', 'lightboxTitle' );
+			bookLitLightbox.setAttribute( 'aria-hidden', 'true' );
+			bookLitLightbox.innerHTML = ''
+				+ '<button type="button" class="lightbox-nav lightbox-nav--prev" id="bookLitLightboxPrev" aria-label="Previous piece">'
+				+ '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>'
+				+ '<button type="button" class="lightbox-nav lightbox-nav--next" id="bookLitLightboxNext" aria-label="Next piece">'
+				+ '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>'
+				+ '<div class="lightbox-panel" id="bookLitLightboxPanel">'
+				+ '<button type="button" class="lightbox-close" id="bookLitLightboxClose" aria-label="Close">'
+				+ '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>'
+				+ '<div class="lightbox-content" id="bookLitLightboxContent"></div></div>';
+			document.body.appendChild( bookLitLightbox );
+			const bookLitLightboxPanel = document.getElementById( 'bookLitLightboxPanel' );
+			const bookLitLightboxContent = document.getElementById( 'bookLitLightboxContent' );
+			const bookLitLightboxClose = document.getElementById( 'bookLitLightboxClose' );
+			const bookLitLightboxPrev = document.getElementById( 'bookLitLightboxPrev' );
+			const bookLitLightboxNext = document.getElementById( 'bookLitLightboxNext' );
+
+			let bookLitCurrentIndex = -1;
+
+			function isBookLitLightboxOpen() {
+				return bookLitLightbox.classList.contains( 'is-open' );
+			}
+
+			function escapeLitHTML( str ) {
+				return String( str == null ? '' : str )
+					.replace( /&/g, '&amp;' )
+					.replace( /</g, '&lt;' )
+					.replace( />/g, '&gt;' )
+					.replace( /"/g, '&quot;' )
+					.replace( /'/g, '&#39;' );
+			}
+			function escapeLitAttr( str ) {
+				return escapeLitHTML( str );
+			}
+			function resolve3dWorldLitAsset( rel ) {
+				return resolveShipArtUrl( rel );
+			}
+			function reflowLitProseParagraph( raw ) {
+				const lines = String( raw || '' ).split( /\n/ ).map( ( l ) => l.trim() ).filter( ( l ) => l.length );
+				if ( !lines.length ) return '';
+				let out = lines[ 0 ];
+				for ( let i = 1; i < lines.length; i++ ) {
+					if ( /-$/.test( out ) ) out = out.slice( 0, -1 ) + lines[ i ];
+					else out += ' ' + lines[ i ];
+				}
+				return out;
+			}
+			function formatLitPoemStanza( block ) {
+				const lines = String( block || '' ).split( '\n' );
+				const parts = [];
+				for ( let i = 0; i < lines.length; i++ ) {
+					const line = lines[ i ];
+					const tabm = /^(\t+)(.*)$/.exec( line );
+					if ( tabm && tabm[ 1 ].length ) {
+						parts.push( `<span class="lb-lit-poemline lb-lit-poemline--indented" style="--tab-depth:${ tabm[ 1 ].length }">${ escapeLitHTML( tabm[ 2 ] ) }</span>` );
+						continue;
+					}
+					if ( !line.trim() ) {
+						parts.push( '<br />' );
+						continue;
+					}
+					parts.push( escapeLitHTML( line ) );
+				}
+				return parts.join( '<br />' );
+			}
+			function renderLitBodyHtml3d( p ) {
+				const isPoem = p.format === 'poem';
+				const blocks = String( p.body || '' ).split( /\n\n+/ ).map( ( b ) => b.trim() ).filter( ( b ) => b.length );
+				return blocks.map( ( block ) => {
+					if ( isPoem ) {
+						return `<p class="lb-lit-stanza">${ formatLitPoemStanza( block ) }</p>`;
+					}
+					let cls = 'lb-lit-prose';
+					let text = block;
+					if ( /^\t+/.test( block ) ) {
+						cls += ' lb-lit-prose--indented-block';
+						text = block.replace( /^\t+/, '' );
+					}
+					const flowed = reflowLitProseParagraph( text );
+					return `<p class="${ cls }">${ escapeLitHTML( flowed ) }</p>`;
+				} ).join( '' );
+			}
+			function renderBookLitModalHtml( p ) {
+				const isPoem = p.format === 'poem';
+				const bodyHtml = renderLitBodyHtml3d( p );
+				const altText = `Illustration for ${ p.title }`;
+				const doodleHtml = p.doodle
+					? `<div class="lb-lit-head-doodle" aria-hidden="true">
+           <img src="${ escapeLitAttr( resolve3dWorldLitAsset( p.doodle ) ) }" alt="${ escapeLitAttr( altText ) }" loading="lazy" />
+         </div>`
+					: '';
+				return ''
+					+ '<div class="lb-lit">'
+					+ '<header class="lb-lit-head">'
+					+ '<div class="lb-lit-head-text">'
+					+ `<h2 class="lb-lit-title" id="lightboxTitle">${ escapeLitHTML( p.title ) }</h2>`
+					+ `<div class="lb-lit-byline">By <strong>${ escapeLitHTML( p.author ) }</strong></div>`
+					+ '</div>'
+					+ doodleHtml
+					+ '</header>'
+					+ `<div class="lb-lit-body ${ isPoem ? 'lb-lit-body--poem' : '' }">${ bodyHtml }</div>`
+					+ '<div class="lb-lit-end">◆ ◆ ◆</div>'
+					+ '</div>';
+			}
+			function renderBookLitLightboxContent( p ) {
+				bookLitLightboxContent.innerHTML = renderBookLitModalHtml( p );
+			}
+			function closeBookLitModal() {
+				if ( !isBookLitLightboxOpen() ) return;
+				bookLitLightbox.classList.remove( 'is-open' );
+				bookLitLightbox.setAttribute( 'aria-hidden', 'true' );
+				document.body.classList.remove( 'lightbox-open' );
+				bookLitLightboxContent.innerHTML = '';
+				bookLitCurrentIndex = -1;
+			}
+			function stepBookLit( delta ) {
+				const arr = globalThis.LIT_PIECES;
+				if ( !Array.isArray( arr ) || arr.length === 0 || bookLitCurrentIndex < 0 ) return;
+				let idx = bookLitCurrentIndex;
+				const len = arr.length;
+				for ( let s = 0; s < len + 2; s++ ) {
+					idx = ( idx + delta + len ) % len;
+					if ( arr[ idx ]?.interaction !== 'exitBookstore' ) {
+						bookLitCurrentIndex = idx;
+						renderBookLitLightboxContent( arr[ idx ] );
+						bookLitLightboxPanel.scrollTop = 0;
+						bookLitLightboxContent.scrollTop = 0;
+						return;
+					}
+				}
+			}
+			function openBookLitModal( index ) {
+				const pieces = globalThis.LIT_PIECES;
+				if ( !Array.isArray( pieces ) || index < 0 || index >= pieces.length ) return;
+				const p = pieces[ index ];
+				if ( p?.interaction === 'exitBookstore' ) return;
+				bookLitCurrentIndex = index;
+				bookLitModalOpenedAt = performance.now();
+				if ( document.pointerLockElement === document.body ) document.exitPointerLock?.();
+				renderBookLitLightboxContent( p );
+				bookLitLightbox.classList.add( 'is-open' );
+				bookLitLightbox.setAttribute( 'aria-hidden', 'false' );
+				document.body.classList.add( 'lightbox-open' );
+				bookLitLightboxPanel.scrollTop = 0;
+				bookLitLightboxContent.scrollTop = 0;
+				window.requestAnimationFrame( () => {
+					bookLitLightboxClose.focus();
+				} );
+			}
+			bookLitLightboxClose.addEventListener( 'click', ( e ) => { e.stopPropagation(); closeBookLitModal(); } );
+			bookLitLightboxPrev.addEventListener( 'click', ( e ) => { e.stopPropagation(); stepBookLit( -1 ); } );
+			bookLitLightboxNext.addEventListener( 'click', ( e ) => { e.stopPropagation(); stepBookLit( 1 ); } );
+			bookLitLightbox.addEventListener( 'click', ( e ) => {
+				if ( e.target === bookLitLightbox ) closeBookLitModal();
+			} );
 			document.addEventListener( 'keydown', ( e ) => {
+				if ( isBookLitLightboxOpen() ) {
+					if ( e.code === 'Escape' ) {
+						closeBookLitModal();
+						e.preventDefault();
+						return;
+					}
+					if ( e.code === 'ArrowRight' ) {
+						e.preventDefault();
+						stepBookLit( 1 );
+						return;
+					}
+					if ( e.code === 'ArrowLeft' ) {
+						e.preventDefault();
+						stepBookLit( -1 );
+						return;
+					}
+				}
 				if ( e.code === 'Escape' && shipLitModalOpen ) {
 					closeShipLitModal();
 					e.preventDefault();
@@ -772,6 +1057,8 @@
 			let flythroughChoiceFontRef = null;
 			const flythroughChoiceRaycaster = new THREE.Raycaster();
 			const _choiceNdc = new THREE.Vector2();
+			/** Mobile: extra ray samples in a ring (CSS px) so branch paths are easier to tap. */
+			const FLYTHROUGH_CHOICE_MOBILE_TOUCH_PICK_RADIUS_PX = 56;
 			let flythroughChoiceHoverClientX = -1e9, flythroughChoiceHoverClientY = -1e9;
 			const _flyChoiceHitCorners = [
 				new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()
@@ -1181,17 +1468,39 @@
 				}
 			}, { passive: true } );
 
-			function tryPickFlythroughChoice( clientX, clientY ) {
-				if ( flythroughChoicePickables.length === 0 ) return false;
+			/**
+			 * @returns {THREE.Intersection|null}
+			 */
+			function pickFlythroughChoiceHitAt( clientX, clientY ) {
+				if ( flythroughChoicePickables.length === 0 ) return null;
 				const canvas = renderer.domElement;
 				const r = canvas.getBoundingClientRect();
-				_choiceNdc.x = ( ( clientX - r.left ) / r.width ) * 2 - 1;
-				_choiceNdc.y = -( ( clientY - r.top ) / r.height ) * 2 + 1;
-				flythroughChoiceRaycaster.setFromCamera( _choiceNdc, camera );
-				const hits = flythroughChoiceRaycaster.intersectObjects( flythroughChoicePickables, false );
-				if ( hits.length === 0 ) return false;
-				const key = hits[ 0 ].object.userData.branchKey;
-				if ( !key || !branchFlythroughStates[ key ] ) return false;
+				const R = isMobileDevice ? FLYTHROUGH_CHOICE_MOBILE_TOUCH_PICK_RADIUS_PX : 0;
+				const c = R * 0.7071067811865476;
+				const sampleOxOy = R <= 0
+					? [ [ 0, 0 ] ]
+					: [
+						[ 0, 0 ],
+						[ R, 0 ], [ -R, 0 ], [ 0, R ], [ 0, -R ],
+						[ c, c ], [ c, -c ], [ -c, c ], [ -c, -c ]
+					];
+				for ( let si = 0; si < sampleOxOy.length; si++ ) {
+					const ox = sampleOxOy[ si ][ 0 ], oy = sampleOxOy[ si ][ 1 ];
+					_choiceNdc.x = ( ( clientX + ox - r.left ) / r.width ) * 2 - 1;
+					_choiceNdc.y = -( ( clientY + oy - r.top ) / r.height ) * 2 + 1;
+					flythroughChoiceRaycaster.setFromCamera( _choiceNdc, camera );
+					const hits = flythroughChoiceRaycaster.intersectObjects( flythroughChoicePickables, false );
+					if ( hits.length === 0 ) continue;
+					const key = hits[ 0 ].object.userData.branchKey;
+					if ( key && branchFlythroughStates[ key ] ) return hits[ 0 ];
+				}
+				return null;
+			}
+
+			function tryPickFlythroughChoice( clientX, clientY ) {
+				const hit = pickFlythroughChoiceHitAt( clientX, clientY );
+				if ( !hit ) return false;
+				const key = hit.object.userData.branchKey;
 				startBranchFlythrough( key );
 				return true;
 			}
@@ -1381,6 +1690,10 @@
 						const sm = u * u * ( 3 - 2 * u );
 						tScroll = THREE.MathUtils.lerp( scrollFrac * pathDur, pathDur, sm );
 					}
+					/* scrollBottom allows scrollTop within a few px of max; scrollFrac can still be < 1, so target never reached D and branch completion never ran. */
+					if ( isFlythroughBranchSegment() && scrollContainer.scrollTop >= maxScroll - 12 ) {
+						tScroll = pathDur;
+					}
 					flythroughTargetTime = tScroll;
 				}
 				let smoothK = isMobileDevice ? 4.2 : 3.6;
@@ -1393,7 +1706,7 @@
 
 				if ( isFlythroughBranchSegment() && flythroughState && maxScroll > 0 ) {
 					const D = flythroughState.duration;
-					if ( scrollBottom && flythroughTime >= D - BRANCH_END_SNAP_TIME_EPS && flythroughTargetTime >= D - 1e-3 ) {
+					if ( scrollBottom && flythroughTime >= D - BRANCH_END_SNAP_TIME_EPS && flythroughTargetTime >= D - BRANCH_END_SNAP_TIME_EPS ) {
 						finishBranchFlythroughAndEnterMap();
 						return;
 					}
@@ -1439,8 +1752,8 @@
 				exitFlythrough();
 				mapTeleportCooldownUntil = performance.now() + 1600;
 				if ( seg === 'theater' ) enterTheaterMap();
-				else if ( seg === 'bookstore' ) enterBookstoreMap();
-				else enterShipMap();
+				else if ( seg === 'bookstore' ) enterBookstoreMap( true );
+				else enterShipMap( true );
 			}
 
 			function startReverseBridgeFromBranch() {
@@ -1523,7 +1836,8 @@
 				if ( isMobileDevice ) {
 					if ( _flyMobileLastTouchY === null ) return;
 					const dy = currentY - _flyMobileLastTouchY;
-					if ( isFlythroughBranchSegment() && scrollContainer.scrollTop <= 2 && dy < -2.5 ) {
+					/* Mobile uses native pan-y (swipe up = scroll forward). Pull down at top exits branch; do not use dy < 0 — that matched forward swipes. */
+					if ( isFlythroughBranchSegment() && scrollContainer.scrollTop <= 2 && dy > 8 ) {
 						startReverseBridgeFromBranch();
 					}
 					_flyMobileLastTouchY = currentY;
@@ -1748,6 +2062,8 @@
 
 				keyStates[ event.code ] = true;
 
+				if ( isBookLitLightboxOpen() && ( event.code === 'ArrowLeft' || event.code === 'ArrowRight' ) ) return;
+
 				if ( flythroughActive && flythroughSegment !== 'choice' && flythroughSegment !== 'bridge' && flythroughSegment !== 'reverseBridge' ) {
 					const maxS = scrollContainer.scrollHeight - scrollContainer.clientHeight;
 					if ( maxS > 0 && ( event.code === 'ArrowRight' || event.code === 'ArrowLeft' || event.code === 'ArrowDown' || event.code === 'ArrowUp' ) ) {
@@ -1826,6 +2142,23 @@
 						}
 					}
 				}
+				if ( activeMap === 'bookstore' && !flythroughActive && !isBookLitLightboxOpen() ) {
+					const canBookPick = document.pointerLockElement === document.body || ( navigator.maxTouchPoints > 0 || 'ontouchstart' in window );
+					if ( canBookPick ) {
+						const litIdx = raycastBookstoreLitCenterHitIndex();
+						if ( litIdx >= 0 ) {
+							const lp = globalThis.LIT_PIECES;
+							if ( Array.isArray( lp ) && lp[ litIdx ]?.interaction === 'exitBookstore' ) {
+								exitBookstoreToMain();
+								mapTeleportCooldownUntil = performance.now() + 1600;
+							} else {
+								openBookLitModal( litIdx );
+							}
+							e.preventDefault();
+							return;
+						}
+					}
+				}
 				if ( activeMap === 'theater' && theaterRaycastHitsScreen() && !isTheaterVideoFullscreen() ) {
 					enterTheaterVideoFullscreen();
 					e.preventDefault();
@@ -1836,7 +2169,7 @@
 
 			document.body.addEventListener( 'mousemove', ( event ) => {
 
-				if ( shipLitModalOpen ) return;
+				if ( shipLitModalOpen || isBookLitLightboxOpen() ) return;
 				if ( !flythroughActive && document.pointerLockElement === document.body ) {
 
 					if ( isTheaterVideoFullscreen() ) return;
@@ -1905,6 +2238,25 @@
 					const t = e.changedTouches[ 0 ];
 					if ( tryPickFlythroughChoice( t.clientX, t.clientY ) ) return;
 				}
+				if ( activeMap === 'bookstore' && !flythroughActive && !isBookLitLightboxOpen() && e.changedTouches.length === 1 ) {
+					const t = e.changedTouches[ 0 ];
+					const dist = Math.hypot( t.clientX - touchState.startX, t.clientY - touchState.startY );
+					const dt = performance.now() - touchState.touchStartTime;
+					if ( dist < 24 && dt < 450 ) {
+						const litIdx = raycastBookstoreLitCenterHitIndex();
+						if ( litIdx >= 0 ) {
+							const lp = globalThis.LIT_PIECES;
+							if ( Array.isArray( lp ) && lp[ litIdx ]?.interaction === 'exitBookstore' ) {
+								exitBookstoreToMain();
+								mapTeleportCooldownUntil = performance.now() + 1600;
+							} else {
+								openBookLitModal( litIdx );
+							}
+							touchState.active = touchState.isHolding = mobileMovingForward = false;
+							return;
+						}
+					}
+				}
 				if ( activeMap === 'ship' && !flythroughActive && !shipLitModalOpen && e.changedTouches.length === 1 ) {
 					const t = e.changedTouches[ 0 ];
 					const dist = Math.hypot( t.clientX - touchState.startX, t.clientY - touchState.startY );
@@ -1936,6 +2288,10 @@
 			
 			function updateMobileInput() {
 				if ( activeMap === 'ship' && !flythroughActive ) {
+					mobileMovingForward = false;
+					return;
+				}
+				if ( activeMap === 'bookstore' && !flythroughActive ) {
 					mobileMovingForward = false;
 					return;
 				}
@@ -2032,6 +2388,11 @@
 					playerBody.angularVelocity.set( 0, 0, 0 );
 					return;
 				}
+				if ( activeMap === 'bookstore' && !flythroughActive ) {
+					playerBody.velocity.set( 0, 0, 0 );
+					playerBody.angularVelocity.set( 0, 0, 0 );
+					return;
+				}
 				_inputDirection.set( 0, 0, 0 );
 				
 				if ( keyStates[ 'KeyW' ] ) { const f = getForwardVector(); _inputDirection.x += f.x; _inputDirection.z += f.z; }
@@ -2090,14 +2451,18 @@
 			const THEATER_PORTAL_EXIT_RADIUS = 4;
 			const THEATER_SPAWN = new THREE.Vector3( 0, 1.95, 12 );
 			const MAIN_RETURN_POS = new THREE.Vector3( -8, 7, -26 );
-			const BOOKSTORE_SPAWN = new THREE.Vector3( 0, 1.95, 14 );
+			const BOOKSTORE_SPAWN = new THREE.Vector3( 0, 1.95, 10 );
+			/** Extra world Y for literature ring (panels sit a bit above strict eye line). */
+			const BOOKSTORE_LIT_RING_Y_EXTRA = 0.52;
 			const BOOKSTORE_EXIT_POS = new THREE.Vector3( 0, 2, -19 );
 			const BOOKSTORE_EXIT_RADIUS = 3.5;
 			const SHIP_SPAWN = new THREE.Vector3( 0, 1.95, 9 );
 			const SHIP_EXIT_POS = new THREE.Vector3( 0, 2, -14 );
 			const SHIP_EXIT_RADIUS = 3.5;
+			/** Bump when bookstore interior / literature layout changes so cached map rebuilds. */
+			const BOOKSTORE_MAP_REVISION = 4;
 			/** Bump when ship deck lighting/geometry changes so cached map rebuilds. */
-			const SHIP_DECK_MAP_REVISION = 15;
+			const SHIP_DECK_MAP_REVISION = 17;
 			let activeMap = 'main';
 			let mainMapRoot = null;
 			const mainWorldStaticBodies = [];
@@ -2200,11 +2565,19 @@
 				if ( activeMap === 'ship' && !flythroughActive ) {
 					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
 				}
+				if ( activeMap === 'bookstore' && !flythroughActive ) {
+					playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
+				}
 				checkGroundContact();
 				applyPlayerMovement( deltaTime );
 				world.step( PHYSICS_TIMESTEP, deltaTime, PHYSICS_MAX_SUBSTEPS );
 				if ( activeMap === 'ship' && !flythroughActive ) {
 					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					playerBody.angularVelocity.set( 0, 0, 0 );
+				}
+				if ( activeMap === 'bookstore' && !flythroughActive ) {
+					playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
 					playerBody.velocity.set( 0, 0, 0 );
 					playerBody.angularVelocity.set( 0, 0, 0 );
 				}
@@ -2700,94 +3073,926 @@
 				};
 			}
 
+			function buildBookstoreLiteraturePanels( bookstoreGroup ) {
+				const litRoot = new THREE.Group();
+				litRoot.name = 'BookstoreLiteraturePanels';
+				bookstoreGroup.add( litRoot );
+				const literaturePickMeshes = [];
+				const literaturePanelMeta = [];
+				const pieces = globalThis.LIT_PIECES;
+				if ( !Array.isArray( pieces ) || pieces.length === 0 ) {
+					return {
+						literaturePickMeshes,
+						literaturePanelMeta,
+						literatureRoot: litRoot,
+						disposeLiteraturePanels: () => {
+							if ( litRoot.parent ) litRoot.parent.remove( litRoot );
+							litRoot.clear();
+						}
+					};
+				}
+				const loader = new THREE.TextureLoader();
+				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const n = pieces.length;
+				const frameT = 0.18;
+				const Sbs = bookstoreGroup.scale.x;
+				const centerX = BOOKSTORE_SPAWN.x / Sbs;
+				const centerZ = BOOKSTORE_SPAWN.z / Sbs;
+				const eyeWorldY = BOOKSTORE_SPAWN.y + ( PLAYER_HEIGHT / 2 + PLAYER_EYE_HEIGHT - PLAYER_HEIGHT );
+				const ringY = ( eyeWorldY + BOOKSTORE_LIT_RING_Y_EXTRA ) / Sbs;
+
+				function bookstoreLitPlaneSizeFromAspect( aspect ) {
+					const maxW = 4.05;
+					const maxH = 4.85;
+					if ( !isFinite( aspect ) || aspect <= 0 ) return { artW: 3.2, artH: 4.0 };
+					let h = maxH;
+					let w = h * aspect;
+					if ( w > maxW ) {
+						w = maxW;
+						h = w / aspect;
+					}
+					return { artW: w, artH: h };
+				}
+				const panelTangentMax = bookstoreLitPlaneSizeFromAspect( 1.35 ).artW + frameT * 2 + 0.55;
+				const exitTangentMax = 3.85 + frameT * 2 + 0.45;
+				const maxTangentFootprint = Math.max( panelTangentMax, exitTangentMax );
+				const minRingForSpacing = maxTangentFootprint / ( 2 * Math.sin( Math.PI / Math.max( n, 3 ) ) );
+				const ringRadius = Math.min( 17.5, Math.max( 12, minRingForSpacing * 1.07 ) );
+
+				const SHIP_CAPTION_GAP_BELOW_FRAME = 0.28;
+				const SHIP_CAPTION_Z = 0.12;
+
+				function disposeShipLitCaptionRow( row ) {
+					if ( !row ) return;
+					row.traverse( ( o ) => {
+						if ( o.geometry ) o.geometry.dispose();
+						if ( o.material ) o.material.dispose();
+					} );
+				}
+
+				/**
+				 * Title + artist under a ship art frame — same material language as flythrough choice labels.
+				 * @returns {THREE.Group|null}
+				 */
+				function buildShipLitCaptionRowGroup( font, titleStr, artistStr, titleTargetW ) {
+					if ( !font ) return null;
+					const row = new THREE.Group();
+					row.name = 'ShipLitCaption';
+					const titleRaw = String( titleStr || '' ).trim() || '—';
+					const artistRaw = String( artistStr || '' ).trim();
+					const hasSub = artistRaw.length > 0;
+					const titleLineGap = 0.058;
+					const titleGlowScale = 1.07;
+					const textParams = {
+						font: font,
+						size: 0.38,
+						height: 0.056,
+						curveSegments: 10,
+						bevelEnabled: false
+					};
+					function measureTitleWidth( str ) {
+						const g = new TextGeometry( str, textParams );
+						g.computeBoundingBox();
+						const w = g.boundingBox.max.x - g.boundingBox.min.x;
+						g.dispose();
+						return w;
+					}
+					function measureTitleHeight( str ) {
+						const g = new TextGeometry( str, textParams );
+						g.computeBoundingBox();
+						const h = g.boundingBox.max.y - g.boundingBox.min.y;
+						g.dispose();
+						return h;
+					}
+					function wrapTitleLines( str, maxGeomW ) {
+						const words = str.split( /\s+/ ).filter( Boolean );
+						if ( words.length === 0 ) return [ '' ];
+						const out = [];
+						let cur = '';
+						for ( let wi = 0; wi < words.length; wi++ ) {
+							const w = words[ wi ];
+							const trial = cur ? cur + ' ' + w : w;
+							if ( measureTitleWidth( trial ) <= maxGeomW || !cur ) cur = trial;
+							else {
+								out.push( cur );
+								cur = w;
+							}
+						}
+						if ( cur ) out.push( cur );
+						return out;
+					}
+					const fullWOneLine = measureTitleWidth( titleRaw );
+					let maxLG = Math.max( textParams.size * 2.2, fullWOneLine * 0.36 );
+					let titleLines = wrapTitleLines( titleRaw, maxLG );
+					let guard = 0;
+					while ( titleLines.length > 4 && maxLG > textParams.size * 1.15 && guard++ < 28 ) {
+						maxLG *= 0.9;
+						titleLines = wrapTitleLines( titleRaw, maxLG );
+					}
+					if ( titleLines.length > 4 ) titleLines = titleLines.slice( 0, 4 );
+					let maxLnW = 0;
+					for ( let ti = 0; ti < titleLines.length; ti++ ) {
+						maxLnW = Math.max( maxLnW, measureTitleWidth( titleLines[ ti ] ) );
+					}
+					const tw = titleTargetW > 0 ? titleTargetW : 3.2;
+					const fitScale = maxLnW > 1e-6 ? Math.min( 1.22, tw / maxLnW ) : 1;
+					const lineDispHs = titleLines.map( ( ln ) => measureTitleHeight( ln ) * fitScale );
+					let totalTitleH = 0;
+					for ( let li = 0; li < lineDispHs.length; li++ ) {
+						totalTitleH += lineDispHs[ li ];
+						if ( li < lineDispHs.length - 1 ) totalTitleH += titleLineGap;
+					}
+					const maxTitleDispW = Math.max( ...titleLines.map( ( ln ) => measureTitleWidth( ln ) * fitScale ), 0.001 );
+					const dispW = maxTitleDispW;
+
+					const padX = 0.38;
+					const padY = 0.16;
+					const gapYTitleSub = 0.082;
+					let alignY = 0;
+					let subY = 0;
+					let subDispW = 0;
+					let subDispH = 0;
+					let subFit = 1;
+					let subGeo = null;
+					if ( hasSub ) {
+						const subParams = {
+							font: font,
+							size: textParams.size * 0.34,
+							height: textParams.height * 0.38,
+							curveSegments: 10,
+							bevelEnabled: false
+						};
+						const maxSubW = dispW * 1.02;
+						subGeo = new TextGeometry( artistRaw, subParams );
+						subGeo.computeBoundingBox();
+						const sbb = subGeo.boundingBox;
+						const stw = sbb.max.x - sbb.min.x;
+						const sth = sbb.max.y - sbb.min.y;
+						subGeo.center();
+						subFit = stw > 1e-6 ? Math.min( 1.14, maxSubW / stw ) : 1;
+						subDispW = stw * subFit;
+						subDispH = sth * subFit;
+						alignY = gapYTitleSub * 0.5 + subDispH * 0.5 + totalTitleH * 0.5;
+						subY = alignY - totalTitleH * 0.5 - gapYTitleSub - subDispH * 0.5;
+					}
+
+					const titleCentY = hasSub ? alignY : 0;
+					let yCursor = titleCentY + totalTitleH * 0.5;
+
+					const backMat = new THREE.MeshBasicMaterial( {
+						color: 0x120a06,
+						transparent: true,
+						opacity: 0.9,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: false,
+						polygonOffset: true,
+						polygonOffsetFactor: -2,
+						polygonOffsetUnits: -2
+					} );
+					const blockW = hasSub ? Math.max( dispW, subDispW ) + padX * 2 : dispW + padX * 2;
+					const blockH = ( hasSub ? totalTitleH + gapYTitleSub + subDispH : totalTitleH ) + padY * 2;
+					row.userData.shipCaptionBlockH = blockH;
+					const backGeo = new THREE.PlaneGeometry( blockW, blockH );
+					const backMesh = new THREE.Mesh( backGeo, backMat );
+					backMesh.position.set( 0, 0, -0.08 );
+					backMesh.renderOrder = 4;
+					row.add( backMesh );
+
+					const glowMat = new THREE.MeshBasicMaterial( {
+						color: 0xffb24a,
+						transparent: true,
+						opacity: 0.46,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: false,
+						blending: THREE.AdditiveBlending,
+						polygonOffset: true,
+						polygonOffsetFactor: -4,
+						polygonOffsetUnits: -4
+					} );
+					const textMat = new THREE.MeshBasicMaterial( {
+						color: 0xfffff8,
+						transparent: true,
+						opacity: 1,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: true,
+						polygonOffset: true,
+						polygonOffsetFactor: -4,
+						polygonOffsetUnits: -4
+					} );
+
+					for ( let li = 0; li < titleLines.length; li++ ) {
+						const lineStr = titleLines[ li ];
+						const textGeo = new TextGeometry( lineStr, textParams );
+						textGeo.computeBoundingBox();
+						textGeo.center();
+						const ly = yCursor - lineDispHs[ li ] * 0.5;
+						yCursor -= lineDispHs[ li ] + titleLineGap;
+
+						const glowGeo = textGeo.clone();
+						const glowMesh = new THREE.Mesh( glowGeo, glowMat );
+						glowMesh.scale.setScalar( fitScale * titleGlowScale );
+						glowMesh.position.set( 0, ly, -0.02 );
+						glowMesh.renderOrder = 5;
+						row.add( glowMesh );
+
+						const fillMesh = new THREE.Mesh( textGeo, textMat );
+						fillMesh.scale.setScalar( fitScale );
+						fillMesh.position.set( 0, ly, 0.012 );
+						fillMesh.renderOrder = 6;
+						row.add( fillMesh );
+					}
+
+					if ( hasSub && subGeo ) {
+						const subGlowMat = new THREE.MeshBasicMaterial( {
+							color: 0xe6a030,
+							transparent: true,
+							opacity: 0.34,
+							side: THREE.DoubleSide,
+							toneMapped: false,
+							depthTest: true,
+							depthWrite: false,
+							blending: THREE.AdditiveBlending,
+							polygonOffset: true,
+							polygonOffsetFactor: -4,
+							polygonOffsetUnits: -4
+						} );
+						const subGlowMesh = new THREE.Mesh( subGeo.clone(), subGlowMat );
+						subGlowMesh.scale.setScalar( subFit * 1.06 );
+						subGlowMesh.position.set( 0, subY, -0.016 );
+						subGlowMesh.renderOrder = 5;
+						row.add( subGlowMesh );
+
+						const subMat = new THREE.MeshBasicMaterial( {
+							color: 0xf8f0e4,
+							transparent: true,
+							opacity: 0.97,
+							side: THREE.DoubleSide,
+							toneMapped: false,
+							depthTest: true,
+							depthWrite: true,
+							polygonOffset: true,
+							polygonOffsetFactor: -4,
+							polygonOffsetUnits: -4
+						} );
+						const subTextMesh = new THREE.Mesh( subGeo, subMat );
+						subTextMesh.scale.setScalar( subFit );
+						subTextMesh.position.set( 0, subY, 0.012 );
+						subTextMesh.renderOrder = 6;
+						row.add( subTextMesh );
+					}
+
+					return row;
+				}
+
+				function rebuildShipLitPanelFrame( parts, artW, artH, ft ) {
+					const pg = parts.panelGroup;
+					const fw = artW + ft * 2;
+					const fh = artH + ft * 2;
+					function replPlane( mesh, w, h ) {
+						mesh.geometry.dispose();
+						mesh.geometry = new THREE.PlaneGeometry( w, h );
+					}
+					replPlane( parts.back, artW + 0.3, artH + 0.3 );
+					replPlane( parts.art, artW, artH );
+					replPlane( parts.pick, artW + 0.28, artH + 0.28 );
+					parts.rimLine.geometry.dispose();
+					parts.rimLine.geometry = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+					parts.outerRimLine.geometry.dispose();
+					parts.outerRimLine.geometry = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+					parts.hoverEdgeLine.geometry.dispose();
+					parts.hoverEdgeLine.geometry = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+					for ( let fi = 0; fi < parts.frameBars.length; fi++ ) {
+						const mesh = parts.frameBars[ fi ];
+						pg.remove( mesh );
+						mesh.geometry.dispose();
+					}
+					parts.frameBars.length = 0;
+					function addFrameBar( sx, sy, sz, px, py, pz ) {
+						const geo = new THREE.BoxGeometry( sx, sy, sz );
+						const mesh = new THREE.Mesh( geo, parts.frameMat );
+						mesh.position.set( px, py, pz );
+						pg.add( mesh );
+						parts.frameBars.push( mesh );
+					}
+					addFrameBar( fw, ft, ft * 1.2, 0, fh / 2 + ft / 2, 0.035 );
+					addFrameBar( fw, ft, ft * 1.2, 0, -fh / 2 - ft / 2, 0.035 );
+					addFrameBar( ft, fh, ft * 1.2, fw / 2 + ft / 2, 0, 0.035 );
+					addFrameBar( ft, fh, ft * 1.2, -fw / 2 - ft / 2, 0, 0.035 );
+					if ( parts.captionRow ) {
+						const fontR = flythroughChoiceFontRef;
+						disposeShipLitCaptionRow( parts.captionRow );
+						parts.panelGroup.remove( parts.captionRow );
+						parts.captionRow = null;
+						if ( fontR ) {
+							const capW = Math.min( 6.35, fw * 0.98 );
+							const row = buildShipLitCaptionRowGroup(
+								fontR,
+								parts.captionTitle != null ? parts.captionTitle : '',
+								parts.captionAuthor != null ? parts.captionAuthor : '',
+								capW
+							);
+							if ( row ) {
+								const bh = row.userData.shipCaptionBlockH || 0.48;
+								row.position.set( 0, -fh * 0.5 - ft - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+								parts.panelGroup.add( row );
+								parts.captionRow = row;
+							}
+						}
+					}
+				}
+
+				for ( let i = 0; i < n; i++ ) {
+					const ang = ( i / n ) * Math.PI * 2;
+					const x = centerX + Math.cos( ang ) * ringRadius;
+					const z = centerZ + Math.sin( ang ) * ringRadius;
+					const pg = new THREE.Group();
+					pg.position.set( x, ringY, z );
+					pg.lookAt( centerX, ringY, centerZ );
+					litRoot.add( pg );
+
+					const piece = pieces[ i ];
+					if ( piece && piece.interaction === 'exitBookstore' ) {
+						const artW = 3.85;
+						const artH = 1.85;
+						const line1 = piece.title != null ? String( piece.title ) : 'RETURN';
+						const line2Join = [ piece.subtitle, piece.medium ].filter( ( x ) => x != null && String( x ).trim() !== '' ).map( ( x ) => String( x ) ).join( ' ' );
+						const line2 = line2Join || 'TO THE CAVE';
+
+						const backGeo = new THREE.PlaneGeometry( artW + 0.3, artH + 0.3 );
+						const backMat = new THREE.MeshStandardMaterial( { color: 0x100d0b, roughness: 0.98 } );
+						const back = new THREE.Mesh( backGeo, backMat );
+						back.position.z = -0.055;
+						pg.add( back );
+
+						const artGeo = new THREE.PlaneGeometry( artW, artH );
+						const artMat = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0, toneMapped: false, depthWrite: false } );
+						const art = new THREE.Mesh( artGeo, artMat );
+						art.position.z = 0.02;
+						pg.add( art );
+
+						const fontRef = flythroughChoiceFontRef;
+						if ( fontRef ) {
+							const glowMat = new THREE.MeshBasicMaterial( {
+								color: 0xffb24a, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
+								toneMapped: false, depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending
+							} );
+							const textMat = new THREE.MeshBasicMaterial( {
+								color: 0xfffef5, transparent: true, opacity: 1, side: THREE.DoubleSide,
+								toneMapped: false, depthTest: true, depthWrite: true
+							} );
+							const titleParams = { font: fontRef, size: 0.38, height: 0.06, curveSegments: 10, bevelEnabled: false };
+							const subParams = { font: fontRef, size: 0.165, height: 0.03, curveSegments: 10, bevelEnabled: false };
+							const g1 = new TextGeometry( line1, titleParams );
+							g1.computeBoundingBox();
+							g1.center();
+							const g2 = new TextGeometry( line2, subParams );
+							g2.computeBoundingBox();
+							g2.center();
+							const bb1 = g1.boundingBox;
+							const bb2 = g2.boundingBox;
+							const h1 = bb1.max.y - bb1.min.y;
+							const h2 = bb2.max.y - bb2.min.y;
+							const gap = 0.12;
+							const totalH = h1 + gap + h2;
+							const yTitle = totalH * 0.5 - h1 * 0.5;
+							const ySub = -totalH * 0.5 + h2 * 0.5;
+							const zText = 0.045;
+							const g1g = g1.clone();
+							const glow1 = new THREE.Mesh( g1g, glowMat );
+							glow1.scale.setScalar( 1.06 );
+							glow1.position.set( 0, yTitle, zText - 0.02 );
+							glow1.renderOrder = 2;
+							pg.add( glow1 );
+							const fill1 = new THREE.Mesh( g1, textMat );
+							fill1.position.set( 0, yTitle, zText );
+							fill1.renderOrder = 3;
+							pg.add( fill1 );
+							const g2g = g2.clone();
+							const glow2 = new THREE.Mesh( g2g, glowMat );
+							glow2.scale.setScalar( 1.06 );
+							glow2.position.set( 0, ySub, zText - 0.02 );
+							glow2.renderOrder = 2;
+							pg.add( glow2 );
+							const fill2 = new THREE.Mesh( g2, textMat );
+							fill2.position.set( 0, ySub, zText );
+							fill2.renderOrder = 3;
+							pg.add( fill2 );
+						} else {
+							const c = document.createElement( 'canvas' );
+							c.width = 1024;
+							c.height = 512;
+							const ctx = c.getContext( '2d' );
+							const cw = c.width;
+							const ch = c.height;
+							ctx.fillStyle = '#1a1008';
+							ctx.fillRect( 0, 0, cw, ch );
+							ctx.strokeStyle = '#d4a574';
+							ctx.lineWidth = 10;
+							ctx.strokeRect( 24, 24, cw - 48, ch - 48 );
+							ctx.fillStyle = '#fffef5';
+							ctx.textAlign = 'center';
+							ctx.textBaseline = 'middle';
+							ctx.font = 'bold 86px Arial, Helvetica, sans-serif';
+							ctx.fillText( line1, cw / 2, ch * 0.38 );
+							ctx.font = '500 52px Arial, Helvetica, sans-serif';
+							ctx.fillStyle = '#ffe8c8';
+							ctx.fillText( line2, cw / 2, ch * 0.62 );
+							const signTex = new THREE.CanvasTexture( c );
+							signTex.colorSpace = THREE.SRGBColorSpace;
+							signTex.needsUpdate = true;
+							artMat.opacity = 1;
+							artMat.depthWrite = true;
+							artMat.map = signTex;
+							artMat.needsUpdate = true;
+						}
+
+						const frameMat = new THREE.MeshStandardMaterial( {
+							color: 0xd4af37, metalness: 0.52, roughness: 0.4,
+							emissive: new THREE.Color( 0x553311 ), emissiveIntensity: 0.11, toneMapped: true
+						} );
+						const frameBars = [];
+						function addFrameBar( sx, sy, sz, px, py, pz ) {
+							const geo = new THREE.BoxGeometry( sx, sy, sz );
+							const mesh = new THREE.Mesh( geo, frameMat );
+							mesh.position.set( px, py, pz );
+							pg.add( mesh );
+							frameBars.push( mesh );
+						}
+						const fw = artW + frameT * 2;
+						const fh = artH + frameT * 2;
+						addFrameBar( fw, frameT, frameT * 1.2, 0, fh / 2 + frameT / 2, 0.035 );
+						addFrameBar( fw, frameT, frameT * 1.2, 0, -fh / 2 - frameT / 2, 0.035 );
+						addFrameBar( frameT, fh, frameT * 1.2, fw / 2 + frameT / 2, 0, 0.035 );
+						addFrameBar( frameT, fh, frameT * 1.2, -fw / 2 - frameT / 2, 0, 0.035 );
+
+						const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+						const rimMat = new THREE.LineBasicMaterial( {
+							color: 0x7a9ec8, transparent: true, opacity: 0.56, toneMapped: false,
+							depthTest: false, depthWrite: false
+						} );
+						const rimLine = new THREE.LineSegments( rimEdges, rimMat );
+						rimLine.position.z = 0.07;
+						rimLine.renderOrder = 2;
+						pg.add( rimLine );
+
+						const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+						const outerRimMat = new THREE.LineBasicMaterial( {
+							color: 0x5a7aa8, transparent: true, opacity: 0.44, toneMapped: false,
+							depthTest: false, depthWrite: false
+						} );
+						const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
+						outerRimLine.position.z = 0.068;
+						outerRimLine.renderOrder = 1;
+						pg.add( outerRimLine );
+
+						const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+						const hoverEdgeMat = new THREE.LineBasicMaterial( {
+							color: 0xa8c8e8, transparent: true, opacity: 0.34, toneMapped: false,
+							depthTest: false, depthWrite: false
+						} );
+						const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
+						hoverEdgeLine.position.z = 0.082;
+						hoverEdgeLine.renderOrder = 3;
+						pg.add( hoverEdgeLine );
+
+						const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
+						const pickMat = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0, depthWrite: false } );
+						const pick = new THREE.Mesh( pickGeo, pickMat );
+						pick.position.z = 0.09;
+						pick.userData.kind = 'bookstoreLit';
+						pick.userData.bookstoreLitIndex = i;
+						pick.userData.bookstoreExit = true;
+						pg.add( pick );
+						literaturePickMeshes.push( pick );
+
+						pg.userData.shipPanelParts = {
+							panelGroup: pg,
+							back, art, pick, rimLine, outerRimLine, hoverEdgeLine,
+							frameBars,
+							frameMat,
+							frameT
+						};
+
+						literaturePanelMeta.push( { panelGroup: pg, rimMat, outerRimMat, frameMat, hoverEdgeMat } );
+						continue;
+					}
+
+					const artSrc = pieces[ i ]?.doodle;
+					let url = '';
+					let aspect = 4 / 5;
+					if ( artSrc ) {
+						url = resolveShipArtUrl( artSrc );
+						const pre = bookstoreLitPreloadedTextureByUrl.get( url );
+						if ( pre && pre.image && pre.image.width > 0 && pre.image.height > 0 ) {
+							aspect = pre.image.width / pre.image.height;
+						}
+					}
+					const { artW, artH } = bookstoreLitPlaneSizeFromAspect( aspect );
+
+					const backGeo = new THREE.PlaneGeometry( artW + 0.3, artH + 0.3 );
+					const backMat = new THREE.MeshStandardMaterial( { color: 0x100d0b, roughness: 0.98 } );
+					const back = new THREE.Mesh( backGeo, backMat );
+					back.position.z = -0.055;
+					pg.add( back );
+
+					const artGeo = new THREE.PlaneGeometry( artW, artH );
+					const artMat = new THREE.MeshBasicMaterial( {
+						color: 0xffffff, toneMapped: false
+					} );
+					const art = new THREE.Mesh( artGeo, artMat );
+					art.position.z = 0.02;
+					pg.add( art );
+
+					if ( artSrc ) {
+						const pre = bookstoreLitPreloadedTextureByUrl.get( url );
+						if ( pre ) {
+							artMat.map = pre;
+							artMat.needsUpdate = true;
+						} else {
+							loader.load( url, ( tex ) => {
+								if ( artMat.map ) return;
+								tex.colorSpace = THREE.SRGBColorSpace;
+								tex.anisotropy = maxAniso;
+								tex.needsUpdate = true;
+								const fin = finalizeBookstoreDoodleTexture( tex, maxAniso );
+								artMat.map = fin;
+								artMat.needsUpdate = true;
+								const a = fin.image && fin.image.width > 0 && fin.image.height > 0
+									? fin.image.width / fin.image.height
+									: 4 / 5;
+								const sz = bookstoreLitPlaneSizeFromAspect( a );
+								if ( pg.userData.shipPanelParts ) {
+									rebuildShipLitPanelFrame( pg.userData.shipPanelParts, sz.artW, sz.artH, frameT );
+								}
+							}, undefined, () => {} );
+						}
+					}
+
+					const frameMat = new THREE.MeshStandardMaterial( {
+						color: 0xd4af37, metalness: 0.52, roughness: 0.4,
+						emissive: new THREE.Color( 0x553311 ), emissiveIntensity: 0.11, toneMapped: true
+					} );
+					const frameBars = [];
+					function addFrameBar( sx, sy, sz, px, py, pz ) {
+						const geo = new THREE.BoxGeometry( sx, sy, sz );
+						const mesh = new THREE.Mesh( geo, frameMat );
+						mesh.position.set( px, py, pz );
+						pg.add( mesh );
+						frameBars.push( mesh );
+					}
+					const fw = artW + frameT * 2;
+					const fh = artH + frameT * 2;
+					addFrameBar( fw, frameT, frameT * 1.2, 0, fh / 2 + frameT / 2, 0.035 );
+					addFrameBar( fw, frameT, frameT * 1.2, 0, -fh / 2 - frameT / 2, 0.035 );
+					addFrameBar( frameT, fh, frameT * 1.2, fw / 2 + frameT / 2, 0, 0.035 );
+					addFrameBar( frameT, fh, frameT * 1.2, -fw / 2 - frameT / 2, 0, 0.035 );
+
+					const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
+					const rimMat = new THREE.LineBasicMaterial( {
+						color: 0x7a9ec8, transparent: true, opacity: 0.56, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const rimLine = new THREE.LineSegments( rimEdges, rimMat );
+					rimLine.position.z = 0.07;
+					rimLine.renderOrder = 2;
+					pg.add( rimLine );
+
+					const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
+					const outerRimMat = new THREE.LineBasicMaterial( {
+						color: 0x5a7aa8, transparent: true, opacity: 0.44, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
+					outerRimLine.position.z = 0.068;
+					outerRimLine.renderOrder = 1;
+					pg.add( outerRimLine );
+
+					const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
+					const hoverEdgeMat = new THREE.LineBasicMaterial( {
+						color: 0xa8c8e8, transparent: true, opacity: 0.34, toneMapped: false,
+						depthTest: false, depthWrite: false
+					} );
+					const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
+					hoverEdgeLine.position.z = 0.082;
+					hoverEdgeLine.renderOrder = 3;
+					pg.add( hoverEdgeLine );
+
+					const capPiece = pieces[ i ];
+					const captionTitle = capPiece?.title != null ? String( capPiece.title ) : '';
+					const captionAuthor = capPiece?.author != null ? String( capPiece.author ) : '';
+					let captionRow = null;
+					const capFont = flythroughChoiceFontRef;
+					if ( capFont ) {
+						const capTargetW = Math.min( 6.35, fw * 0.98 );
+						captionRow = buildShipLitCaptionRowGroup( capFont, captionTitle, captionAuthor, capTargetW );
+						if ( captionRow ) {
+							const bh = captionRow.userData.shipCaptionBlockH || 0.48;
+							captionRow.position.set( 0, -fh * 0.5 - frameT - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+							pg.add( captionRow );
+						}
+					}
+
+					const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
+					const pickMat = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0, depthWrite: false } );
+					const pick = new THREE.Mesh( pickGeo, pickMat );
+					pick.position.z = 0.09;
+					pick.userData.kind = 'bookstoreLit';
+					pick.userData.bookstoreLitIndex = i;
+					pg.add( pick );
+					literaturePickMeshes.push( pick );
+
+					pg.userData.shipPanelParts = {
+						panelGroup: pg,
+						back, art, pick, rimLine, outerRimLine, hoverEdgeLine,
+						frameBars,
+						frameMat,
+						frameT,
+						captionRow,
+						captionTitle,
+						captionAuthor
+					};
+
+					literaturePanelMeta.push( { panelGroup: pg, rimMat, outerRimMat, frameMat, hoverEdgeMat } );
+				}
+
+				function disposeLiteraturePanels() {
+					const disposedMats = new Set();
+					const sharedTex = new Set( bookstoreLitPreloadedTextureByUrl.values() );
+					litRoot.traverse( ( o ) => {
+						if ( o.geometry ) o.geometry.dispose();
+						if ( o.material ) {
+							const m = o.material;
+							if ( disposedMats.has( m ) ) return;
+							disposedMats.add( m );
+							if ( m.map ) {
+								if ( !sharedTex.has( m.map ) ) m.map.dispose();
+								m.map = null;
+							}
+							m.dispose();
+						}
+					} );
+					litRoot.clear();
+					if ( litRoot.parent ) litRoot.parent.remove( litRoot );
+				}
+
+				return {
+					literaturePickMeshes,
+					literaturePanelMeta,
+					literatureRoot: litRoot,
+					disposeLiteraturePanels
+				};
+			}
 			function buildBookstoreMap() {
 				const group = new THREE.Group();
 				group.name = 'BookstoreInterior';
-				const floorMat = new THREE.MeshStandardMaterial( { color: 0x6e5c4c, roughness: 0.78 } );
-				const shelfWood = new THREE.MeshStandardMaterial( { color: 0x554233, roughness: 0.78 } );
-				const bookMat = new THREE.MeshStandardMaterial( { color: 0x8b3a2a, roughness: 0.72 } );
-				const trimMat = new THREE.MeshStandardMaterial( { color: 0x383028, roughness: 0.82 } );
 
-				const floorMesh = new THREE.Mesh( new THREE.PlaneGeometry( 40, 36 ), floorMat );
-				floorMesh.rotation.x = -Math.PI / 2;
-				floorMesh.receiveShadow = !isMobile;
-				group.add( floorMesh );
-
-				const wallH = 6;
-				const wallGeoW = new THREE.PlaneGeometry( 40, wallH );
-				const wallGeoD = new THREE.PlaneGeometry( 36, wallH );
-				const mkWall = ( geo, x, y, z, ry ) => {
-					const m = new THREE.Mesh( geo, trimMat );
-					m.position.set( x, y, z );
-					m.rotation.y = ry;
-					m.receiveShadow = !isMobile;
-					group.add( m );
-				};
-				mkWall( wallGeoW, 0, wallH / 2, -18, 0 );
-				mkWall( wallGeoW, 0, wallH / 2, 18, Math.PI );
-				mkWall( wallGeoD, -20, wallH / 2, 0, Math.PI / 2 );
-				mkWall( wallGeoD, 20, wallH / 2, 0, -Math.PI / 2 );
-
-				function addShelfUnit( cx, cz, rotY ) {
-					const u = new THREE.Group();
-					u.position.set( cx, 0, cz );
-					u.rotation.y = rotY;
-					const w = 2.2, d = 0.45, h = 3.2;
-					for ( let s = 0; s < 4; s++ ) {
-						const y = 0.45 + s * 0.72;
-						const board = new THREE.Mesh( new THREE.BoxGeometry( w, 0.06, d ), shelfWood );
-						board.position.set( 0, y, 0 );
-						board.castShadow = !isMobile;
-						u.add( board );
-						for ( let b = -1; b <= 1; b++ ) {
-							const book = new THREE.Mesh( new THREE.BoxGeometry( 0.22, 0.5 + ( s % 2 ) * 0.08, 0.32 ), bookMat );
-							book.position.set( b * 0.55, y + 0.32, 0 );
-							book.rotation.y = ( b + s ) * 0.12;
-							book.castShadow = !isMobile;
-							u.add( book );
-						}
+				function createRichWoodTexture() {
+					const canvas = document.createElement( 'canvas' );
+					canvas.width = 1024;
+					canvas.height = 1024;
+					const ctx = canvas.getContext( '2d' );
+					ctx.fillStyle = '#2c1104';
+					ctx.fillRect( 0, 0, 1024, 1024 );
+					for ( let i = 0; i < 8000; i++ ) {
+						ctx.fillStyle = Math.random() > 0.5 ? 'rgba(15, 5, 0, 0.4)' : 'rgba(70, 30, 10, 0.2)';
+						const w = Math.random() * 2 + 1;
+						const h = Math.random() * 100 + 20;
+						ctx.fillRect( Math.random() * 1024, Math.random() * 1024, w, h );
 					}
-					const back = new THREE.Mesh( new THREE.BoxGeometry( w, h, 0.08 ), shelfWood );
-					back.position.set( 0, h / 2 + 0.2, -d / 2 );
-					back.castShadow = !isMobile;
-					u.add( back );
-					group.add( u );
+					ctx.fillStyle = '#0a0301';
+					const planks = 8;
+					const plankW = 1024 / planks;
+					for ( let i = 1; i < planks; i++ ) ctx.fillRect( i * plankW - 2, 0, 4, 1024 );
+					const texture = new THREE.CanvasTexture( canvas );
+					texture.colorSpace = THREE.SRGBColorSpace;
+					texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+					texture.anisotropy = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+					return texture;
 				}
-				for ( let z = -14; z <= 12; z += 5.5 ) {
-					addShelfUnit( -18.5, z, 0 );
-					addShelfUnit( 18.5, z, Math.PI );
-				}
-				addShelfUnit( 0, -16.5, Math.PI / 2 );
 
-				const readLight = new THREE.PointLight( 0xfff0e0, 3.6, 42, 2 );
-				readLight.position.set( 0, 4.8, 2 );
-				group.add( readLight );
-				const warmFill = new THREE.PointLight( 0xf0e4d4, 2.6, 48, 2 );
-				warmFill.position.set( -7, 5.2, -6 );
-				group.add( warmFill );
-				const topFill = new THREE.PointLight( 0xfffcf5, 2.2, 45, 2 );
-				topFill.position.set( 6, 5.2, 8 );
-				group.add( topFill );
+				const woodTex = createRichWoodTexture();
+				const matWood = new THREE.MeshStandardMaterial( { map: woodTex, roughness: 0.7, metalness: 0.1, toneMapped: true } );
+				const matFloor = new THREE.MeshStandardMaterial( { map: woodTex.clone(), roughness: 0.4, metalness: 0.2, toneMapped: true } );
+				matFloor.map.needsUpdate = true;
+				matFloor.map.repeat.set( 8, 12 );
+				const matGold = new THREE.MeshStandardMaterial( { color: 0xcca854, roughness: 0.3, metalness: 0.8, toneMapped: true } );
+
+				const roomWidth = 40;
+				const roomDepth = 60;
+				const roomHeight = 25;
+				const halfW = roomWidth / 2;
+				const halfD = roomDepth / 2;
+
+				const floorGeo = new THREE.PlaneGeometry( roomWidth, roomDepth );
+				matFloor.map = woodTex.clone();
+				matFloor.map.needsUpdate = true;
+				matFloor.map.repeat.set( 8, 12 );
+				const floor = new THREE.Mesh( floorGeo, matFloor );
+				floor.rotation.x = -Math.PI / 2;
+				floor.receiveShadow = !isMobile;
+				group.add( floor );
+
+				const ceiling = new THREE.Mesh( new THREE.PlaneGeometry( roomWidth, roomDepth ), matWood );
+				ceiling.rotation.x = Math.PI / 2;
+				ceiling.position.y = roomHeight;
+				group.add( ceiling );
+
+				const wallMat = matWood.clone();
+				const wallTex = woodTex.clone();
+				wallTex.needsUpdate = true;
+				wallTex.repeat.set( 10, 4 );
+				wallMat.map = wallTex;
+				const wallGeo = new THREE.PlaneGeometry( roomDepth, roomHeight );
+				const leftWall = new THREE.Mesh( wallGeo, wallMat );
+				leftWall.rotation.y = Math.PI / 2;
+				leftWall.position.set( -halfW, roomHeight / 2, 0 );
+				leftWall.receiveShadow = !isMobile;
+				group.add( leftWall );
+				const rightWall = new THREE.Mesh( wallGeo.clone(), wallMat.clone() );
+				rightWall.material.map = wallTex.clone();
+				rightWall.material.map.needsUpdate = true;
+				rightWall.material.map.repeat.set( 10, 4 );
+				rightWall.rotation.y = -Math.PI / 2;
+				rightWall.position.set( halfW, roomHeight / 2, 0 );
+				rightWall.receiveShadow = !isMobile;
+				group.add( rightWall );
+				const backWall = new THREE.Mesh( new THREE.PlaneGeometry( roomWidth, roomHeight ), wallMat.clone() );
+				backWall.material.map = wallTex.clone();
+				backWall.material.map.needsUpdate = true;
+				backWall.material.map.repeat.set( 10, 4 );
+				backWall.position.set( 0, roomHeight / 2, -halfD );
+				backWall.receiveShadow = !isMobile;
+				group.add( backWall );
+
+				const maxBooks = isMobile ? 2800 : 11000;
+				const bookGeo = new THREE.BoxGeometry( 1, 1, 1 );
+				bookGeo.translate( 0, 0.5, 0.5 );
+				const bookMat = new THREE.MeshStandardMaterial( { color: 0xffffff, roughness: 0.5, metalness: 0.1, toneMapped: true } );
+				const instancedBooks = new THREE.InstancedMesh( bookGeo, bookMat, maxBooks );
+				instancedBooks.castShadow = !isMobile;
+				instancedBooks.receiveShadow = !isMobile;
+				group.add( instancedBooks );
+
+				let bookCount = 0;
+				const dummy = new THREE.Object3D();
+				const bookColors = [
+					new THREE.Color( 0x3a0d11 ), new THREE.Color( 0x112211 ), new THREE.Color( 0x0c1c38 ),
+					new THREE.Color( 0x2d1b0c ), new THREE.Color( 0x1a1a1a ), new THREE.Color( 0x7c581a )
+				];
+				const tempColor = new THREE.Color();
+
+				function populateBooksOnShelf( shelfX, shelfZ, rotY, shelfY, shelfWidth, shelfDepth ) {
+					let currentX = -shelfWidth / 2 + 0.2;
+					const endX = shelfWidth / 2 - 0.2;
+					while ( currentX < endX && bookCount < maxBooks ) {
+						const bThickness = 0.15 + Math.random() * 0.3;
+						const bHeight = 0.8 + Math.random() * 0.6;
+						const bDepth = 0.7 + Math.random() * 0.3;
+						if ( currentX + bThickness > endX ) break;
+						const zSpan = shelfDepth - bDepth - 0.35;
+						const zLocal = zSpan > 0 ? ( Math.random() - 0.5 ) * zSpan : 0;
+						dummy.position.set( currentX + bThickness / 2, shelfY, zLocal );
+						dummy.scale.set( bThickness, bHeight, bDepth );
+						dummy.rotation.set( 0, 0, 0 );
+						if ( Math.random() > 0.8 ) dummy.rotation.z = ( Math.random() - 0.5 ) * 0.3;
+						dummy.position.applyAxisAngle( new THREE.Vector3( 0, 1, 0 ), rotY );
+						dummy.position.x += shelfX;
+						dummy.position.z += shelfZ;
+						dummy.rotation.y = rotY;
+						dummy.updateMatrix();
+						instancedBooks.setMatrixAt( bookCount, dummy.matrix );
+						tempColor.copy( bookColors[ Math.floor( Math.random() * bookColors.length ) ] );
+						tempColor.r += ( Math.random() - 0.5 ) * 0.1;
+						tempColor.g += ( Math.random() - 0.5 ) * 0.1;
+						tempColor.b += ( Math.random() - 0.5 ) * 0.1;
+						instancedBooks.setColorAt( bookCount, tempColor );
+						currentX += bThickness + 0.04 + Math.random() * 0.06;
+						bookCount++;
+					}
+				}
+
+				function buildShelfStructure( x, z, rotY, width, height, tiers ) {
+					const sg = new THREE.Group();
+					sg.position.set( x, 0, z );
+					sg.rotation.y = rotY;
+					const depth = 2.5;
+					const thickness = 0.3;
+					const backGeo = new THREE.BoxGeometry( width, height, thickness );
+					const back = new THREE.Mesh( backGeo, matWood );
+					back.position.set( 0, height / 2, -depth / 2 );
+					back.receiveShadow = !isMobile;
+					sg.add( back );
+					const sideGeo = new THREE.BoxGeometry( thickness, height, depth );
+					const leftSide = new THREE.Mesh( sideGeo, matWood );
+					leftSide.position.set( -width / 2 + thickness / 2, height / 2, 0 );
+					leftSide.receiveShadow = !isMobile;
+					leftSide.castShadow = !isMobile;
+					const rightSide = new THREE.Mesh( sideGeo, matWood );
+					rightSide.position.set( width / 2 - thickness / 2, height / 2, 0 );
+					rightSide.receiveShadow = !isMobile;
+					rightSide.castShadow = !isMobile;
+					sg.add( leftSide, rightSide );
+					const tierHeight = height / tiers;
+					const shelfGeo = new THREE.BoxGeometry( width - thickness * 2, thickness, depth - thickness );
+					for ( let i = 1; i < tiers; i++ ) {
+						const shelfY = i * tierHeight;
+						const shelf = new THREE.Mesh( shelfGeo, matWood );
+						shelf.position.set( 0, shelfY, 0 );
+						shelf.receiveShadow = !isMobile;
+						shelf.castShadow = !isMobile;
+						sg.add( shelf );
+						populateBooksOnShelf( x, z, rotY, shelfY + thickness / 2, width - thickness * 2, depth );
+					}
+					group.add( sg );
+				}
+
+				const shelfH = 18;
+				const shelfTiers = 10;
+				const shelfW = 12;
+				buildShelfStructure( -19, -15, Math.PI / 2, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( -19, -3, Math.PI / 2, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( -19, 9, Math.PI / 2, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( 19, -15, -Math.PI / 2, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( 19, -3, -Math.PI / 2, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( 19, 9, -Math.PI / 2, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( -10, -29, 0, shelfW, shelfH, shelfTiers );
+				buildShelfStructure( 10, -29, 0, shelfW, shelfH, shelfTiers );
+
+				instancedBooks.count = bookCount;
+				instancedBooks.instanceMatrix.needsUpdate = true;
+				if ( instancedBooks.instanceColor ) instancedBooks.instanceColor.needsUpdate = true;
+
+				function createWallSconce( x, y, z, rotY ) {
+					const sconceG = new THREE.Group();
+					sconceG.position.set( x, y, z );
+					sconceG.rotation.y = rotY;
+					const fix = new THREE.Mesh( new THREE.BoxGeometry( 0.2, 0.8, 0.4 ), matGold );
+					fix.position.set( -0.1, 0, 0 );
+					sconceG.add( fix );
+					const bulb = new THREE.Mesh(
+						new THREE.SphereGeometry( 0.2, 16, 16 ),
+						new THREE.MeshStandardMaterial( { color: 0xffffee, emissive: 0xffbb55, emissiveIntensity: 2, toneMapped: true } )
+					);
+					bulb.position.set( 0.2, 0.2, 0 );
+					sconceG.add( bulb );
+					const pl = new THREE.PointLight( 0xffa844, 1.2, 25, 2 );
+					pl.position.set( 0.4, 0.2, 0 );
+					pl.castShadow = false;
+					sconceG.add( pl );
+					group.add( sconceG );
+				}
+				const sconceY = 8;
+				[ -18, -6, 6, 18 ].forEach( ( zz ) => {
+					createWallSconce( -17.5, sconceY, zz, 0 );
+					createWallSconce( 17.5, sconceY, zz, Math.PI );
+				} );
+
+				function addSpotlight( zPos ) {
+					const spotLight = new THREE.SpotLight( 0xffd599, 3, 40, Math.PI / 6, 0.8, 1.5 );
+					spotLight.position.set( 0, roomHeight - 1, zPos );
+					spotLight.castShadow = !isMobile;
+					if ( spotLight.shadow ) {
+						spotLight.shadow.mapSize.width = isMobile ? 512 : 1024;
+						spotLight.shadow.mapSize.height = isMobile ? 512 : 1024;
+					}
+					const target = new THREE.Object3D();
+					target.position.set( 0, 0, zPos );
+					group.add( target );
+					spotLight.target = target;
+					group.add( spotLight );
+				}
+				addSpotlight( -5 );
+				addSpotlight( -18 );
+
+				const ambInterior = new THREE.AmbientLight( 0x3a2818, isMobile ? 0.55 : 0.85 );
+				group.add( ambInterior );
 
 				const bodies = [];
-				const floorBody = new CANNON.Body( { mass: 0, material: groundMaterial } );
-				floorBody.addShape( new CANNON.Box( new CANNON.Vec3( 20, 0.08, 18 ) ), new CANNON.Vec3( 0, -0.08, 0 ) );
-				bodies.push( floorBody );
-				const wy = wallH / 2;
-				const n = new CANNON.Body( { mass: 0, material: groundMaterial } );
-				n.addShape( new CANNON.Box( new CANNON.Vec3( 20, wy, 0.2 ) ), new CANNON.Vec3( 0, wy, -18 ) );
-				bodies.push( n );
-				const s = new CANNON.Body( { mass: 0, material: groundMaterial } );
-				s.addShape( new CANNON.Box( new CANNON.Vec3( 20, wy, 0.2 ) ), new CANNON.Vec3( 0, wy, 18 ) );
-				bodies.push( s );
-				const e = new CANNON.Body( { mass: 0, material: groundMaterial } );
-				e.addShape( new CANNON.Box( new CANNON.Vec3( 0.2, wy, 18 ) ), new CANNON.Vec3( -20, wy, 0 ) );
-				bodies.push( e );
-				const wst = new CANNON.Body( { mass: 0, material: groundMaterial } );
-				wst.addShape( new CANNON.Box( new CANNON.Vec3( 0.2, wy, 18 ) ), new CANNON.Vec3( 20, wy, 0 ) );
-				bodies.push( wst );
+				const addBox = ( hx, hy, hz, x, y, z ) => {
+					const b = new CANNON.Body( { mass: 0, material: groundMaterial } );
+					b.addShape( new CANNON.Box( new CANNON.Vec3( hx, hy, hz ) ), new CANNON.Vec3( x, y, z ) );
+					bodies.push( b );
+				};
+				addBox( halfW, 0.1, halfD, 0, -0.1, 0 );
+				const wy = roomHeight / 2;
+				addBox( halfW, wy, 0.2, 0, wy, -halfD );
+				addBox( 0.2, wy, halfD, -halfW, wy, 0 );
+				addBox( 0.2, wy, halfD, halfW, wy, 0 );
 
-				return { group, bodies };
+				const lit = buildBookstoreLiteraturePanels( group );
+				return {
+					group,
+					bodies,
+					bookstoreLitPickMeshes: lit.literaturePickMeshes,
+					bookstoreLitPanelMeta: lit.literaturePanelMeta,
+					disposeBookstoreLiteraturePanels: lit.disposeLiteraturePanels
+				};
 			}
 
 			function createShipWoodCanvasTexture() {
@@ -2854,6 +4059,237 @@
 					return { artW: w, artH: h };
 				}
 
+				const SHIP_CAPTION_GAP_BELOW_FRAME = 0.28;
+				const SHIP_CAPTION_Z = 0.12;
+
+				function disposeShipLitCaptionRow( row ) {
+					if ( !row ) return;
+					row.traverse( ( o ) => {
+						if ( o.geometry ) o.geometry.dispose();
+						if ( o.material ) o.material.dispose();
+					} );
+				}
+
+				/**
+				 * Title + artist under a ship art frame — same material language as flythrough choice labels.
+				 * @returns {THREE.Group|null}
+				 */
+				function buildShipLitCaptionRowGroup( font, titleStr, artistStr, titleTargetW ) {
+					if ( !font ) return null;
+					const row = new THREE.Group();
+					row.name = 'ShipLitCaption';
+					const titleRaw = String( titleStr || '' ).trim() || '—';
+					const artistRaw = String( artistStr || '' ).trim();
+					const hasSub = artistRaw.length > 0;
+					const titleLineGap = 0.058;
+					const titleGlowScale = 1.07;
+					const textParams = {
+						font: font,
+						size: 0.38,
+						height: 0.056,
+						curveSegments: 10,
+						bevelEnabled: false
+					};
+					function measureTitleWidth( str ) {
+						const g = new TextGeometry( str, textParams );
+						g.computeBoundingBox();
+						const w = g.boundingBox.max.x - g.boundingBox.min.x;
+						g.dispose();
+						return w;
+					}
+					function measureTitleHeight( str ) {
+						const g = new TextGeometry( str, textParams );
+						g.computeBoundingBox();
+						const h = g.boundingBox.max.y - g.boundingBox.min.y;
+						g.dispose();
+						return h;
+					}
+					function wrapTitleLines( str, maxGeomW ) {
+						const words = str.split( /\s+/ ).filter( Boolean );
+						if ( words.length === 0 ) return [ '' ];
+						const out = [];
+						let cur = '';
+						for ( let wi = 0; wi < words.length; wi++ ) {
+							const w = words[ wi ];
+							const trial = cur ? cur + ' ' + w : w;
+							if ( measureTitleWidth( trial ) <= maxGeomW || !cur ) cur = trial;
+							else {
+								out.push( cur );
+								cur = w;
+							}
+						}
+						if ( cur ) out.push( cur );
+						return out;
+					}
+					const fullWOneLine = measureTitleWidth( titleRaw );
+					let maxLG = Math.max( textParams.size * 2.2, fullWOneLine * 0.36 );
+					let titleLines = wrapTitleLines( titleRaw, maxLG );
+					let guard = 0;
+					while ( titleLines.length > 4 && maxLG > textParams.size * 1.15 && guard++ < 28 ) {
+						maxLG *= 0.9;
+						titleLines = wrapTitleLines( titleRaw, maxLG );
+					}
+					if ( titleLines.length > 4 ) titleLines = titleLines.slice( 0, 4 );
+					let maxLnW = 0;
+					for ( let ti = 0; ti < titleLines.length; ti++ ) {
+						maxLnW = Math.max( maxLnW, measureTitleWidth( titleLines[ ti ] ) );
+					}
+					const tw = titleTargetW > 0 ? titleTargetW : 3.2;
+					const fitScale = maxLnW > 1e-6 ? Math.min( 1.22, tw / maxLnW ) : 1;
+					const lineDispHs = titleLines.map( ( ln ) => measureTitleHeight( ln ) * fitScale );
+					let totalTitleH = 0;
+					for ( let li = 0; li < lineDispHs.length; li++ ) {
+						totalTitleH += lineDispHs[ li ];
+						if ( li < lineDispHs.length - 1 ) totalTitleH += titleLineGap;
+					}
+					const maxTitleDispW = Math.max( ...titleLines.map( ( ln ) => measureTitleWidth( ln ) * fitScale ), 0.001 );
+					const dispW = maxTitleDispW;
+
+					const padX = 0.38;
+					const padY = 0.16;
+					const gapYTitleSub = 0.082;
+					let alignY = 0;
+					let subY = 0;
+					let subDispW = 0;
+					let subDispH = 0;
+					let subFit = 1;
+					let subGeo = null;
+					if ( hasSub ) {
+						const subParams = {
+							font: font,
+							size: textParams.size * 0.34,
+							height: textParams.height * 0.38,
+							curveSegments: 10,
+							bevelEnabled: false
+						};
+						const maxSubW = dispW * 1.02;
+						subGeo = new TextGeometry( artistRaw, subParams );
+						subGeo.computeBoundingBox();
+						const sbb = subGeo.boundingBox;
+						const stw = sbb.max.x - sbb.min.x;
+						const sth = sbb.max.y - sbb.min.y;
+						subGeo.center();
+						subFit = stw > 1e-6 ? Math.min( 1.14, maxSubW / stw ) : 1;
+						subDispW = stw * subFit;
+						subDispH = sth * subFit;
+						alignY = gapYTitleSub * 0.5 + subDispH * 0.5 + totalTitleH * 0.5;
+						subY = alignY - totalTitleH * 0.5 - gapYTitleSub - subDispH * 0.5;
+					}
+
+					const titleCentY = hasSub ? alignY : 0;
+					let yCursor = titleCentY + totalTitleH * 0.5;
+
+					const backMat = new THREE.MeshBasicMaterial( {
+						color: 0x120a06,
+						transparent: true,
+						opacity: 0.9,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: false,
+						polygonOffset: true,
+						polygonOffsetFactor: -2,
+						polygonOffsetUnits: -2
+					} );
+					const blockW = hasSub ? Math.max( dispW, subDispW ) + padX * 2 : dispW + padX * 2;
+					const blockH = ( hasSub ? totalTitleH + gapYTitleSub + subDispH : totalTitleH ) + padY * 2;
+					row.userData.shipCaptionBlockH = blockH;
+					const backGeo = new THREE.PlaneGeometry( blockW, blockH );
+					const backMesh = new THREE.Mesh( backGeo, backMat );
+					backMesh.position.set( 0, 0, -0.08 );
+					backMesh.renderOrder = 4;
+					row.add( backMesh );
+
+					const glowMat = new THREE.MeshBasicMaterial( {
+						color: 0xffb24a,
+						transparent: true,
+						opacity: 0.46,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: false,
+						blending: THREE.AdditiveBlending,
+						polygonOffset: true,
+						polygonOffsetFactor: -4,
+						polygonOffsetUnits: -4
+					} );
+					const textMat = new THREE.MeshBasicMaterial( {
+						color: 0xfffff8,
+						transparent: true,
+						opacity: 1,
+						side: THREE.DoubleSide,
+						toneMapped: false,
+						depthTest: true,
+						depthWrite: true,
+						polygonOffset: true,
+						polygonOffsetFactor: -4,
+						polygonOffsetUnits: -4
+					} );
+
+					for ( let li = 0; li < titleLines.length; li++ ) {
+						const lineStr = titleLines[ li ];
+						const textGeo = new TextGeometry( lineStr, textParams );
+						textGeo.computeBoundingBox();
+						textGeo.center();
+						const ly = yCursor - lineDispHs[ li ] * 0.5;
+						yCursor -= lineDispHs[ li ] + titleLineGap;
+
+						const glowGeo = textGeo.clone();
+						const glowMesh = new THREE.Mesh( glowGeo, glowMat );
+						glowMesh.scale.setScalar( fitScale * titleGlowScale );
+						glowMesh.position.set( 0, ly, -0.02 );
+						glowMesh.renderOrder = 5;
+						row.add( glowMesh );
+
+						const fillMesh = new THREE.Mesh( textGeo, textMat );
+						fillMesh.scale.setScalar( fitScale );
+						fillMesh.position.set( 0, ly, 0.012 );
+						fillMesh.renderOrder = 6;
+						row.add( fillMesh );
+					}
+
+					if ( hasSub && subGeo ) {
+						const subGlowMat = new THREE.MeshBasicMaterial( {
+							color: 0xe6a030,
+							transparent: true,
+							opacity: 0.34,
+							side: THREE.DoubleSide,
+							toneMapped: false,
+							depthTest: true,
+							depthWrite: false,
+							blending: THREE.AdditiveBlending,
+							polygonOffset: true,
+							polygonOffsetFactor: -4,
+							polygonOffsetUnits: -4
+						} );
+						const subGlowMesh = new THREE.Mesh( subGeo.clone(), subGlowMat );
+						subGlowMesh.scale.setScalar( subFit * 1.06 );
+						subGlowMesh.position.set( 0, subY, -0.016 );
+						subGlowMesh.renderOrder = 5;
+						row.add( subGlowMesh );
+
+						const subMat = new THREE.MeshBasicMaterial( {
+							color: 0xf8f0e4,
+							transparent: true,
+							opacity: 0.97,
+							side: THREE.DoubleSide,
+							toneMapped: false,
+							depthTest: true,
+							depthWrite: true,
+							polygonOffset: true,
+							polygonOffsetFactor: -4,
+							polygonOffsetUnits: -4
+						} );
+						const subTextMesh = new THREE.Mesh( subGeo, subMat );
+						subTextMesh.scale.setScalar( subFit );
+						subTextMesh.position.set( 0, subY, 0.012 );
+						subTextMesh.renderOrder = 6;
+						row.add( subTextMesh );
+					}
+
+					return row;
+				}
+
 				function rebuildShipLitPanelFrame( parts, artW, artH, ft ) {
 					const pg = parts.panelGroup;
 					const fw = artW + ft * 2;
@@ -2888,6 +4324,27 @@
 					addFrameBar( fw, ft, ft * 1.2, 0, -fh / 2 - ft / 2, 0.035 );
 					addFrameBar( ft, fh, ft * 1.2, fw / 2 + ft / 2, 0, 0.035 );
 					addFrameBar( ft, fh, ft * 1.2, -fw / 2 - ft / 2, 0, 0.035 );
+					if ( parts.captionRow ) {
+						const fontR = flythroughChoiceFontRef;
+						disposeShipLitCaptionRow( parts.captionRow );
+						parts.panelGroup.remove( parts.captionRow );
+						parts.captionRow = null;
+						if ( fontR ) {
+							const capW = Math.min( 6.35, fw * 0.98 );
+							const row = buildShipLitCaptionRowGroup(
+								fontR,
+								parts.captionTitle != null ? parts.captionTitle : '',
+								parts.captionArtist != null ? parts.captionArtist : '',
+								capW
+							);
+							if ( row ) {
+								const bh = row.userData.shipCaptionBlockH || 0.48;
+								row.position.set( 0, -fh * 0.5 - ft - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+								parts.panelGroup.add( row );
+								parts.captionRow = row;
+							}
+						}
+					}
 				}
 
 				for ( let i = 0; i < n; i++ ) {
@@ -3016,7 +4473,7 @@
 
 						const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
 						const rimMat = new THREE.LineBasicMaterial( {
-							color: 0xffee66, transparent: true, opacity: 0.88, toneMapped: false,
+							color: 0x7a9ec8, transparent: true, opacity: 0.56, toneMapped: false,
 							depthTest: false, depthWrite: false
 						} );
 						const rimLine = new THREE.LineSegments( rimEdges, rimMat );
@@ -3026,7 +4483,7 @@
 
 						const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
 						const outerRimMat = new THREE.LineBasicMaterial( {
-							color: 0xffaa22, transparent: true, opacity: 0.62, toneMapped: false,
+							color: 0x5a7aa8, transparent: true, opacity: 0.44, toneMapped: false,
 							depthTest: false, depthWrite: false
 						} );
 						const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
@@ -3036,7 +4493,7 @@
 
 						const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
 						const hoverEdgeMat = new THREE.LineBasicMaterial( {
-							color: 0xffffff, transparent: true, opacity: 0.22, toneMapped: false,
+							color: 0xa8c8e8, transparent: true, opacity: 0.34, toneMapped: false,
 							depthTest: false, depthWrite: false
 						} );
 						const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
@@ -3137,7 +4594,7 @@
 
 					const rimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.06, fh + 0.06 ) );
 					const rimMat = new THREE.LineBasicMaterial( {
-						color: 0xffee66, transparent: true, opacity: 0.88, toneMapped: false,
+						color: 0x7a9ec8, transparent: true, opacity: 0.56, toneMapped: false,
 						depthTest: false, depthWrite: false
 					} );
 					const rimLine = new THREE.LineSegments( rimEdges, rimMat );
@@ -3147,7 +4604,7 @@
 
 					const outerRimEdges = new THREE.EdgesGeometry( new THREE.PlaneGeometry( fw + 0.42, fh + 0.42 ) );
 					const outerRimMat = new THREE.LineBasicMaterial( {
-						color: 0xffaa22, transparent: true, opacity: 0.62, toneMapped: false,
+						color: 0x5a7aa8, transparent: true, opacity: 0.44, toneMapped: false,
 						depthTest: false, depthWrite: false
 					} );
 					const outerRimLine = new THREE.LineSegments( outerRimEdges, outerRimMat );
@@ -3157,13 +4614,28 @@
 
 					const hoverEdgeGeo = new THREE.EdgesGeometry( new THREE.PlaneGeometry( artW + 0.38, artH + 0.38 ) );
 					const hoverEdgeMat = new THREE.LineBasicMaterial( {
-						color: 0xffffff, transparent: true, opacity: 0.22, toneMapped: false,
+						color: 0xa8c8e8, transparent: true, opacity: 0.34, toneMapped: false,
 						depthTest: false, depthWrite: false
 					} );
 					const hoverEdgeLine = new THREE.LineSegments( hoverEdgeGeo, hoverEdgeMat );
 					hoverEdgeLine.position.z = 0.082;
 					hoverEdgeLine.renderOrder = 3;
 					pg.add( hoverEdgeLine );
+
+					const capPiece = pieces[ i ];
+					const captionTitle = capPiece?.title != null ? String( capPiece.title ) : '';
+					const captionArtist = capPiece?.artist != null ? String( capPiece.artist ) : '';
+					let captionRow = null;
+					const capFont = flythroughChoiceFontRef;
+					if ( capFont ) {
+						const capTargetW = Math.min( 6.35, fw * 0.98 );
+						captionRow = buildShipLitCaptionRowGroup( capFont, captionTitle, captionArtist, capTargetW );
+						if ( captionRow ) {
+							const bh = captionRow.userData.shipCaptionBlockH || 0.48;
+							captionRow.position.set( 0, -fh * 0.5 - frameT - SHIP_CAPTION_GAP_BELOW_FRAME - bh * 0.5, SHIP_CAPTION_Z );
+							pg.add( captionRow );
+						}
+					}
 
 					const pickGeo = new THREE.PlaneGeometry( artW + 0.28, artH + 0.28 );
 					const pickMat = new THREE.MeshBasicMaterial( { transparent: true, opacity: 0, depthWrite: false } );
@@ -3179,7 +4651,10 @@
 						back, art, pick, rimLine, outerRimLine, hoverEdgeLine,
 						frameBars,
 						frameMat,
-						frameT
+						frameT,
+						captionRow,
+						captionTitle,
+						captionArtist
 					};
 
 					literaturePanelMeta.push( { panelGroup: pg, rimMat, outerRimMat, frameMat, hoverEdgeMat } );
@@ -3462,15 +4937,28 @@
 			function updateShipLiteraturePanelsHover( elapsed ) {
 				const meta = shipMapCache?.literaturePanelMeta;
 				if ( !meta?.length ) return;
+				const idleRim = 0x7a9ec8;
+				const idleOuter = 0x5a7aa8;
+				const idleEdge = 0xa8c8e8;
+				const hiRim = 0x99f5ff;
+				const hiOuter = 0x22a8ff;
+				const hiEdge = 0xe8fbff;
 				if ( activeMap !== 'ship' || shipLitModalOpen || flythroughActive ) {
 					shipLitHoverIndex = -1;
 					shipLitHoverIndexCached = -1;
 					for ( let i = 0; i < meta.length; i++ ) {
 						const m = meta[ i ];
-						m.rimMat.opacity = 0.88;
-						if ( m.outerRimMat ) m.outerRimMat.opacity = 0.62;
+						m.rimMat.opacity = 0.56;
+						m.rimMat.color.setHex( idleRim );
+						if ( m.outerRimMat ) {
+							m.outerRimMat.opacity = 0.44;
+							m.outerRimMat.color.setHex( idleOuter );
+						}
 						m.frameMat.emissiveIntensity = 0.11;
-						if ( m.hoverEdgeMat ) m.hoverEdgeMat.opacity = 0.22;
+						if ( m.hoverEdgeMat ) {
+							m.hoverEdgeMat.color.setHex( idleEdge );
+							m.hoverEdgeMat.opacity = 0.34;
+						}
 						m.panelGroup.scale.setScalar( 1 );
 					}
 					return;
@@ -3483,24 +4971,131 @@
 				for ( let i = 0; i < meta.length; i++ ) {
 					const m = meta[ i ];
 					const on = i === shipLitHoverIndex;
-					const pulse = 0.5 * Math.sin( elapsed * 4.8 );
-					m.rimMat.opacity = on ? 1 : 0.88;
-					m.rimMat.color.setHex( on ? 0xffffcc : 0xffee66 );
-					if ( m.outerRimMat ) {
-						m.outerRimMat.opacity = on ? 0.92 + 0.08 * pulse : 0.62;
-						m.outerRimMat.color.setHex( on ? 0xffdd44 : 0xffaa22 );
+					const t = elapsed;
+					const pulse = 0.5 * ( Math.sin( t * 7.4 ) + 0.42 * Math.sin( t * 11.8 + 0.9 ) );
+					const pulse2 = 0.5 * Math.sin( t * 5.1 + 0.35 );
+					const beat = 0.5 + 0.5 * Math.sin( t * 6.6 );
+					if ( on ) {
+						m.rimMat.color.setHex( hiRim );
+						m.rimMat.opacity = 0.98 + 0.02 * pulse2;
+						if ( m.outerRimMat ) {
+							m.outerRimMat.color.setHex( hiOuter );
+							m.outerRimMat.opacity = 0.82 + 0.16 * pulse + 0.06 * beat;
+						}
+						m.frameMat.emissiveIntensity = 0.38 + 0.22 * pulse2 + 0.12 * Math.sin( t * 4.2 );
+						m.frameMat.emissive.setHex( 0x112244 );
+						if ( m.hoverEdgeMat ) {
+							m.hoverEdgeMat.color.setHex( hiEdge );
+							m.hoverEdgeMat.opacity = 0.72 + 0.26 * beat + 0.08 * pulse;
+						}
+						m.panelGroup.scale.setScalar( 1.045 + 0.032 * pulse2 + 0.014 * Math.sin( t * 8.4 ) );
+					} else {
+						m.rimMat.color.setHex( idleRim );
+						m.rimMat.opacity = 0.56;
+						if ( m.outerRimMat ) {
+							m.outerRimMat.color.setHex( idleOuter );
+							m.outerRimMat.opacity = 0.44;
+						}
+						m.frameMat.emissiveIntensity = 0.11;
+						m.frameMat.emissive.setHex( 0x553311 );
+						if ( m.hoverEdgeMat ) {
+							m.hoverEdgeMat.color.setHex( idleEdge );
+							m.hoverEdgeMat.opacity = 0.34;
+						}
+						m.panelGroup.scale.setScalar( 1 );
 					}
-					m.frameMat.emissiveIntensity = on ? 0.42 + 0.28 * Math.sin( elapsed * 3.8 ) : 0.14;
-					if ( m.hoverEdgeMat ) {
-						m.hoverEdgeMat.color.setHex( on ? 0xffffff : 0xfffef0 );
-						m.hoverEdgeMat.opacity = on ? 0.96 + 0.04 * pulse : 0.22;
+				}
+			}
+
+			function raycastBookstoreLitCenterHitIndex() {
+				if ( activeMap !== 'bookstore' || isBookLitLightboxOpen() || !bookstoreMapCache?.bookstoreLitPickMeshes?.length ) return -1;
+				camera.updateMatrixWorld( true );
+				bookstoreLitRaycaster.setFromCamera( bookstoreLitNdcCenter, camera );
+				const hits = bookstoreLitRaycaster.intersectObjects( bookstoreMapCache.bookstoreLitPickMeshes, false );
+				if ( !hits.length ) return -1;
+				const u = hits[ 0 ].object.userData;
+				return u && u.kind === 'bookstoreLit' ? u.bookstoreLitIndex : -1;
+			}
+
+			function updateBookstoreLiteraturePanelsHover( elapsed ) {
+				const meta = bookstoreMapCache?.bookstoreLitPanelMeta;
+				if ( !meta?.length ) return;
+				const idleRim = 0x7a9ec8;
+				const idleOuter = 0x5a7aa8;
+				const idleEdge = 0xa8c8e8;
+				const hiRim = 0x99f5ff;
+				const hiOuter = 0x22a8ff;
+				const hiEdge = 0xe8fbff;
+				if ( activeMap !== 'bookstore' || isBookLitLightboxOpen() || flythroughActive ) {
+					bookstoreLitHoverIndex = -1;
+					bookstoreLitHoverIndexCached = -1;
+					for ( let i = 0; i < meta.length; i++ ) {
+						const m = meta[ i ];
+						m.rimMat.opacity = 0.56;
+						m.rimMat.color.setHex( idleRim );
+						if ( m.outerRimMat ) {
+							m.outerRimMat.opacity = 0.44;
+							m.outerRimMat.color.setHex( idleOuter );
+						}
+						m.frameMat.emissiveIntensity = 0.11;
+						if ( m.hoverEdgeMat ) {
+							m.hoverEdgeMat.color.setHex( idleEdge );
+							m.hoverEdgeMat.opacity = 0.34;
+						}
+						m.panelGroup.scale.setScalar( 1 );
 					}
-					m.panelGroup.scale.setScalar( on ? 1.028 + 0.018 * Math.sin( elapsed * 3.2 ) : 1 );
+					return;
+				}
+				bookstoreLitRaycastFrame++;
+				if ( ( bookstoreLitRaycastFrame & 1 ) === 0 ) {
+					bookstoreLitHoverIndexCached = raycastBookstoreLitCenterHitIndex();
+				}
+				bookstoreLitHoverIndex = bookstoreLitHoverIndexCached;
+				for ( let i = 0; i < meta.length; i++ ) {
+					const m = meta[ i ];
+					const on = i === bookstoreLitHoverIndex;
+					const t = elapsed;
+					const pulse = 0.5 * ( Math.sin( t * 7.4 ) + 0.42 * Math.sin( t * 11.8 + 0.9 ) );
+					const pulse2 = 0.5 * Math.sin( t * 5.1 + 0.35 );
+					const beat = 0.5 + 0.5 * Math.sin( t * 6.6 );
+					if ( on ) {
+						m.rimMat.color.setHex( hiRim );
+						m.rimMat.opacity = 0.98 + 0.02 * pulse2;
+						if ( m.outerRimMat ) {
+							m.outerRimMat.color.setHex( hiOuter );
+							m.outerRimMat.opacity = 0.82 + 0.16 * pulse + 0.06 * beat;
+						}
+						m.frameMat.emissiveIntensity = 0.38 + 0.22 * pulse2 + 0.12 * Math.sin( t * 4.2 );
+						m.frameMat.emissive.setHex( 0x112244 );
+						if ( m.hoverEdgeMat ) {
+							m.hoverEdgeMat.color.setHex( hiEdge );
+							m.hoverEdgeMat.opacity = 0.72 + 0.26 * beat + 0.08 * pulse;
+						}
+						m.panelGroup.scale.setScalar( 1.045 + 0.032 * pulse2 + 0.014 * Math.sin( t * 8.4 ) );
+					} else {
+						m.rimMat.color.setHex( idleRim );
+						m.rimMat.opacity = 0.56;
+						if ( m.outerRimMat ) {
+							m.outerRimMat.color.setHex( idleOuter );
+							m.outerRimMat.opacity = 0.44;
+						}
+						m.frameMat.emissiveIntensity = 0.11;
+						m.frameMat.emissive.setHex( 0x553311 );
+						if ( m.hoverEdgeMat ) {
+							m.hoverEdgeMat.color.setHex( idleEdge );
+							m.hoverEdgeMat.opacity = 0.34;
+						}
+						m.panelGroup.scale.setScalar( 1 );
+					}
 				}
 			}
 
 			function getBookstoreMap() {
-				if ( !bookstoreMapCache ) bookstoreMapCache = buildBookstoreMap();
+				if ( !bookstoreMapCache || bookstoreMapCache._revision !== BOOKSTORE_MAP_REVISION ) {
+					if ( bookstoreMapCache?.disposeBookstoreLiteraturePanels ) bookstoreMapCache.disposeBookstoreLiteraturePanels();
+					bookstoreMapCache = buildBookstoreMap();
+					bookstoreMapCache._revision = BOOKSTORE_MAP_REVISION;
+				}
 				return bookstoreMapCache;
 			}
 
@@ -3535,27 +5130,51 @@
 				activeMap = 'main';
 			}
 
-			function enterBookstoreMap() {
+			function enterBookstoreMap( fromFlythroughBranch ) {
 				if ( activeMap !== 'main' || !mainMapRoot ) return;
-				const b = getBookstoreMap();
-				swapToInteriorMap( 'bookstore', b );
-				playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
-				playerBody.velocity.set( 0, 0, 0 );
-				const eyeH = getPlayerEyeHeight();
-				smoothedCameraPos.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y + eyeH, BOOKSTORE_SPAWN.z );
-				camera.rotation.order = 'YXZ';
-				camera.rotation.x = 0;
-				camera.rotation.y = 0;
-				scene.background = new THREE.Color( 0x353028 );
-				scene.fog = new THREE.Fog( 0x353028, 8, 58 );
-				/* Defaults often use very low hemi/sun; set readable floors for MeshStandard interiors. */
-				fillLight1.intensity = Math.max( 0.78, fillLight1.intensity * 0.82 + 0.42 );
-				directionalLight.intensity = Math.max( 1.05, Math.min( 2.6, directionalLight.intensity * 0.92 + 0.55 ) );
-				ambientLight.intensity = Math.max( 0.55, ambientLight.intensity + 0.32 );
+				if ( bookstoreEntryLoadInProgress ) {
+					if ( fromFlythroughBranch ) pendingEnterBookstoreFromFlythrough = true;
+					return;
+				}
+				bookstoreEntryLoadInProgress = true;
+				showShipEntryLoader();
+				Promise.all( [
+					ensureBookstoreLitTexturesPreloaded(),
+					flythroughFontLoadPromise,
+					new Promise( ( r ) => { window.setTimeout( r, BOOKSTORE_ENTRY_LOADER_MIN_MS ); } )
+				] ).then( () => {
+					const b = getBookstoreMap();
+					swapToInteriorMap( 'bookstore', b );
+					playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
+					playerBody.velocity.set( 0, 0, 0 );
+					const eyeH = getPlayerEyeHeight();
+					smoothedCameraPos.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y + eyeH, BOOKSTORE_SPAWN.z );
+					camera.rotation.order = 'YXZ';
+					camera.rotation.x = 0;
+					camera.rotation.y = 0;
+					scene.background = new THREE.Color( 0x353028 );
+					scene.fog = new THREE.Fog( 0x353028, 8, 58 );
+					/* Defaults often use very low hemi/sun; set readable floors for MeshStandard interiors. */
+					fillLight1.intensity = Math.max( 0.78, fillLight1.intensity * 0.82 + 0.42 );
+					directionalLight.intensity = Math.max( 1.05, Math.min( 2.6, directionalLight.intensity * 0.92 + 0.55 ) );
+					ambientLight.intensity = Math.max( 0.55, ambientLight.intensity + 0.32 );
+					window.requestAnimationFrame( () => {
+						window.requestAnimationFrame( () => { hideShipEntryLoader(); } );
+					} );
+				} ).catch( () => {
+					hideShipEntryLoader();
+				} ).finally( () => {
+					bookstoreEntryLoadInProgress = false;
+					if ( pendingEnterBookstoreFromFlythrough ) {
+						pendingEnterBookstoreFromFlythrough = false;
+						if ( activeMap === 'main' && mainMapRoot ) enterBookstoreMap( true );
+					}
+				} );
 			}
 
 			function exitBookstoreToMain() {
 				if ( activeMap !== 'bookstore' || !mainMapRoot ) return;
+				closeBookLitModal();
 				restoreMainWorldFromInterior( getBookstoreMap() );
 				playerBody.position.set( MAIN_RETURN_POS.x, MAIN_RETURN_POS.y, MAIN_RETURN_POS.z );
 				playerBody.velocity.set( 0, 0, 0 );
@@ -3567,7 +5186,12 @@
 				applySettings();
 			}
 
+			let bookstoreEntryLoadInProgress = false;
+			let pendingEnterBookstoreFromFlythrough = false;
+			const BOOKSTORE_ENTRY_LOADER_MIN_MS = 520;
+
 			let shipEntryLoadInProgress = false;
+			let pendingEnterShipFromFlythrough = false;
 			const SHIP_ENTRY_LOADER_MIN_MS = 520;
 
 			function showShipEntryLoader() {
@@ -3585,8 +5209,12 @@
 				el.setAttribute( 'aria-busy', 'false' );
 			}
 
-			function enterShipMap() {
-				if ( activeMap !== 'main' || !mainMapRoot || shipEntryLoadInProgress ) return;
+			function enterShipMap( fromFlythroughBranch ) {
+				if ( activeMap !== 'main' || !mainMapRoot ) return;
+				if ( shipEntryLoadInProgress ) {
+					if ( fromFlythroughBranch ) pendingEnterShipFromFlythrough = true;
+					return;
+				}
 				shipEntryLoadInProgress = true;
 				showShipEntryLoader();
 				const t0 = performance.now();
@@ -3616,6 +5244,10 @@
 					hideShipEntryLoader();
 				} ).finally( () => {
 					shipEntryLoadInProgress = false;
+					if ( pendingEnterShipFromFlythrough ) {
+						pendingEnterShipFromFlythrough = false;
+						if ( activeMap === 'main' && mainMapRoot ) enterShipMap( true );
+					}
 				} );
 			}
 
@@ -3679,20 +5311,17 @@
 					return;
 				}
 				flythroughChoiceMenuGroup.updateMatrixWorld( true );
-				_choiceNdc.x = ( ( flythroughChoiceHoverClientX - cr.left ) / cr.width ) * 2 - 1;
-				_choiceNdc.y = -( ( flythroughChoiceHoverClientY - cr.top ) / cr.height ) * 2 + 1;
-				flythroughChoiceRaycaster.setFromCamera( _choiceNdc, camera );
-				const hits = flythroughChoiceRaycaster.intersectObjects( flythroughChoicePickables, false );
-				if ( hits.length === 0 ) {
+				const hit = pickFlythroughChoiceHitAt( flythroughChoiceHoverClientX, flythroughChoiceHoverClientY );
+				if ( !hit ) {
 					hideFlythroughChoiceHoverOverlay();
 					return;
 				}
-				const key = hits[ 0 ].object.userData.branchKey;
+				const key = hit.object.userData.branchKey;
 				if ( !key || !branchFlythroughStates[ key ] ) {
 					hideFlythroughChoiceHoverOverlay();
 					return;
 				}
-				const hm = hits[ 0 ].object;
+				const hm = hit.object;
 				const w = hm.geometry?.parameters?.width ?? 1;
 				const h = hm.geometry?.parameters?.height ?? 1;
 				const hw = w * 0.5, hh = h * 0.5;
@@ -4045,6 +5674,9 @@
 				if ( activeMap === 'ship' ) {
 					updateShipLanternFlicker( clock.getElapsedTime() );
 					updateShipLiteraturePanelsHover( clock.getElapsedTime() );
+				}
+				if ( activeMap === 'bookstore' ) {
+					updateBookstoreLiteraturePanelsHover( clock.getElapsedTime() );
 				}
 				if ( activeMap === 'theater' ) updateTheaterGodRaySunPosition();
 				flythroughChoiceMenuGroup.visible = !isInteriorMap();

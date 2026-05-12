@@ -1225,6 +1225,11 @@ html.page-loaded .page-loader {
   object-fit: contain;
 }
 
+/* tips.png is white on transparent; invert to black on the light thanks strip */
+.special-thanks-img--tips {
+  filter: brightness(0);
+}
+
 .special-thanks-slide--hawk .special-thanks-img {
   height: 70px;
   max-width: min(72px, 20vw);
