@@ -147,6 +147,18 @@
 			mix-blend-mode: normal;
 			opacity: 1;
 		}
+		#bookLitLightbox,
+		#bookLitLightbox .lightbox-panel,
+		#bookLitLightbox .lightbox-content,
+		#bookLitLightbox .lb-lit,
+		#bookLitLightbox .lb-lit .lb-lit-title,
+		#bookLitLightbox .lb-lit .lb-lit-byline,
+		#bookLitLightbox .lb-lit .lb-lit-body,
+		#bookLitLightbox .lb-lit .lb-lit-end,
+		#bookLitLightbox .lightbox-close,
+		#bookLitLightbox .lightbox-nav {
+			font-family: 'Times New Roman', Times, Georgia, serif;
+		}
 	</style>
 	<style id="3dworld-treasure-loader-theme">
 		#page-loader svg path[class^="dCcBMlpE_"],
@@ -2453,7 +2465,7 @@
 			const MAIN_RETURN_POS = new THREE.Vector3( -8, 7, -26 );
 			const BOOKSTORE_SPAWN = new THREE.Vector3( 0, 1.95, 10 );
 			/** Extra world Y for literature ring (panels sit a bit above strict eye line). */
-			const BOOKSTORE_LIT_RING_Y_EXTRA = 0.52;
+			const BOOKSTORE_LIT_RING_Y_EXTRA = 1;
 			const BOOKSTORE_EXIT_POS = new THREE.Vector3( 0, 2, -19 );
 			const BOOKSTORE_EXIT_RADIUS = 3.5;
 			const SHIP_SPAWN = new THREE.Vector3( 0, 1.95, 9 );
