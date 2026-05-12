@@ -333,26 +333,31 @@ function escapeAttr(str) { return escapeHTML(str); }
     return parts.join('<br />');
   }
 
+  /** Trim a body block without stripping a leading tab (used for inner-dialogue paragraphs, e.g. Gabriel’s Sapphire). */
+  function trimLitBodyBlock(b) {
+    return String(b || '').replace(/^\n+/, '').replace(/\s+$/, '');
+  }
+
   /**
    * Body markup (in LIT_PIECES[].body):
    * - Blank line (\n\n+) = new paragraph (prose) or new stanza (poem).
    * - Prose: single newlines inside a block are reflowed into one paragraph (soft hyphen at line end joins words).
    * - Poem: single newline = line break within stanza.
    * - Tab at start of a poem line = indented line.
-   * - Prose block starting with tab = blockquote-style inset (leading tabs stripped before reflow).
+   * - Prose block starting with tab = inner-dialogue / inset (leading tabs stripped before reflow); only used in Gabriel’s Sapphire.
    */
   function renderLitBodyHtml(p) {
     const isPoem = p.format === 'poem';
-    const blocks = String(p.body || '').split(/\n\n+/).map(b => b.trim()).filter(b => b.length);
+    const blocks = String(p.body || '').split(/\n\n+/).map(trimLitBodyBlock).filter(b => b.length);
     return blocks.map(block => {
       if (isPoem) {
         return `<p class="lb-lit-stanza">${formatPoemStanza(block)}</p>`;
       }
       let cls = 'lb-lit-prose';
       let text = block;
-      if (/^\t+/.test(block)) {
+      if (/^\t+/.test(text)) {
         cls += ' lb-lit-prose--indented-block';
-        text = block.replace(/^\t+/, '');
+        text = text.replace(/^\t+/, '');
       }
       const flowed = reflowProseParagraph(text);
       return `<p class="${cls}">${escapeHTML(flowed)}</p>`;

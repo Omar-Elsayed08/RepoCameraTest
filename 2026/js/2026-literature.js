@@ -579,7 +579,7 @@ together like sardines to beat him down.
 Instantly, he pushed the double doors and was met with a warm
 wind, the seaside smell of the ocean, and the radiance of the sun.
 
-Thank the Gods, I made it out of there. Those boys always have it
+	Thank the Gods, I made it out of there. Those boys always have it
 out for me. I understand that I can be a lot, but I just want some friends. I
 want to be liked. I just want someone to understand me, but it seems like
 the only person who really understands me is my grandmother.
@@ -629,7 +629,7 @@ wards so his grandmother couldn’t see him.
 ing books, and playing with all the other children?’’
 
 
-I don’t want Mama to be mad at me; she’ll make a big deal out of
+	I don’t want Mama to be mad at me; she’ll make a big deal out of
 it, and she’ll only make things worse. 
 
 “Say something; I’m not upset, I’m just questioning why you’re at
@@ -654,7 +654,7 @@ diately vicious tears started to form, his heart raced, and his face was now
 beet red.
 
 
-She’s upset. I know she is. I don’t want her to know anything. Not
+	She’s upset. I know she is. I don’t want her to know anything. Not
 about me being the town’s “menace,” me getting bullied at school, or even
 me breaking away from her when she’s asleep. She can’t know or she’ll
 abandon me.
@@ -671,7 +671,7 @@ he walked inside to see his grandmother had blown out the candles, tidied
 up the house, and made sure all doors were locked.
 
 
-What is going on?
+	What is going on?
 
 
 “Let’s go,” said his grandma, in a monotone voice.
@@ -726,7 +726,7 @@ for a few seconds, because I was looking for something I think you would
 like.”
 
 
-I wonder what it could be. Mama is known for being weird, so what-
+	I wonder what it could be. Mama is known for being weird, so what-
 ever she’s getting might be something totally strange or something that’s from
 this cave.
 
@@ -742,7 +742,7 @@ The sapphire was like the clear blue ocean that hugged the island and the
 cerulean sky that observed the people.
 
 
-I’ve never seen something like this before. It reminds me of the bottle
+	I’ve never seen something like this before. It reminds me of the bottle
 trees back home. It also reminds me of the sapphire necklace of my mother’s.
 
 Gabriel looked up, questioning his grandmother. He wondered why
@@ -770,7 +770,7 @@ always trash the beaches, unravel the baskets, and steal fruits too. However,
 her father would always make her clean up her messes,” his grandma ex-
 plained with a soft chuckle.
 
-My mom did those things. I always imagined her as an excellent per-
+	My mom did those things. I always imagined her as an excellent per-
 son; I never knew that she was...well, like me. She never seemed that way in
 pictures or in my memory.
 

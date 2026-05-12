@@ -1866,11 +1866,15 @@ body.lightbox-open {
 .lb-lit-body:not(.lb-lit-body--poem) p.lb-lit-prose:last-child {
   margin-bottom: 0;
 }
-.lb-lit-prose.lb-lit-prose--indented-block {
+.lb-lit-body:not(.lb-lit-body--poem) p.lb-lit-prose--indented-block {
   text-indent: 0;
+}
+.lb-lit-prose.lb-lit-prose--indented-block {
   margin-left: 0;
   padding-left: 1.1rem;
-  border-left: 3px solid color-mix(in srgb, var(--gold) 55%, rgba(46, 28, 10, .2));
+  border-left: 3px solid color-mix(in srgb, #6baee0 50%, rgba(46, 28, 10, .18));
+  color: color-mix(in srgb, #5a9fd4 82%, var(--navy) 18%);
+  font-style: italic;
 }
 
 /* Poems: blank line in source = new stanza; single newline = line within stanza; tab at line start = indent */

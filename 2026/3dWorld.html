@@ -1420,18 +1420,21 @@
 				}
 				return parts.join( '<br />' );
 			}
+			function trimLitBodyBlock3d( b ) {
+				return String( b || '' ).replace( /^\n+/, '' ).replace( /\s+$/, '' );
+			}
 			function renderLitBodyHtml3d( p ) {
 				const isPoem = p.format === 'poem';
-				const blocks = String( p.body || '' ).split( /\n\n+/ ).map( ( b ) => b.trim() ).filter( ( b ) => b.length );
+				const blocks = String( p.body || '' ).split( /\n\n+/ ).map( trimLitBodyBlock3d ).filter( ( b ) => b.length );
 				return blocks.map( ( block ) => {
 					if ( isPoem ) {
 						return `<p class="lb-lit-stanza">${ formatLitPoemStanza( block ) }</p>`;
 					}
 					let cls = 'lb-lit-prose';
 					let text = block;
-					if ( /^\t+/.test( block ) ) {
+					if ( /^\t+/.test( text ) ) {
 						cls += ' lb-lit-prose--indented-block';
-						text = block.replace( /^\t+/, '' );
+						text = text.replace( /^\t+/, '' );
 					}
 					const flowed = reflowLitProseParagraph( text );
 					return `<p class="${ cls }">${ escapeLitHTML( flowed ) }</p>`;
