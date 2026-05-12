@@ -39,6 +39,24 @@
 			backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.45s ease;
 		}
 		#ship-lit-modal.ship-lit-modal--open .ship-lit-backdrop { opacity: 1; }
+		@media (max-width: 900px), (pointer: coarse) {
+			#ship-lit-modal .ship-lit-backdrop {
+				backdrop-filter: none;
+				-webkit-backdrop-filter: none;
+			}
+			#nav-startup-overlay .nav-startup-backdrop {
+				backdrop-filter: none;
+				-webkit-backdrop-filter: none;
+			}
+			#bookLitLightbox.lightbox {
+				backdrop-filter: none;
+				-webkit-backdrop-filter: none;
+			}
+			#bookLitLightbox .lightbox-nav {
+				backdrop-filter: none;
+				-webkit-backdrop-filter: none;
+			}
+		}
 		#ship-lit-modal .ship-lit-card {
 			position: relative; z-index: 1; width: min(100%, 1720px); height: min(100%, 100vh - clamp(20px, 4vmin, 44px));
 			max-height: calc(100vh - clamp(20px, 4vmin, 44px));
@@ -1023,9 +1041,16 @@
 			function finalizeBookstoreDoodleTexture( inputTex, maxAniso ) {
 				if ( !inputTex || !inputTex.image ) return inputTex;
 				const img = inputTex.image;
-				const w = img.naturalWidth || img.width;
-				const h = img.naturalHeight || img.height;
-				if ( !w || !h ) return inputTex;
+				const w0 = img.naturalWidth || img.width;
+				const h0 = img.naturalHeight || img.height;
+				if ( !w0 || !h0 ) return inputTex;
+				const maxPx = isMobileDevice ? 768 : 4096;
+				let w = w0, h = h0;
+				if ( Math.max( w, h ) > maxPx ) {
+					const s = maxPx / Math.max( w, h );
+					w = Math.max( 1, Math.round( w * s ) );
+					h = Math.max( 1, Math.round( h * s ) );
+				}
 				const canvas = document.createElement( 'canvas' );
 				canvas.width = w;
 				canvas.height = h;
@@ -1033,7 +1058,7 @@
 				ctx.fillStyle = '#ffffff';
 				ctx.fillRect( 0, 0, w, h );
 				try {
-					ctx.drawImage( img, 0, 0 );
+					ctx.drawImage( img, 0, 0, w0, h0, 0, 0, w, h );
 				} catch ( _e ) {
 					return inputTex;
 				}
@@ -1052,7 +1077,7 @@
 					return shipArtPreloadPromise;
 				}
 				const texLoader = new THREE.TextureLoader();
-				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const maxAniso = isMobileDevice ? 1 : Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
 				const entries = [];
 				for ( let pi = 0; pi < pieces.length; pi++ ) {
 					const u = resolveShipArtUrl( pieces[ pi ]?.src );
@@ -1078,10 +1103,17 @@
 					urlOnce.set( url, p );
 					return p;
 				}
-				shipArtPreloadPromise = Promise.all( entries.map( ( url ) => loadUrlOnce( url ) ) ).then( () => undefined );
+				const uniqueList = [ ...new Set( entries ) ];
+				if ( isMobileDevice ) {
+					shipArtPreloadPromise = uniqueList.reduce(
+						( chain, url ) => chain.then( () => loadUrlOnce( url ) ),
+						Promise.resolve()
+					).then( () => undefined );
+				} else {
+					shipArtPreloadPromise = Promise.all( uniqueList.map( ( url ) => loadUrlOnce( url ) ) ).then( () => undefined );
+				}
 				return shipArtPreloadPromise;
 			}
-			ensureShipArtTexturesPreloaded();
 
 			const bookstoreLitPreloadedTextureByUrl = new Map();
 			let bookstoreLitPreloadPromise = null;
@@ -1093,7 +1125,7 @@
 					return bookstoreLitPreloadPromise;
 				}
 				const texLoader = new THREE.TextureLoader();
-				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const maxAniso = isMobileDevice ? 1 : Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
 				const entries = [];
 				for ( let pi = 0; pi < pieces.length; pi++ ) {
 					const u = resolveShipArtUrl( pieces[ pi ]?.doodle );
@@ -1119,7 +1151,15 @@
 					urlOnce.set( url, p );
 					return p;
 				}
-				bookstoreLitPreloadPromise = Promise.all( entries.map( ( url ) => loadUrlOnce( url ) ) ).then( () => undefined );
+				const uniqueBookUrls = [ ...new Set( entries ) ];
+				if ( isMobileDevice ) {
+					bookstoreLitPreloadPromise = uniqueBookUrls.reduce(
+						( chain, url ) => chain.then( () => loadUrlOnce( url ) ),
+						Promise.resolve()
+					).then( () => undefined );
+				} else {
+					bookstoreLitPreloadPromise = Promise.all( uniqueBookUrls.map( ( url ) => loadUrlOnce( url ) ) ).then( () => undefined );
+				}
 				return bookstoreLitPreloadPromise;
 			}
 
@@ -1149,7 +1189,7 @@
 				+ '<div class="ship-lit-field"><span class="ship-lit-label">Medium</span><span class="ship-lit-value ship-lit-val-medium"></span></div>'
 				+ '</aside>'
 				+ '<div class="ship-lit-main">'
-				+ '<div class="ship-lit-img-frame"><img class="ship-lit-img" alt="" /></div>'
+				+ '<div class="ship-lit-img-frame"><img class="ship-lit-img" alt="" decoding="async" /></div>'
 				+ '<p class="ship-lit-statement ship-lit-excerpt"></p>'
 				+ '</div></div>'
 				+ '<p class="ship-lit-hint">Click again to close</p>'
@@ -1207,7 +1247,10 @@
 				const artistRaw = String( artistStr || '' ).trim();
 				const hasSub = artistRaw.length > 0;
 				const maxWorldW = Math.max( 1.2, Math.min( 6.35, titleTargetW > 0 ? titleTargetW : 3.2 ) );
-				const cw = Math.min( 2048, Math.max( 640, Math.round( maxWorldW * 210 ) ) );
+				const pxScale = isMobileDevice ? 160 : 210;
+				const cwMax = isMobileDevice ? 1024 : 2048;
+				const cwMin = isMobileDevice ? 480 : 640;
+				const cw = Math.min( cwMax, Math.max( cwMin, Math.round( maxWorldW * pxScale ) ) );
 				const padX = 34;
 				const padY = 26;
 				const fontFamily = 'system-ui, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Hiragino Sans", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", sans-serif';
@@ -1241,7 +1284,7 @@
 				let contentH = padY + titleLines.length * titleLH;
 				if ( hasSub && subLines.length ) contentH += gapTitleSub + subLines.length * subLH;
 				contentH += padY;
-				const ch = Math.min( 1400, Math.max( 96, Math.ceil( contentH ) ) );
+				const ch = Math.min( isMobileDevice ? 900 : 1400, Math.max( 96, Math.ceil( contentH ) ) );
 
 				const c = document.createElement( 'canvas' );
 				c.width = cw;
@@ -3517,7 +3560,7 @@
 			loader.load( './freecam/maptest2-compressed.glb',
 				( gltf ) => {
 					loadingInfo.innerHTML = 'Loading gallery artwork…';
-					ensureShipArtTexturesPreloaded().then( () => {
+					( isMobileDevice ? Promise.resolve() : ensureShipArtTexturesPreloaded() ).then( () => {
 					loadingInfo.innerHTML = originalInfoText;
 					const dc = document.querySelector( '.desktop-controls' );
 					if ( dc && !isMobileDevice ) {
@@ -3607,7 +3650,7 @@
 				( error ) => {
 					console.error( 'Error loading model:', error );
 					loadingInfo.innerHTML = 'Error loading model. Check console.';
-					ensureShipArtTexturesPreloaded().finally( () => {
+					( isMobileDevice ? Promise.resolve() : ensureShipArtTexturesPreloaded() ).finally( () => {
 						if ( typeof window.__magnetSchedule3dWorldLoaderDone === 'function' ) window.__magnetSchedule3dWorldLoaderDone();
 					} );
 				}
@@ -3744,7 +3787,7 @@
 					pg.add( art );
 
 					const fontRef = flythroughChoiceFontRef;
-					if ( fontRef ) {
+					if ( fontRef && !isMobileDevice ) {
 						const glowMat = new THREE.MeshBasicMaterial( {
 							color: 0xffb24a, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
 							toneMapped: false, depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending
@@ -3936,7 +3979,7 @@
 					};
 				}
 				const loader = new THREE.TextureLoader();
-				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const maxAniso = isMobileDevice ? 1 : Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
 				const n = pieces.length;
 				const frameT = 0.18;
 				const Sbs = bookstoreGroup.scale.x;
@@ -4244,7 +4287,7 @@
 						const ca = parts.captionAuthor != null ? parts.captionAuthor : '';
 						const fontR = flythroughChoiceFontRef;
 						let row = null;
-						if ( shipLitCaptionNeedsCanvasTexture( ct, ca ) ) {
+						if ( isMobileDevice || shipLitCaptionNeedsCanvasTexture( ct, ca ) ) {
 							row = buildShipLitCaptionRowCanvasGroup( ct, ca, capW );
 						} else if ( fontR ) {
 							row = buildShipLitCaptionRowGroup( fontR, ct, ca, capW );
@@ -4288,7 +4331,7 @@
 						pg.add( art );
 
 						const fontRef = flythroughChoiceFontRef;
-						if ( fontRef ) {
+						if ( fontRef && !isMobileDevice ) {
 							const glowMat = new THREE.MeshBasicMaterial( {
 								color: 0xffb24a, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
 								toneMapped: false, depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending
@@ -4539,7 +4582,7 @@
 					const captionAuthor = capPiece?.author != null ? String( capPiece.author ) : '';
 					let captionRow = null;
 					const capTargetW = Math.min( 6.35, fw * 0.98 );
-					if ( shipLitCaptionNeedsCanvasTexture( captionTitle, captionAuthor ) ) {
+					if ( isMobileDevice || shipLitCaptionNeedsCanvasTexture( captionTitle, captionAuthor ) ) {
 						captionRow = buildShipLitCaptionRowCanvasGroup( captionTitle, captionAuthor, capTargetW );
 					} else if ( flythroughChoiceFontRef ) {
 						captionRow = buildShipLitCaptionRowGroup( flythroughChoiceFontRef, captionTitle, captionAuthor, capTargetW );
@@ -4606,25 +4649,27 @@
 
 				function createRichWoodTexture() {
 					const canvas = document.createElement( 'canvas' );
-					canvas.width = 1024;
-					canvas.height = 1024;
+					const dim = isMobileDevice ? 512 : 1024;
+					const grainIters = isMobileDevice ? 1200 : 8000;
+					canvas.width = dim;
+					canvas.height = dim;
 					const ctx = canvas.getContext( '2d' );
 					ctx.fillStyle = '#2c1104';
-					ctx.fillRect( 0, 0, 1024, 1024 );
-					for ( let i = 0; i < 8000; i++ ) {
+					ctx.fillRect( 0, 0, dim, dim );
+					for ( let i = 0; i < grainIters; i++ ) {
 						ctx.fillStyle = Math.random() > 0.5 ? 'rgba(15, 5, 0, 0.4)' : 'rgba(70, 30, 10, 0.2)';
 						const w = Math.random() * 2 + 1;
 						const h = Math.random() * 100 + 20;
-						ctx.fillRect( Math.random() * 1024, Math.random() * 1024, w, h );
+						ctx.fillRect( Math.random() * dim, Math.random() * dim, w, h );
 					}
 					ctx.fillStyle = '#0a0301';
 					const planks = 8;
-					const plankW = 1024 / planks;
-					for ( let i = 1; i < planks; i++ ) ctx.fillRect( i * plankW - 2, 0, 4, 1024 );
+					const plankW = dim / planks;
+					for ( let i = 1; i < planks; i++ ) ctx.fillRect( i * plankW - 2, 0, 4, dim );
 					const texture = new THREE.CanvasTexture( canvas );
 					texture.colorSpace = THREE.SRGBColorSpace;
 					texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-					texture.anisotropy = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+					texture.anisotropy = isMobileDevice ? 1 : Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
 					return texture;
 				}
 
@@ -4682,7 +4727,7 @@
 				backWall.receiveShadow = !isMobile;
 				group.add( backWall );
 
-				const maxBooks = isMobile ? 2800 : 11000;
+				const maxBooks = isMobileDevice ? 1700 : 11000;
 				const bookGeo = new THREE.BoxGeometry( 1, 1, 1 );
 				bookGeo.translate( 0, 0.5, 0.5 );
 				const bookMat = new THREE.MeshStandardMaterial( { color: 0xffffff, roughness: 0.5, metalness: 0.1, toneMapped: true } );
@@ -4854,7 +4899,8 @@
 				const ctx = canvas.getContext( '2d' );
 				ctx.fillStyle = '#3a2318';
 				ctx.fillRect( 0, 0, 512, 512 );
-				for ( let i = 0; i < 2800; i++ ) {
+				const grainIters = isMobileDevice ? 900 : 2800;
+				for ( let i = 0; i < grainIters; i++ ) {
 					ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.28)' : 'rgba(90,50,30,0.14)';
 					ctx.fillRect( Math.random() * 512, Math.random() * 512, Math.random() * 3 + 1, Math.random() * 50 + 8 );
 				}
@@ -4865,7 +4911,7 @@
 				const tex = new THREE.CanvasTexture( canvas );
 				tex.colorSpace = THREE.SRGBColorSpace;
 				tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-				tex.anisotropy = 8;
+				tex.anisotropy = isMobileDevice ? 1 : 8;
 				return tex;
 			}
 
@@ -4888,7 +4934,7 @@
 					};
 				}
 				const loader = new THREE.TextureLoader();
-				const maxAniso = Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
+				const maxAniso = isMobileDevice ? 1 : Math.min( 8, renderer.capabilities.getMaxAnisotropy() );
 				const n = pieces.length;
 				const frameT = 0.18;
 				const Sship = deckGroup.scale.x;
@@ -5192,7 +5238,7 @@
 						const ca = parts.captionArtist != null ? parts.captionArtist : '';
 						const fontR = flythroughChoiceFontRef;
 						let row = null;
-						if ( shipLitCaptionNeedsCanvasTexture( ct, ca ) ) {
+						if ( isMobileDevice || shipLitCaptionNeedsCanvasTexture( ct, ca ) ) {
 							row = buildShipLitCaptionRowCanvasGroup( ct, ca, capW );
 						} else if ( fontR ) {
 							row = buildShipLitCaptionRowGroup( fontR, ct, ca, capW );
@@ -5236,7 +5282,7 @@
 						pg.add( art );
 
 						const fontRef = flythroughChoiceFontRef;
-						if ( fontRef ) {
+						if ( fontRef && !isMobileDevice ) {
 							const glowMat = new THREE.MeshBasicMaterial( {
 								color: 0xffb24a, transparent: true, opacity: 0.42, side: THREE.DoubleSide,
 								toneMapped: false, depthTest: true, depthWrite: false, blending: THREE.AdditiveBlending
@@ -5486,7 +5532,7 @@
 					const captionArtist = capPiece?.artist != null ? String( capPiece.artist ) : '';
 					let captionRow = null;
 					const capTargetW = Math.min( 6.35, fw * 0.98 );
-					if ( shipLitCaptionNeedsCanvasTexture( captionTitle, captionArtist ) ) {
+					if ( isMobileDevice || shipLitCaptionNeedsCanvasTexture( captionTitle, captionArtist ) ) {
 						captionRow = buildShipLitCaptionRowCanvasGroup( captionTitle, captionArtist, capTargetW );
 					} else if ( flythroughChoiceFontRef ) {
 						captionRow = buildShipLitCaptionRowGroup( flythroughChoiceFontRef, captionTitle, captionArtist, capTargetW );
@@ -5824,7 +5870,8 @@
 					return;
 				}
 				shipLitRaycastFrame++;
-				if ( ( shipLitRaycastFrame & 1 ) === 0 ) {
+				const _shipLitRayEvery = isMobileDevice ? 3 : 2;
+				if ( ( shipLitRaycastFrame % _shipLitRayEvery ) === 0 ) {
 					shipLitHoverIndexCached = raycastShipLitCenterHitIndex();
 				}
 				shipLitHoverIndex = shipLitHoverIndexCached;
@@ -5907,7 +5954,8 @@
 					return;
 				}
 				bookstoreLitRaycastFrame++;
-				if ( ( bookstoreLitRaycastFrame & 1 ) === 0 ) {
+				const _bookLitRayEvery = isMobileDevice ? 3 : 2;
+				if ( ( bookstoreLitRaycastFrame % _bookLitRayEvery ) === 0 ) {
 					bookstoreLitHoverIndexCached = raycastBookstoreLitCenterHitIndex();
 				}
 				bookstoreLitHoverIndex = bookstoreLitHoverIndexCached;
@@ -6002,7 +6050,10 @@
 					ensureBookstoreLitTexturesPreloaded(),
 					flythroughFontLoadPromise,
 					new Promise( ( r ) => { window.setTimeout( r, BOOKSTORE_ENTRY_LOADER_MIN_MS ); } )
-				] ).then( () => {
+				] ).then( async () => {
+					if ( isMobileDevice ) {
+						await new Promise( ( r ) => requestAnimationFrame( () => requestAnimationFrame( r ) ) );
+					}
 					const b = getBookstoreMap();
 					swapToInteriorMap( 'bookstore', b );
 					playerBody.position.set( BOOKSTORE_SPAWN.x, BOOKSTORE_SPAWN.y, BOOKSTORE_SPAWN.z );
@@ -6045,11 +6096,11 @@
 
 			let bookstoreEntryLoadInProgress = false;
 			let pendingEnterBookstoreFromFlythrough = false;
-			const BOOKSTORE_ENTRY_LOADER_MIN_MS = 520;
+			const BOOKSTORE_ENTRY_LOADER_MIN_MS = isMobileDevice ? 640 : 520;
 
 			let shipEntryLoadInProgress = false;
 			let pendingEnterShipFromFlythrough = false;
-			const SHIP_ENTRY_LOADER_MIN_MS = 520;
+			const SHIP_ENTRY_LOADER_MIN_MS = isMobileDevice ? 640 : 520;
 
 			function showShipEntryLoader() {
 				const el = document.getElementById( 'ship-entry-loader' );
@@ -6079,7 +6130,10 @@
 					ensureShipArtTexturesPreloaded(),
 					flythroughFontLoadPromise,
 					new Promise( ( r ) => { window.setTimeout( r, SHIP_ENTRY_LOADER_MIN_MS ); } )
-				] ).then( () => {
+				] ).then( async () => {
+					if ( isMobileDevice ) {
+						await new Promise( ( r ) => requestAnimationFrame( () => requestAnimationFrame( r ) ) );
+					}
 					const s = getShipMap();
 					swapToInteriorMap( 'ship', s );
 					playerBody.position.set( SHIP_SPAWN.x, SHIP_SPAWN.y, SHIP_SPAWN.z );
