@@ -937,6 +937,8 @@
 			/** Vertical FOV (deg). Slightly wider on phones so more of the scene fits the tall viewport. */
 			const CAMERA_FOV_DESKTOP = 70;
 			const CAMERA_FOV_MOBILE = 100;
+			/** Bookstore / ship interiors on phone: narrower FOV so walls feel less stretched. */
+			const CAMERA_FOV_MOBILE_INTERIOR = 80;
 			const camera = new THREE.PerspectiveCamera(
 				isMobileDevice ? CAMERA_FOV_MOBILE : CAMERA_FOV_DESKTOP,
 				window.innerWidth / window.innerHeight,
@@ -3103,14 +3105,11 @@
 			function onWindowResize() {
 				const h = window.innerHeight;
 				camera.aspect = window.innerWidth / h;
-				camera.updateProjectionMatrix();
+				applyCameraFovAndTorchPerspective();
 				renderer.setSize( window.innerWidth, h );
 				composer.setSize( window.innerWidth, h );
 				bloomPass.setSize( window.innerWidth, h );
 				masterPostPass.uniforms[ 'resolution' ].value.set( window.innerWidth, h );
-				for ( let i = 0; i < torchFireMeshes.length; i ++ ) {
-					torchFireMeshes[ i ].material.setPerspective( camera.fov, h );
-				}
 			}
 
 			function createColliderVisualization() {
@@ -3257,6 +3256,14 @@
 			/** Bump when ship deck lighting/geometry changes so cached map rebuilds. */
 			const SHIP_DECK_MAP_REVISION = 17;
 			let activeMap = 'main';
+
+			function syncMobileCameraFovForActiveMap() {
+				if ( !isMobileDevice ) return;
+				camera.fov = ( activeMap === 'bookstore' || activeMap === 'ship' )
+					? CAMERA_FOV_MOBILE_INTERIOR
+					: CAMERA_FOV_MOBILE;
+			}
+
 			let mainMapRoot = null;
 			const mainWorldStaticBodies = [];
 			let theaterMapCache = null;
@@ -3506,6 +3513,15 @@
 			let colliderVisualization = null;
 			const torchFireMeshes = [];
 			const torchPointLights = [];
+
+			function applyCameraFovAndTorchPerspective() {
+				syncMobileCameraFovForActiveMap();
+				camera.updateProjectionMatrix();
+				const h = window.innerHeight;
+				for ( let i = 0; i < torchFireMeshes.length; i ++ ) {
+					torchFireMeshes[ i ].material.setPerspective( camera.fov, h );
+				}
+			}
 
 			function setMainMapTorchEffectsVisible( visible ) {
 				for ( let i = 0; i < torchFireMeshes.length; i ++ ) torchFireMeshes[ i ].visible = visible;
@@ -6083,6 +6099,7 @@
 					fillLight1.intensity = Math.max( 0.78, fillLight1.intensity * 0.82 + 0.42 );
 					directionalLight.intensity = Math.max( 1.05, Math.min( 2.6, directionalLight.intensity * 0.92 + 0.55 ) );
 					ambientLight.intensity = Math.max( 0.55, ambientLight.intensity + 0.32 );
+					applyCameraFovAndTorchPerspective();
 					window.requestAnimationFrame( () => {
 						window.requestAnimationFrame( () => {
 							hideShipEntryLoader();
@@ -6105,6 +6122,7 @@
 				closeBookLitModal();
 				restoreMainWorldFromInterior( getBookstoreMap() );
 				applySettings();
+				applyCameraFovAndTorchPerspective();
 				activateMainFlythroughAtPathEnd();
 			}
 
@@ -6162,6 +6180,7 @@
 					fillLight1.intensity = Math.max( 1.05, fillLight1.intensity + 0.8 );
 					directionalLight.intensity = Math.max( 1.5, Math.min( 3.5, directionalLight.intensity + 1.0 ) );
 					ambientLight.intensity = Math.max( 0.92, ambientLight.intensity + 0.55 );
+					applyCameraFovAndTorchPerspective();
 					window.requestAnimationFrame( () => {
 						window.requestAnimationFrame( () => {
 							hideShipEntryLoader();
@@ -6184,6 +6203,7 @@
 				closeShipLitModal();
 				restoreMainWorldFromInterior( getShipMap() );
 				applySettings();
+				applyCameraFovAndTorchPerspective();
 				activateMainFlythroughAtPathEnd();
 			}
 
