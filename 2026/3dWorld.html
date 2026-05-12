@@ -3270,13 +3270,24 @@
 			worldAmbientAudio.volume = 0.32;
 			worldAmbientAudio.src = './freecam/Cave_Theme (1).wav';
 			worldAmbientAudio.setAttribute( 'playsinline', '' );
+			/** False while cave theme must not play (theater interior). Guards late `play()` promise resolution. */
+			let worldAmbientPlayOk = true;
 
 			function syncWorldAmbientMusic() {
 				if ( activeMap === 'theater' ) {
-					worldAmbientAudio.pause();
+					worldAmbientPlayOk = false;
+					try { worldAmbientAudio.pause(); } catch ( _e ) {}
 					return;
 				}
-				worldAmbientAudio.play().catch( () => {} );
+				worldAmbientPlayOk = true;
+				const playPromise = worldAmbientAudio.play();
+				if ( playPromise && typeof playPromise.then === 'function' ) {
+					playPromise.then( () => {
+						if ( activeMap === 'theater' || !worldAmbientPlayOk ) {
+							try { worldAmbientAudio.pause(); } catch ( _e2 ) {}
+						}
+					} ).catch( () => {} );
+				}
 			}
 
 			function resumeWorldAmbientAfterUserGesture() {
@@ -6381,6 +6392,7 @@
 			function enterTheaterMap() {
 				if ( activeMap !== 'main' || !mainMapRoot ) return;
 				activeMap = 'theater';
+				syncWorldAmbientMusic();
 				const t = getTheaterMap();
 				scene.remove( mainMapRoot );
 				setMainMapTorchEffectsVisible( false );
@@ -6713,7 +6725,10 @@
 				if ( activeMap === 'bookstore' ) {
 					updateBookstoreLiteraturePanelsHover( clock.getElapsedTime() );
 				}
-				if ( activeMap === 'theater' ) updateTheaterGodRaySunPosition();
+				if ( activeMap === 'theater' ) {
+					updateTheaterGodRaySunPosition();
+					try { worldAmbientAudio.pause(); } catch ( _e ) {}
+				}
 				flythroughChoiceMenuGroup.visible = !isInteriorMap();
 				if ( flythroughChoiceMenuGroup.visible && ( flythroughChoiceEntries.length > 0 || flythroughExtraLabelRows.length > 0 ) ) {
 					for ( let i = 0; i < flythroughChoiceEntries.length; i++ ) {
