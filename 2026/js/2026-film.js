@@ -4,7 +4,7 @@ const FILM_PIECES = [
     title: 'Fruitflies',
     director: 'Peter Snowden',
     desc: '',
-    video: './assets/misc/scored_d1_fruitflies.mov',
+    video: './assets/misc/fruitflies final.mp4',
     poster: './assets/misc/Thumbnail.png'
   }
 ];
